@@ -125,6 +125,17 @@
       "command": [
         "zig-out/bin/vh-log-driver"
       ]
+    },
+    {
+      "name": "common-lisp",
+      "cwd": "implementations/common-lisp",
+      "build": [
+        "sh",
+        "scripts/build.sh"
+      ],
+      "command": [
+        "bin/vh-log-driver"
+      ]
     }
   ]
 }

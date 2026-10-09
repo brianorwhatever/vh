@@ -4,7 +4,7 @@ A Swift 6 implementation of [VH-Log](https://github.com/swcurran/VH-Log) that
 follows this repository's interop profile ([`docs/profile.md`](../../docs/profile.md)).
 It builds on macOS, iOS and Linux. Its only dependency is
 [swift-crypto](https://github.com/apple/swift-crypto), used for SHA-256/512 and
-Ed25519 verification.
+Ed25519 signing and verification.
 
 ```sh
 swift build -c release --product vh-log-driver   # interop driver (docs/interop-protocol.md)
@@ -49,10 +49,11 @@ case .failed(let error): print(error.code.rawValue)      // e.g. "scid-mismatch"
   compare by exact bytes, not by Swift's canonical equivalence, so `"é"` and
   `"e\u{301}"` stay distinct, and `{SCID}` replacement is done on UTF-8 bytes.
   Lone surrogate escapes and non-finite numbers make a log line `invalid-log`.
-- **Deterministic Ed25519 signing.** CryptoKit (which swift-crypto uses on Apple
-  platforms) produces *randomised* Ed25519 signatures, so generated logs wouldn't
-  reproduce the vectors. Signing therefore uses a small port of TweetNaCl's
-  RFC 8032 arithmetic (`Ed25519.swift`); verification uses swift-crypto. Signing
-  takes about 1.5 ms in release builds, much longer in debug builds.
+- **Signing.** The library's default `Ed25519Signer` uses swift-crypto (CryptoKit
+  on Apple platforms); custom signers can conform to `VHLogSigner`. CryptoKit's
+  randomised Ed25519 signatures verify normally but may differ from the vectors.
+  Only the tests and interop driver use the unaudited TweetNaCl port in the
+  separate `VHLogDeterministicSigning` target for reproducible signatures. That
+  target is not a library product and must not be used to protect real keys.
 - The driver reads stdin with `readLine` (splits on `\n` only) and writes each
   response with an unbuffered `write(2)`.

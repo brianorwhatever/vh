@@ -7,6 +7,7 @@ import Glibc
 import Musl
 #endif
 @testable import VHLog
+import VHLogDeterministicSigning
 
 /// Runs the shared vectors in `../../vectors` (the same checks as harness/run.ts).
 /// Files are read with libc, so the tests don't depend on Foundation.
@@ -61,7 +62,7 @@ enum Vectors {
             #expect(Multihash.hashB58(c["data"]!.stringValue!) == c["output"]!.stringValue!)
         }
         for c in v["multikey"]?.arrayValue ?? [] {
-            #expect(try Ed25519Signer(seedHex: c["seed"]!.stringValue!).multikey == c["multikey"]!.stringValue!)
+            #expect(try DeterministicEd25519Signer(seedHex: c["seed"]!.stringValue!).multikey == c["multikey"]!.stringValue!)
         }
         for c in v["keyHash"]?.arrayValue ?? [] {
             #expect(Multihash.keyHash(c["multikey"]!.stringValue!) == c["output"]!.stringValue!)
@@ -78,7 +79,7 @@ enum Vectors {
     @Test func signAndVerify() throws {
         for c in v["sign"]?.arrayValue ?? [] {
             let document = c["document"]!
-            let signer = try Ed25519Signer(seedHex: c["seed"]!.stringValue!)
+            let signer = try DeterministicEd25519Signer(seedHex: c["seed"]!.stringValue!)
             let proof = try DataIntegrity.createProof(document: document, signer: signer,
                                                       options: .init(created: c["created"]?.stringValue))
             #expect(JSONValue.object(proof) == c["proof"]!)
@@ -145,7 +146,7 @@ enum Vectors {
                 if !scid.isEmpty {
                     input = try JSONValue.parse(replacingBytes(in: input.serialized(), scidPlaceholder, with: scid))
                 }
-                let signers = try input["signers"]!.stringArrayValue!.map { try Ed25519Signer(seedHex: $0) }
+                let signers = try input["signers"]!.stringArrayValue!.map { try DeterministicEd25519Signer(seedHex: $0) }
                 let versionId: String
                 if step["op"] == "create" {
                     let r = try createLog(state: input["state"]!, parameters: input["parameters"]!.objectValue!,
@@ -167,7 +168,7 @@ enum Vectors {
                 for w in witness {
                     let versionId = versionIds[Int(w["step"]!.numberValue!) - 1]
                     let proofs = try w["seeds"]!.stringArrayValue!.map {
-                        JSONValue.object(try witnessProof(versionId: versionId, signer: Ed25519Signer(seedHex: $0)))
+                        JSONValue.object(try witnessProof(versionId: versionId, signer: DeterministicEd25519Signer(seedHex: $0)))
                     }
                     records.append(["versionId": .string(versionId), "proof": .array(proofs)])
                 }

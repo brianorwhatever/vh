@@ -1,5 +1,6 @@
 import Testing
 @testable import VHLog
+import VHLogDeterministicSigning
 
 @Suite struct JCSTests {
     @Test(arguments: [
@@ -107,18 +108,18 @@ import Testing
 @Suite struct Ed25519Tests {
     /// RFC 8032 §7.1, TEST 1 and TEST 3.
     @Test func rfc8032Vectors() throws {
-        let s1 = try Ed25519Signer(seedHex: "9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60")
+        let s1 = try DeterministicEd25519Signer(seedHex: "9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60")
         #expect(Hex.encode(s1.publicKey) == "d75a980182b10ab7d54bfed3c964073a0ee172f3daa62325af021a68f707511a")
         #expect(Hex.encode(s1.sign([])) ==
             "e5564300c360ac729086e2cc806e828a84877f1eb8e5d974d873e065224901555fb8821590a33bacc61e39701cf9b46bd25bf5f0595bbe24655141438e7a100b")
-        let s3 = try Ed25519Signer(seedHex: "c5aa8df43f9f837bedb7442f31dcb7b166d38535076f094b85ce3a2e0b4458f7")
+        let s3 = try DeterministicEd25519Signer(seedHex: "c5aa8df43f9f837bedb7442f31dcb7b166d38535076f094b85ce3a2e0b4458f7")
         #expect(Hex.encode(s3.sign([0xAF, 0x82])) ==
             "6291d657deec24024827e69c3abe01a30ce548a284743a445e3680d7db5ac3ac18ff9b538d16f290ae67f760984dc6594a7c15e9716ed28dc027beceea1ec40a")
     }
 
     @Test func signaturesVerifyWithSwiftCrypto() throws {
         for b in UInt8(0)..<8 {
-            let signer = try Ed25519Signer(seed: [UInt8](repeating: b &* 37, count: 32))
+            let signer = try DeterministicEd25519Signer(seed: [UInt8](repeating: b &* 37, count: 32))
             let message = [UInt8](repeating: b, count: Int(b) * 13)
             let sig = signer.sign(message)
             #expect(Ed25519Signer.verify(publicKey: signer.publicKey, message: message, signature: sig))
@@ -127,7 +128,7 @@ import Testing
     }
 
     @Test func rejectsBadSeeds() {
-        #expect(throws: VHLogInputError.self) { try Ed25519Signer(seedHex: "zz") }
-        #expect(throws: VHLogInputError.self) { try Ed25519Signer(seed: [1, 2, 3]) }
+        #expect(throws: VHLogInputError.self) { try DeterministicEd25519Signer(seedHex: "zz") }
+        #expect(throws: VHLogInputError.self) { try DeterministicEd25519Signer(seed: [1, 2, 3]) }
     }
 }

@@ -139,8 +139,22 @@ jobs:
       - name: Unit tests
         run: zig build test --summary all
 
+  common-lisp:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: implementations/common-lisp
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install SBCL
+        run: sudo apt-get update && sudo apt-get install -y sbcl
+      - name: Build
+        run: sh scripts/build.sh
+      - name: Library tests
+        run: sh scripts/test.sh
+
   interop:
-    needs: [typescript, rust, python, elixir, go, swift, kotlin, zig]
+    needs: [typescript, rust, python, elixir, go, swift, kotlin, zig, common-lisp]
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
@@ -164,6 +178,9 @@ jobs:
       - uses: mlugg/setup-zig@v2
         with:
           version: 0.17.0
+
+      - name: Install SBCL
+        run: sudo apt-get update && sudo apt-get install -y sbcl
 
       - name: Vectors are up to date
         run: |

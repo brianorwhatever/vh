@@ -34,8 +34,10 @@ public enum DataIntegrity {
 
     /// Creates a proof over `document`. Field order: `type, cryptosuite,
     /// verificationMethod, created?, proofPurpose, proofValue`.
-    public static func createProof(document: JSONValue, signer: Ed25519Signer,
-                                   options: ProofOptions = .init()) throws(JSONSerializationError) -> JSONObject {
+    ///
+    /// - Throws: ``JSONSerializationError`` for a non-finite number, or whatever the signer throws.
+    public static func createProof(document: JSONValue, signer: some VHLogSigner,
+                                   options: ProofOptions = .init()) throws -> JSONObject {
         var config: JSONObject = [
             "type": .string(proofType),
             "cryptosuite": .string(options.cryptosuite ?? cryptosuite),
@@ -43,9 +45,14 @@ public enum DataIntegrity {
         ]
         if let created = options.created { config["created"] = created }
         config["proofPurpose"] = .string(options.proofPurpose ?? proofPurpose)
-        let signature = signer.sign(try signingInput(document: document, config: config))
+        let signature = try signer.sign(try signingInput(document: document, config: config))
         config["proofValue"] = .string("z" + Base58.encode(signature))
         return config
+    }
+
+    /// ``createProof(document:signer:options:)`` with the default ``Ed25519Signer`` for a hex seed.
+    public static func createProof(document: JSONValue, seedHex: String, options: ProofOptions = .init()) throws -> JSONObject {
+        try createProof(document: document, signer: Ed25519Signer(seedHex: seedHex), options: options)
     }
 
     /// Checks a proof's structure and signature over `document`. It doesn't

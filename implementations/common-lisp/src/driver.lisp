@@ -1,0 +1,106 @@
+;;;; driver.lisp — the interop harness driver (docs/interop-protocol.md).
+;;;; Reads one JSON request per line on stdin, writes one response per line.
+
+(defpackage #:vh-log/driver
+  (:use #:cl #:vh-log)
+  (:export #:main #:handle-request))
+
+(in-package #:vh-log/driver)
+
+(defun input (request key &optional default)
+  (jget (jget request "input") key default))
+
+(defun required-string (request key)
+  (let ((v (input request key)))
+    (unless (stringp v) (error "input.~a must be a string" key))
+    v))
+
+(defun signers (request)
+  (map 'list #'make-signer (input request "signers" #())))
+
+(defun optional-string (request key)
+  (let ((v (input request key)))
+    (and (stringp v) v)))
+
+(defun copy-plist (copy)
+  (if (jhas copy "unavailable")
+      (list :source (jget copy "source") :unavailable (jget copy "unavailable"))
+      (append (list :source (jget copy "source") :log (jget copy "log" ""))
+              (multiple-value-bind (w present) (jget copy "witness")
+                (when present (list :witness w))))))
+
+(defun op-resolve (request)
+  (let ((in (jget request "input")))
+    (multiple-value-bind (witness witness-p) (jget in "witness")
+      (multiple-value-bind (copies copies-p) (jget in "copies")
+        (resolution-to-json
+         (apply #'resolve (required-string request "log")
+                :now (required-string request "now")
+                :options (jget in "options")
+                :retained-version-id (optional-string request "retainedVersionId")
+                (append (when witness-p (list :witness witness))
+                        (when (and copies-p (vectorp copies))
+                          (list :copies (map 'list #'copy-plist copies))))))))))
+
+(defun handle (op request)
+  "The result object for one request; signals an error on driver failure."
+  (cond
+    ((string= op "jcs")
+     (make-json "output" (canonicalize (parse-json (required-string request "text")))))
+    ((string= op "hash")
+     (make-json "output" (hash-string (required-string request "data"))))
+    ((string= op "multikey")
+     (make-json "multikey" (signer-multikey (make-signer (required-string request "seed")))))
+    ((string= op "key-hash")
+     (make-json "output" (key-hash (required-string request "multikey"))))
+    ((string= op "scid")
+     (make-json "scid" (compute-scid (input request "entry"))))
+    ((string= op "entry-hash")
+     (make-json "hash" (entry-hash (input request "entry") (required-string request "previousVersionId"))))
+    ((string= op "sign")
+     (make-json "proof" (sign-document (input request "document")
+                                       (make-signer (required-string request "seed"))
+                                       :verification-method (optional-string request "verificationMethod")
+                                       :created (optional-string request "created"))))
+    ((string= op "verify")
+     (make-json "valid" (if (verify-proof (input request "document") (input request "proof")) :true :false)))
+    ((string= op "create")
+     (multiple-value-bind (log scid version-id)
+         (create-log :state (input request "state") :parameters (input request "parameters")
+                     :version-time (required-string request "versionTime") :signers (signers request))
+       (make-json "log" log "scid" scid "versionId" version-id)))
+    ((string= op "update")
+     (multiple-value-bind (log version-id)
+         (update-log (required-string request "log")
+                     :state (input request "state") :parameters (input request "parameters")
+                     :version-time (required-string request "versionTime") :signers (signers request))
+       (make-json "log" log "versionId" version-id)))
+    ((string= op "witness")
+     (make-json "proof" (witness-proof (required-string request "versionId")
+                                       (make-signer (required-string request "seed"))
+                                       :created (optional-string request "created"))))
+    ((string= op "resolve") (op-resolve request))
+    (t (error "unknown op ~s" op))))
+
+(defun handle-request (line)
+  "Returns the response line (without newline) for one request LINE."
+  (let ((id :null))
+    (handler-case
+        (let ((request (parse-json line :strict nil)))
+          (setf id (jget request "id" :null))
+          (let ((op (jget request "op")))
+            (unless (stringp op) (error "op must be a string"))
+            (to-json (make-json "id" id "ok" :true "result" (handle op request)))))
+      (serious-condition (e)
+        (to-json (make-json "id" id "ok" :false "error" (princ-to-string e)))))))
+
+(defun main ()
+  (let ((in (sb-sys:make-fd-stream 0 :input t :external-format (list :utf-8 :replacement (code-char #xfffd)) :buffering :full))
+        (out (sb-sys:make-fd-stream 1 :output t :external-format :utf-8 :buffering :full)))
+    (loop for line = (read-line in nil nil)
+          while line
+          unless (zerop (length line))
+            do (write-string (handle-request line) out)
+               (terpri out)
+               (finish-output out))
+    (sb-ext:exit :code 0)))

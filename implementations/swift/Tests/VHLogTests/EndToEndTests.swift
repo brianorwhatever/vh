@@ -1,10 +1,11 @@
 import Testing
 @testable import VHLog
+import VHLogDeterministicSigning
 
 @Suite struct EndToEndTests {
-    let k1 = try! Ed25519Signer(seedHex: "90930409d492fb6cd7b50542c97fc6003fcedd59012b47ac114417373796eaaa")
-    let k2 = try! Ed25519Signer(seedHex: "e0203d7f35f898d2c66bbc45b1d5ed23410af56e775d3601a1f4ee3f22987ea6")
-    let w1 = try! Ed25519Signer(seedHex: "b2f56f12a0b0513455e61f01bb11b5af580fdf1bd4ea1b560bc4bf96ee1e0162")
+    let k1 = try! DeterministicEd25519Signer(seedHex: "90930409d492fb6cd7b50542c97fc6003fcedd59012b47ac114417373796eaaa")
+    let k2 = try! DeterministicEd25519Signer(seedHex: "e0203d7f35f898d2c66bbc45b1d5ed23410af56e775d3601a1f4ee3f22987ea6")
+    let w1 = try! DeterministicEd25519Signer(seedHex: "b2f56f12a0b0513455e61f01bb11b5af580fdf1bd4ea1b560bc4bf96ee1e0162")
     let now = "2026-06-01T00:00:00Z"
 
     func resolved(_ result: ResolveResult) throws -> Resolution {

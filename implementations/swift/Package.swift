@@ -13,7 +13,11 @@ let package = Package(
     ],
     targets: [
         .target(name: "VHLog", dependencies: [.product(name: "Crypto", package: "swift-crypto")]),
-        .executableTarget(name: "vh-log-driver", dependencies: ["VHLog"]),
-        .testTarget(name: "VHLogTests", dependencies: ["VHLog"]),
+        // Unaudited deterministic RFC 8032 signer, used only by the driver and the
+        // tests so generated logs reproduce the vectors byte for byte. Not a product.
+        .target(name: "VHLogDeterministicSigning",
+                dependencies: ["VHLog", .product(name: "Crypto", package: "swift-crypto")]),
+        .executableTarget(name: "vh-log-driver", dependencies: ["VHLog", "VHLogDeterministicSigning"]),
+        .testTarget(name: "VHLogTests", dependencies: ["VHLog", "VHLogDeterministicSigning"]),
     ]
 )

@@ -7,6 +7,7 @@ import Glibc
 import Musl
 #endif
 import VHLog
+import VHLogDeterministicSigning
 
 struct DriverError: Error, CustomStringConvertible {
     let description: String
@@ -24,9 +25,9 @@ extension JSONValue {
         return o
     }
 
-    func signers(_ key: String) throws -> [Ed25519Signer] {
+    func signers(_ key: String) throws -> [DeterministicEd25519Signer] {
         guard let seeds = self[key]?.stringArrayValue else { throw DriverError("input.\(key) must be an array of hex seeds") }
-        return try seeds.map { try Ed25519Signer(seedHex: $0) }
+        return try seeds.map { try DeterministicEd25519Signer(seedHex: $0) }
     }
 }
 
@@ -37,7 +38,7 @@ func handle(_ op: String, _ i: JSONValue) throws -> JSONValue {
     case "hash":
         return ["output": .string(Multihash.hashB58(try i.string("data")))]
     case "multikey":
-        return ["multikey": .string(try Ed25519Signer(seedHex: try i.string("seed")).multikey)]
+        return ["multikey": .string(try DeterministicEd25519Signer(seedHex: try i.string("seed")).multikey)]
     case "key-hash":
         return ["output": .string(Multihash.keyHash(try i.string("multikey")))]
     case "scid":
@@ -47,7 +48,7 @@ func handle(_ op: String, _ i: JSONValue) throws -> JSONValue {
     case "sign":
         var options = DataIntegrity.ProofOptions(verificationMethod: i["verificationMethod"]?.stringValue)
         options.created = i["created"]
-        let signer = try Ed25519Signer(seedHex: try i.string("seed"))
+        let signer = try DeterministicEd25519Signer(seedHex: try i.string("seed"))
         let proof = try DataIntegrity.createProof(document: i["document"] ?? .null, signer: signer, options: options)
         return ["proof": .object(proof)]
     case "verify":
@@ -62,7 +63,7 @@ func handle(_ op: String, _ i: JSONValue) throws -> JSONValue {
                               signers: try i.signers("signers"))
         return ["log": .string(r.log), "versionId": .string(r.versionId)]
     case "witness":
-        let proof = try witnessProof(versionId: try i.string("versionId"), signer: try Ed25519Signer(seedHex: try i.string("seed")),
+        let proof = try witnessProof(versionId: try i.string("versionId"), signer: try DeterministicEd25519Signer(seedHex: try i.string("seed")),
                                      created: i["created"]?.stringValue)
         return ["proof": .object(proof)]
     case "resolve":

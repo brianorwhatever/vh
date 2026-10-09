@@ -82,10 +82,12 @@ func replacingText(in object: JSONObject, _ target: String, with replacement: St
     return result
 }
 
-func signDocument(_ document: JSONObject, signers: [Ed25519Signer]) throws -> JSONValue {
+func signDocument(_ document: JSONObject, signers: [any VHLogSigner]) throws -> JSONValue {
     var options = DataIntegrity.ProofOptions()
     options.created = document["versionTime"]
-    return .array(try signers.map { .object(try DataIntegrity.createProof(document: .object(document), signer: $0, options: options)) })
+    return .array(try signers.map { signer in
+        .object(try DataIntegrity.createProof(document: .object(document), signer: signer, options: options))
+    })
 }
 
 /// Creates a new log (spec: *Create*). Adds `logVersion` and `"scid": "{SCID}"`
@@ -94,7 +96,7 @@ func signDocument(_ document: JSONObject, signers: [Ed25519Signer]) throws -> JS
 ///
 /// Inputs are not validated beyond what's needed to produce an entry (profile §5).
 public func createLog(state: JSONValue, parameters: JSONObject, versionTime: String,
-                      signers: [Ed25519Signer]) throws -> CreatedLog {
+                      signers: [any VHLogSigner]) throws -> CreatedLog {
     var parameters = parameters
     if !parameters.contains("logVersion") { parameters["logVersion"] = .string(logVersion) }
     if !parameters.contains("scid") { parameters["scid"] = .string(scidPlaceholder) }
@@ -113,7 +115,7 @@ public func createLog(state: JSONValue, parameters: JSONObject, versionTime: Str
 /// Appends a signed entry to `log` (spec: *Update*). The hash chain continues
 /// from the log's last line. Deactivate with `parameters: ["deactivated": true]`.
 public func updateLog(log: String, state: JSONValue, parameters: JSONObject = [:], versionTime: String,
-                      signers: [Ed25519Signer]) throws -> UpdatedLog {
+                      signers: [any VHLogSigner]) throws -> UpdatedLog {
     guard let last = parseLogLines(log).last else { throw VHLogInputError.invalidInput("cannot update an empty log") }
     guard let previousVersionId = try JSONValue.parse(last)["versionId"]?.stringValue else {
         throw VHLogInputError.invalidInput("the last log line has no string versionId")
@@ -146,7 +148,30 @@ func javaScriptParseInt(_ s: String) -> Double {
 }
 
 /// A witness proof: `eddsa-jcs-2022` over `{"versionId": …}` (profile §3).
-public func witnessProof(versionId: String, signer: Ed25519Signer, created: String? = nil) throws -> JSONObject {
+public func witnessProof(versionId: String, signer: some VHLogSigner, created: String? = nil) throws -> JSONObject {
     try DataIntegrity.createProof(document: .object(["versionId": .string(versionId)]), signer: signer,
                                   options: .init(created: created))
+}
+
+// MARK: - Seed-based conveniences (default swift-crypto signer)
+
+/// ``createLog(state:parameters:versionTime:signers:)`` signing with the default
+/// ``Ed25519Signer`` for each hex-encoded 32-byte seed.
+public func createLog(state: JSONValue, parameters: JSONObject, versionTime: String,
+                      seedsHex: [String]) throws -> CreatedLog {
+    try createLog(state: state, parameters: parameters, versionTime: versionTime,
+                  signers: seedsHex.map { try Ed25519Signer(seedHex: $0) })
+}
+
+/// ``updateLog(log:state:parameters:versionTime:signers:)`` signing with the
+/// default ``Ed25519Signer`` for each hex-encoded 32-byte seed.
+public func updateLog(log: String, state: JSONValue, parameters: JSONObject = [:], versionTime: String,
+                      seedsHex: [String]) throws -> UpdatedLog {
+    try updateLog(log: log, state: state, parameters: parameters, versionTime: versionTime,
+                  signers: seedsHex.map { try Ed25519Signer(seedHex: $0) })
+}
+
+/// ``witnessProof(versionId:signer:created:)`` with the default ``Ed25519Signer``.
+public func witnessProof(versionId: String, seedHex: String, created: String? = nil) throws -> JSONObject {
+    try witnessProof(versionId: versionId, signer: Ed25519Signer(seedHex: seedHex), created: created)
 }

@@ -1,19 +1,24 @@
 import Crypto
+import VHLog
 
-/// An Ed25519 signing key created from a 32-byte seed (RFC 8032 §5.1.5).
+/// A deterministic RFC 8032 Ed25519 signer, for interop tests only.
 ///
-/// Signing is implemented here (a port of TweetNaCl's field and scalar
-/// arithmetic) rather than delegated to CryptoKit, because CryptoKit's Ed25519
-/// signatures are randomised on Apple platforms. The profile needs RFC 8032's
-/// deterministic signatures so that generated logs reproduce byte for byte on
-/// every platform. Verification uses swift-crypto.
-public struct Ed25519Signer: Sendable {
+/// > Important: This is an **unaudited** port of TweetNaCl's field and scalar
+/// > arithmetic. It makes no constant-time guarantees beyond TweetNaCl's
+/// > branch-free structure and must not be used to protect real keys.
+///
+/// It exists because the library's default ``VHLog/Ed25519Signer`` signs with
+/// CryptoKit on Apple platforms, which produces *randomised* (still valid)
+/// Ed25519 signatures. The interop vectors compare generated log lines and
+/// proofs byte for byte, so the test suite and the `vh-log-driver` executable
+/// inject this signer instead. It is not part of any library product.
+public struct DeterministicEd25519Signer: VHLogSigner {
     /// The raw 32-byte public key.
     public let publicKey: [UInt8]
     private let scalar: [UInt8]
     private let prefix: [UInt8]
 
-    /// Creates a signer from a 32-byte seed.
+    /// Creates a signer from a 32-byte seed (RFC 8032 §5.1.5).
     public init(seed: [UInt8]) throws(VHLogInputError) {
         guard seed.count == 32 else { throw .invalidSeed("Ed25519 seed must be 32 bytes") }
         var d = Array(SHA512.hash(data: seed))
@@ -45,14 +50,6 @@ public struct Ed25519Signer: Sendable {
             for j in 0..<32 { x[i + j] += Int64(h[i]) * Int64(scalar[j]) }
         }
         return R + Ed25519Math.modL(&x)
-    }
-
-    /// Verifies an Ed25519 signature with swift-crypto.
-    public static func verify(publicKey: [UInt8], message: [UInt8], signature: [UInt8]) -> Bool {
-        guard publicKey.count == 32, signature.count == 64,
-            let key = try? Curve25519.Signing.PublicKey(rawRepresentation: publicKey)
-        else { return false }
-        return key.isValidSignature(signature, for: message)
     }
 }
 
