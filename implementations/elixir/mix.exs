@@ -10,7 +10,8 @@ defmodule VHLog.MixProject do
       elixirc_options: [warnings_as_errors: true],
       deps: deps(),
       description: "Verifiable History Log (VH-Log) — vh-log-interop-0 profile",
-      docs: [main: "VHLog"]
+      docs: [main: "VHLog"],
+      package: [licenses: ["MIT"]]
     ]
   end
 

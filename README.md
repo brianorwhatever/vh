@@ -132,3 +132,7 @@ To add an implementation:
 CI ([`.github/workflows/interop.yml`](.github/workflows/interop.yml)) runs each
 implementation's own checks, verifies that the vectors are up to date, and
 runs the full matrix.
+
+## License
+
+[MIT](LICENSE). The VH-Log specification itself is licensed separately by its authors; see [swcurran/VH-Log](https://github.com/swcurran/VH-Log/blob/main/LICENSE.md).

@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "VH-Log (Verifiable History Log) - create, update, witness, verify and resolve logs (vh-log-interop-0 profile)"
 readme = "README.md"
 requires-python = ">=3.11"
-license = { text = "Apache-2.0" }
+license = "MIT"
 dependencies = ["cryptography>=42"]
 
 [dependency-groups]

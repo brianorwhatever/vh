@@ -2,6 +2,7 @@
   "name": "vh-log",
   "version": "0.1.0",
   "description": "VH-Log (Verifiable History Log) — TypeScript reference implementation",
+  "license": "MIT",
   "type": "module",
   "exports": "./src/index.ts",
   "engines": {

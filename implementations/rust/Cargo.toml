@@ -3,7 +3,7 @@ name = "vh-log"
 version = "0.1.0"
 edition = "2024"
 description = "VH-Log (Verifiable History Log) for the vh-log-interop-0 profile"
-license = "Apache-2.0"
+license = "MIT"
 publish = false
 
 [lib]
