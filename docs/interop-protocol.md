@@ -122,6 +122,9 @@ On failure:
  "error": {"code": "scid-mismatch", "version": 1, "message": "…"}}
 ```
 
+- Omitting `witness` means no witness file was found. An explicit `"witness": null`
+  is a malformed witness file (`invalid-witness-file` if any entry needs
+  witnessing).
 - `firstInvalidVersion`/`error` describe partial validity of the reference copy
   ([profile §4](profile.md#4-resolution-behaviour)).
 - For `fork-detected`, `error` also has `"fork": {"version": k, "copies": [{"source", "versionId"}]}`.

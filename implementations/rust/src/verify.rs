@@ -139,8 +139,8 @@ fn days_from_civil(y: i64, m: i64, d: i64) -> i64 {
 
 /// Parses a `versionTime` (`YYYY-MM-DDTHH:MM:SSZ` or `…+00:00`) to seconds since the
 /// epoch; returns `None` unless it is a valid whole-second UTC timestamp.
-///
-/// Like the reference implementation (which uses `Date.UTC`), years 0000–0099 are rejected.
+/// Every four-digit year (including 0000–0099) is accepted; dates use the
+/// proleptic Gregorian calendar.
 pub fn parse_version_time(value: &str) -> Option<i64> {
     let b = value.as_bytes();
     let rest = match b.len() {
@@ -167,17 +167,23 @@ pub fn parse_version_time(value: &str) -> Option<i64> {
         num(14..16),
         num(17..19),
     );
-    if y < 100
-        || !(1..=12).contains(&mo)
-        || d < 1
-        || d > days_in_month(y, mo)
-        || h > 23
-        || mi > 59
-        || s > 59
-    {
+    if !(1..=12).contains(&mo) || d < 1 || d > days_in_month(y, mo) || h > 23 || mi > 59 || s > 59 {
         return None;
     }
     Some(days_from_civil(y, mo, d) * 86_400 + h * 3600 + mi * 60 + s)
+}
+
+/// Profile §4: an `http` or `https` URL made only of printable ASCII
+/// (U+0021–U+007E), with a non-empty authority.
+pub fn is_watcher_url(value: &str) -> bool {
+    if value.is_empty() || !value.bytes().all(|b| (0x21..=0x7e).contains(&b)) {
+        return false;
+    }
+    let rest = value
+        .strip_prefix("https://")
+        .or_else(|| value.strip_prefix("http://"));
+    rest.and_then(|r| r.chars().next())
+        .is_some_and(|c| !matches!(c, '/' | '?' | '#'))
 }
 
 fn validate_witness(value: &Value, version: u64) -> Result<Option<WitnessConfig>, VhLogError> {
@@ -305,7 +311,7 @@ fn apply_parameters(
         None => None,
         Some(v) => Some(
             as_string_array(v)
-                .filter(|urls| urls.iter().all(|u| url::Url::parse(u).is_ok()))
+                .filter(|urls| urls.iter().all(|u| is_watcher_url(u)))
                 .ok_or_else(|| invalid("watchers must be an array of URLs"))?,
         ),
     };
@@ -748,6 +754,19 @@ mod tests {
             parse_version_time("2024-02-29T23:59:59Z"),
             Some(1_709_251_199)
         );
+        // Every four-digit year is valid, including 0000-0099 (year 0 is a leap year).
+        assert_eq!(
+            parse_version_time("0000-01-01T00:00:00Z"),
+            Some(-62_167_219_200)
+        );
+        assert_eq!(
+            parse_version_time("0000-02-29T00:00:00Z"),
+            Some(-62_162_121_600)
+        );
+        assert_eq!(
+            parse_version_time("0099-12-31T23:59:59Z"),
+            Some(-59_011_459_201)
+        );
         for bad in [
             "2023-02-29T00:00:00Z",
             "2026-01-01T00:00:00.5Z",
@@ -755,9 +774,67 @@ mod tests {
             "2026-01-01T00:00:00+01:00",
             "2026-13-01T00:00:00Z",
             "2026-01-01T24:00:00Z",
-            "0050-01-01T00:00:00Z",
+            "2026-01-01T00:00:60Z",
+            "2026-01-01T00:00:00z",
+            "1900-02-29T00:00:00Z",
         ] {
             assert_eq!(parse_version_time(bad), None, "{bad}");
         }
+    }
+
+    #[test]
+    fn watcher_urls() {
+        for ok in [
+            "https://w.example",
+            "http://w.example/a?b#c",
+            "https://[::1]:8080",
+        ] {
+            assert!(is_watcher_url(ok), "{ok}");
+        }
+        for bad in [
+            "",
+            "not a url",
+            "https://w.example/a b",
+            "https://w\u{e4}tcher.example",
+            "HTTPS://w.example",
+            "ftp://w.example",
+            "https://",
+            "https:///path",
+            "http://?q",
+            "https://#f",
+        ] {
+            assert!(!is_watcher_url(bad), "{bad}");
+        }
+    }
+
+    #[test]
+    fn unsafe_json_lines_are_invalid_log() {
+        let entry = |extra: &str| {
+            format!(
+                r#"{{"versionId":"1-x","versionTime":"2026-01-01T00:00:00Z","parameters":{{}},"state":{{{extra}}},"proof":[]}}"#
+            )
+        };
+        for extra in [r#""n":1e400"#, r#""s":"\ud800""#, r#""\udc00":1"#] {
+            let v = verify_log(&entry(extra), None, 0);
+            let f = v.failure.unwrap();
+            assert_eq!(
+                (f.code, f.version),
+                (ErrorCode::InvalidLog, Some(1)),
+                "{extra}"
+            );
+        }
+        // A well-formed pair is fine (fails later, not as invalid-log).
+        let v = verify_log(&entry(r#""s":"\ud83d\ude00""#), None, 0);
+        assert_eq!(v.failure.unwrap().code, ErrorCode::UnsupportedLogVersion);
+    }
+
+    #[test]
+    fn duplicate_keys_last_wins() {
+        let v = verify_log(
+            r#"{"versionId":"1-x","versionTime":"2026-01-01T00:00:00Z","parameters":{},"parameters":5,"state":{},"proof":[]}"#,
+            None,
+            0,
+        );
+        assert_eq!(v.failure.unwrap().code, ErrorCode::InvalidEntry);
     }
 }

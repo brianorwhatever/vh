@@ -91,7 +91,7 @@ defmodule VHLog.Resolver do
   @spec line_version_id([String.t()], integer()) :: String.t() | nil
   def line_version_id(lines, index) when index >= 0 do
     with line when is_binary(line) <- Enum.at(lines, index),
-         {:ok, %{"versionId" => id}} when is_binary(id) <- JSON.decode(line) do
+         {:ok, %{"versionId" => id}} when is_binary(id) <- JSON.decode_lenient(line) do
       id
     else
       _ -> nil
@@ -155,7 +155,7 @@ defmodule VHLog.Resolver do
 
   # The parsed versionTime of the first invalid line, or :infinity.
   defp first_invalid_time(lines, index) do
-    with {:ok, %{"versionTime" => vt}} <- JSON.decode(Enum.at(lines, index)),
+    with {:ok, %{"versionTime" => vt}} <- JSON.decode_lenient(Enum.at(lines, index)),
          {:ok, t} <- VersionTime.parse(vt) do
       t
     else

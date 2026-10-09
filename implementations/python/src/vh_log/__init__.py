@@ -51,6 +51,8 @@ from .verify import (
     VerifiedEntry,
     VerifiedLog,
     WitnessConfig,
+    is_safe_json,
+    is_watcher_url,
     parse_version_time,
     verify_log,
 )
@@ -95,6 +97,8 @@ __all__ = [
     "format_number",
     "hash_b58",
     "hex_to_bytes",
+    "is_safe_json",
+    "is_watcher_url",
     "key_hash",
     "multikey_from_public_key",
     "parse_json",

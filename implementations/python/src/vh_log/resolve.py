@@ -458,11 +458,9 @@ def resolve(
     ``retained_version_id`` is a versionId the caller saw earlier. Verification failures are
     reported in the result (``valid: False``), not raised.
     """
-    epoch = _to_epoch(now)
-    request: dict[str, Any] = {
-        "log": log,
-        "now": datetime.fromtimestamp(epoch, tz=UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
-    }
+    if not isinstance(now, str):
+        now = datetime.fromtimestamp(_to_epoch(now), tz=UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+    request: dict[str, Any] = {"log": log, "now": now}
     if witness is not None:
         request["witness"] = witness
     if options is not None:

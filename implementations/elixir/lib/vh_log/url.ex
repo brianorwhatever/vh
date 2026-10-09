@@ -1,64 +1,33 @@
 defmodule VHLog.URL do
   @moduledoc """
-  A small approximation of the WHATWG URL parser's `URL.canParse` (used by
-  the reference implementation to validate `watchers`): an absolute URL with
-  a scheme; the special schemes `http`, `https`, `ws`, `wss` and `ftp` also
-  need a non-empty, well-formed host and a numeric port, if any.
+  Watcher URL validation (profile §4): an `http` or `https` URL made only of
+  printable ASCII (U+0021–U+007E), with a non-empty authority. Concretely, the
+  value starts with `https://` or `http://` (lowercase) and the remainder's
+  first character is not `/`, `?` or `#`. Nothing else is checked.
   """
 
-  @special ~w(http https ws wss ftp)
-  @forbidden_host ~c" #%/:<>?@[\\]^|"
-
   @doc """
-  True if `value` parses as an absolute URL.
+  True if `value` is a valid watcher URL.
 
       iex> VHLog.URL.valid?("https://w1.example/path")
       true
       iex> VHLog.URL.valid?("not a url")
       false
+      iex> VHLog.URL.valid?("HTTPS://w.example")
+      false
   """
   @spec valid?(term()) :: boolean()
-  def valid?(value) when is_binary(value) do
-    trimmed = value |> trim() |> String.replace(["\t", "\n", "\r"], "")
-
-    case Regex.run(~r/\A([A-Za-z][A-Za-z0-9+.\-]*):(.*)\z/s, trimmed) do
-      [_, scheme, rest] ->
-        if String.downcase(scheme) in @special, do: special_ok?(rest), else: true
-
-      nil ->
-        false
-    end
-  end
-
+  def valid?(value) when is_binary(value), do: printable_ascii?(value) and authority?(value)
   def valid?(_), do: false
 
-  # Leading/trailing C0 controls and spaces are stripped.
-  defp trim(s), do: Regex.replace(~r/\A[\x00-\x20]+|[\x00-\x20]+\z/, s, "")
+  defp authority?("https://" <> rest), do: non_empty_authority?(rest)
+  defp authority?("http://" <> rest), do: non_empty_authority?(rest)
+  defp authority?(_), do: false
 
-  defp special_ok?(rest) do
-    authority =
-      rest
-      |> String.trim_leading("/")
-      |> String.trim_leading("\\")
-      |> String.split(["/", "\\", "?", "#"], parts: 2)
-      |> hd()
+  defp non_empty_authority?(<<c, _::binary>>), do: c not in ~c"/?#"
+  defp non_empty_authority?(<<>>), do: false
 
-    host_port = authority |> String.split("@") |> List.last()
-
-    case host_port do
-      "[" <> _ ->
-        Regex.match?(~r/\A\[[0-9A-Fa-f:.]+\](:\d*)?\z/, host_port)
-
-      _ ->
-        {host, port} =
-          case String.split(host_port, ":", parts: 2) do
-            [h] -> {h, ""}
-            [h, p] -> {h, p}
-          end
-
-        host != "" and
-          not Enum.any?(String.to_charlist(host), &(&1 in @forbidden_host or &1 < 0x20)) and
-          (port == "" or (Regex.match?(~r/\A\d+\z/, port) and String.to_integer(port) <= 65_535))
-    end
-  end
+  defp printable_ascii?(<<>>), do: true
+  defp printable_ascii?(<<c, rest::binary>>) when c in 0x21..0x7E, do: printable_ascii?(rest)
+  defp printable_ascii?(_), do: false
 end

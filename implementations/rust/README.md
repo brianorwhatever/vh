@@ -51,7 +51,7 @@ match result {
 
 Dependencies: `serde`/`serde_json` (with `float_roundtrip` so numbers parse
 exactly as doubles), `ryu-js` (ECMAScript number formatting), `sha2`,
-`ed25519-dalek`, `url` (WHATWG URL parsing for `watchers`).
+`ed25519-dalek`.
 
 ## Testing
 

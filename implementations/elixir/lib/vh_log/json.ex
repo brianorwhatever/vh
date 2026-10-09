@@ -44,6 +44,66 @@ defmodule VHLog.JSON do
 
   def decode(_), do: {:error, :not_a_string}
 
+  @doc """
+  Parses JSON text as ECMAScript's `JSON.parse` would, accepting what
+  `decode/1` rejects as not I-JSON-safe: a lone surrogate escape becomes
+  U+FFFD and a number beyond the double range becomes `nil`. Used only to
+  read `versionId`/`versionTime` from lines that may be invalid.
+  """
+  @spec decode_lenient(binary()) :: {:ok, value()} | {:error, term()}
+  def decode_lenient(text) when is_binary(text) do
+    decoders =
+      Keyword.put(@decoders, :float, &lenient_number/1)
+      |> Keyword.put(:integer, &lenient_number/1)
+
+    case JSON.decode(replace_lone_surrogates(text), :ok, decoders) do
+      {value, :ok, rest} -> if whitespace?(rest), do: {:ok, value}, else: {:error, :trailing_data}
+      {:error, _} = error -> error
+    end
+  rescue
+    e -> {:error, e}
+  end
+
+  def decode_lenient(_), do: {:error, :not_a_string}
+
+  @doc false
+  def lenient_number(text) do
+    number(text)
+  rescue
+    ArgumentError -> nil
+  end
+
+  # Rewrites `\uD800`-style escapes that are not part of a surrogate pair to
+  # `\uFFFD`, leaving everything else byte-for-byte.
+  defp replace_lone_surrogates(text), do: scan(text, false, []) |> IO.iodata_to_binary()
+
+  defp scan(<<>>, _in_string, acc), do: Enum.reverse(acc)
+  defp scan(<<?", rest::binary>>, in_string, acc), do: scan(rest, not in_string, [?" | acc])
+
+  defp scan(<<?\\, ?u, a::binary-size(4), ?\\, ?u, b::binary-size(4), rest::binary>>, true, acc) do
+    case {surrogate(a), surrogate(b)} do
+      {:high, :low} -> scan(rest, true, ["\\u" <> b, "\\u" <> a | acc])
+      {:none, _} -> scan(<<?\\, ?u, b::binary, rest::binary>>, true, ["\\u" <> a | acc])
+      _ -> scan(<<?\\, ?u, b::binary, rest::binary>>, true, ["\\uFFFD" | acc])
+    end
+  end
+
+  defp scan(<<?\\, ?u, a::binary-size(4), rest::binary>>, true, acc) do
+    escape = if surrogate(a) == :none, do: "\\u" <> a, else: "\\uFFFD"
+    scan(rest, true, [escape | acc])
+  end
+
+  defp scan(<<?\\, c, rest::binary>>, true, acc), do: scan(rest, true, [c, ?\\ | acc])
+  defp scan(<<c, rest::binary>>, in_string, acc), do: scan(rest, in_string, [c | acc])
+
+  defp surrogate(hex) do
+    case Integer.parse(hex, 16) do
+      {n, ""} when n in 0xD800..0xDBFF -> :high
+      {n, ""} when n in 0xDC00..0xDFFF -> :low
+      _ -> :none
+    end
+  end
+
   @doc "Like `decode/1` but raises `ArgumentError` on invalid JSON."
   @spec decode!(binary()) :: value()
   def decode!(text) do

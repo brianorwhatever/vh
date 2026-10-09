@@ -31,7 +31,7 @@ Pinned spec: [`swcurran/VH-Log@f2f9fda`](https://github.com/swcurran/VH-Log/tree
 ```
 vectors/                    shared, language-neutral test data
   primitives.json           JCS, multihash, multikey, key hash, SCID, entry hash, proofs
-  resolution/*.json         141 logs (valid and invalid), each with the expected result
+  resolution/*.json         158 logs (valid and invalid), each with the expected result
   generation.json           scenarios each implementation must reproduce exactly
 harness/run.ts              runs every implementation's driver against all of it
 implementations.json        how to build and start each driver

@@ -79,17 +79,30 @@ Section links point at the pinned
     the entry will be retrieved … or before" can't be checked, apart from the
     future tolerance.
 
+16. **`deactivated` doesn't say whether it carries over.** Other parameters
+    "retain the most recent prior value" when omitted; `deactivated` has no such
+    rule. It makes no visible difference, because nothing may follow a
+    deactivating entry. Witness-id NFC normalisation likewise has no effect
+    under a did:key witness profile, since those ids are ASCII.
+
 ## Interop hazards worth a sentence in the spec
 
-16. **JCS numbers are doubles.** RFC 8785 serialises every number as an IEEE-754
+17. **JCS numbers are doubles.** RFC 8785 serialises every number as an IEEE-754
     double, so a `state` containing `123456789012345678` hashes as
     `…680`. Languages with arbitrary-precision integers (Python, Elixir, Rust's
     serde_json) silently break the hash chain unless they convert. Vector:
     `structure/jcs-numbers-in-state`.
-17. **JCS key order is by UTF-16 code units.** Libraries that sort by code point
+18. **JCS key order is by UTF-16 code units.** Libraries that sort by code point
     or by UTF-8 bytes disagree when there are non-BMP keys (e.g. emoji). Vector:
-    `primitives.json` `jcs[4]`.
-18. **JSON Lines and U+2028.** Line readers in some languages (Node's
+    `primitives.json` `jcs[5]`.
+19. **Formatting doubles is easy to get subtly wrong.** Rust's `{:e}` gives
+    the shortest digits but not always the closest ones (`896365914996807.2`
+    comes out as `…807.3`), so about 0.1% of random doubles hashed differently
+    from ECMAScript. The original vectors didn't catch this; `jcs[2]` now does.
+20. **Edge cases of the JSON parser.** `1e400`, lone surrogate escapes and
+    duplicate keys are handled differently by different parsers. The spec
+    should require I-JSON (RFC 7493) log lines; the profile pins this (§4).
+21. **JSON Lines and U+2028.** Line readers in some languages (Node's
     `readline`, Python's `str.splitlines`) also split on U+2028/U+2029, which JSON
     allows unescaped inside strings. The spec should say a log is split on `\n`
     only.

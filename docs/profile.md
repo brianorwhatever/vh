@@ -122,8 +122,22 @@ first entry that is not witnessed.
 `versionTime > now + 300s` fails with `future-version-time`.
 
 **`versionTime` format:** `YYYY-MM-DDTHH:MM:SSZ` or `YYYY-MM-DDTHH:MM:SS+00:00`,
-with a valid calendar date and time and no fractional seconds. Comparisons use the
-instant, not the string.
+with no fractional seconds. Every 4-digit year is valid, including 0000–0099.
+The month must be 01–12, the day must exist in that month (proleptic Gregorian
+calendar, so 29 February only in leap years), and the time must be 00:00:00–23:59:59
+(no leap second 60, no 24:00). Comparisons use the instant, not the string.
+
+**Log lines must be I-JSON-safe (Profile):** a line that contains a number too
+large to be a finite double (e.g. `1e400`), or a string or key with a lone
+surrogate escape (e.g. `"\ud800"`), fails with `invalid-log`. If a key is
+duplicated, the **last** value wins, as in every mainstream JSON parser. The
+vectors pin this behaviour, and producers MUST NOT emit duplicate keys.
+
+**`watchers` URLs (Profile):** each must consist only of printable ASCII
+(U+0021–U+007E), start with `https://` or `http://`, and have at least one
+character before the next `/`, `?` or `#` (a non-empty authority). Nothing else
+is checked. This is easy to implement the same way everywhere, which WHATWG URL
+parsing is not. International hostnames must be punycode-encoded.
 
 **Unknown parameters** are ignored (spec: *Specialisation-defined Parameters*).
 Known parameters with wrong types or values fail with `invalid-parameter`.

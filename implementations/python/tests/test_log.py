@@ -15,6 +15,7 @@ from vh_log import (
     key_hash,
     parse_json,
     resolve,
+    resolve_request,
     signer_from_seed,
     update_log,
     verify_log,
@@ -165,3 +166,28 @@ def test_driver_splits_on_newline_only() -> None:
     assert responses[0] == {"id": 1, "ok": True, "result": {"output": '{"a":1,"b":"\u2028"}'}}
     assert responses[1]["id"] == 2 and responses[1]["ok"] is False
     assert responses[2]["result"]["output"] == "QmatYkNGZnELf8cAGdyJpUca2PyY4szai3RHyyWofNY1pY"
+
+
+def test_unsafe_log_lines_are_invalid_log() -> None:
+    created = create_log({"id": "x"}, {"updateKeys": [KEY_A]}, "2026-01-01T00:00:00Z", [SEED_A])
+    for bad in ('{"n":1e400}', '{"s":"\\ud800"}', '{"\\udc00":1}'):
+        line = created.log.rstrip("\n").replace('"state":{"id":"x"}', f'"state":{bad}')
+        verified = verify_log(created.log + line + "\n", now=NOW)
+        assert verified.failure is not None
+        assert (verified.failure["code"], verified.failure["version"]) == ("invalid-log", 2)
+
+
+def test_null_witness_file_is_malformed() -> None:
+    witness_id = "did:key:" + signer_from_seed(WITNESS_SEED).multikey
+    created = create_log(
+        {"id": "x"},
+        {"updateKeys": [KEY_A], "witness": {"threshold": 1, "witnesses": [{"id": witness_id}]}},
+        "2026-01-01T00:00:00Z",
+        [SEED_A],
+    )
+    request = {"log": created.log, "now": NOW, "witness": None}
+    result: Any = resolve_request(request)
+    assert result["error"]["code"] == "invalid-witness-file"
+    del request["witness"]
+    result = resolve_request(request)
+    assert result["error"]["code"] == "witness-threshold-not-met"

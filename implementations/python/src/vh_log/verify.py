@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import calendar
+import math
 import re
 import unicodedata
 from collections.abc import Sequence
@@ -31,6 +32,8 @@ __all__ = [
     "VerifiedEntry",
     "VerifiedLog",
     "WitnessConfig",
+    "is_safe_json",
+    "is_watcher_url",
     "parse_version_time",
     "verify_log",
 ]
@@ -41,9 +44,8 @@ SUPPORTED_LOG_VERSIONS: Final = (LOG_VERSION,)
 
 _VERSION_TIME = re.compile(r"([0-9]{4})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})(?:Z|\+00:00)")
 _VERSION_ID = re.compile(r"([1-9][0-9]*)-([^-]+)", re.DOTALL)
-_URL_SCHEME = re.compile(r"[A-Za-z][A-Za-z0-9+.\-]*:")
-_SPECIAL_SCHEMES = {"http", "https", "ws", "wss", "ftp"}
-_FORBIDDEN_HOST = set(" #%/:<>?@[\\]^|\t\n\r")
+_MONTH_DAYS: Final = (31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
+_SURROGATE = re.compile("[\ud800-\udfff]")
 
 
 class _Absent:
@@ -125,33 +127,49 @@ def _nfc(s: str) -> str:
     return unicodedata.normalize("NFC", s)
 
 
-def _can_parse_url(value: str) -> bool:
-    """An approximation of WHATWG ``URL.canParse`` (absolute URLs only)."""
-    value = (
-        value.strip("".join(chr(c) for c in range(0x21)))
-        .replace("\t", "")
-        .replace("\n", "")
-        .replace("\r", "")
-    )
-    match = _URL_SCHEME.match(value)
-    if not match:
+def is_watcher_url(value: str) -> bool:
+    """Profile section 4: an ``http``/``https`` URL of printable ASCII (U+0021-U+007E) with an authority."""
+    if not value or not all("\x21" <= c <= "\x7e" for c in value):
         return False
-    scheme = match[0][:-1].lower()
-    if scheme not in _SPECIAL_SCHEMES:
+    for prefix in ("https://", "http://"):
+        if value.startswith(prefix):
+            rest = value[len(prefix) :]
+            return rest != "" and rest[0] not in "/?#"
+    return False
+
+
+def _is_well_formed(s: str) -> bool:
+    """True unless ``s`` has a lone surrogate (a surrogate pair stored as two code points is fine)."""
+    if not _SURROGATE.search(s):
         return True
-    rest = value[match.end() :].lstrip("/\\")
-    authority = re.split(r"[/\\?#]", rest, maxsplit=1)[0]
-    host_port = authority.rpartition("@")[2]
-    if host_port.startswith("["):
-        host, sep, port = host_port.partition("]")
-        if not sep or len(host) < 3:
-            return False
-        port = port[1:] if port.startswith(":") else ("" if port == "" else "x")
-    else:
-        host, _, port = host_port.partition(":")
-        if not host or any(c in _FORBIDDEN_HOST for c in host):
-            return False
-    return port == "" or (port.isascii() and port.isdigit() and int(port) <= 65535)
+    try:
+        s.encode("utf-16-le", "surrogatepass").decode("utf-16-le")
+    except UnicodeDecodeError:
+        return False
+    return True
+
+
+def is_safe_json(value: object) -> bool:
+    """Profile section 4: I-JSON-safe -- finite numbers and strings/keys without lone surrogates."""
+    if isinstance(value, float):
+        return math.isfinite(value)
+    if isinstance(value, str):
+        return _is_well_formed(value)
+    if isinstance(value, list):
+        return all(is_safe_json(v) for v in value)
+    if isinstance(value, dict):
+        return all(_is_well_formed(k) and is_safe_json(v) for k, v in value.items())
+    return True
+
+
+def _days_from_civil(y: int, m: int, d: int) -> int:
+    """Days since 1970-01-01 in the proleptic Gregorian calendar (H. Hinnant's algorithm)."""
+    y -= m <= 2
+    era = y // 400
+    yoe = y - era * 400
+    doy = (153 * (m + (-3 if m > 2 else 9)) + 2) // 5 + d - 1
+    doe = yoe * 365 + yoe // 4 - yoe // 100 + doy
+    return era * 146097 + doe - 719468
 
 
 def parse_version_time(value: object) -> int | None:
@@ -162,14 +180,12 @@ def parse_version_time(value: object) -> int | None:
     if not m:
         return None
     y, mo, d, h, mi, s = (int(g) for g in m.groups())
-    if y < 100:
-        # The reference uses Date.UTC, which maps years 0-99 to 1900-1999, so it rejects them.
+    if not 1 <= mo <= 12 or h > 23 or mi > 59 or s > 59:
         return None
-    try:
-        dt = datetime(y, mo, d, h, mi, s, tzinfo=UTC)
-    except ValueError:
+    leap = (y % 4 == 0 and y % 100 != 0) or y % 400 == 0
+    if not 1 <= d <= (29 if mo == 2 and leap else _MONTH_DAYS[mo - 1]):
         return None
-    return calendar.timegm(dt.utctimetuple())
+    return _days_from_civil(y, mo, d) * 86400 + h * 3600 + mi * 60 + s
 
 
 def _to_epoch(now: int | datetime | str) -> int:
@@ -253,7 +269,7 @@ def _apply_parameters(raw: dict[str, Any], previous: Parameters | None, version:
     else:
         witness = previous.witness if previous is not None else None
     if "watchers" in raw and (
-        not _is_string_list(raw["watchers"]) or not all(_can_parse_url(u) for u in raw["watchers"])
+        not _is_string_list(raw["watchers"]) or not all(is_watcher_url(u) for u in raw["watchers"])
     ):
         raise invalid("watchers must be an array of URLs")
     if "deactivated" in raw and not isinstance(raw["deactivated"], bool):
@@ -485,6 +501,10 @@ def verify_log(log: str, witness: object = ABSENT, now: int | datetime | str | N
                 raise VHLogError(ErrorCode.INVALID_LOG, f"line {i + 1} is not JSON", i + 1) from None
             if not isinstance(raw, dict):
                 raise VHLogError(ErrorCode.INVALID_LOG, f"line {i + 1} is not a JSON object", i + 1)
+            if not is_safe_json(raw):
+                raise VHLogError(
+                    ErrorCode.INVALID_LOG, f"line {i + 1} has a non-finite number or a lone surrogate", i + 1
+                )
             entries.append(_verify_entry(raw, entries[-1] if entries else None, clock))
         except VHLogError as e:
             failure = e.to_report()

@@ -133,6 +133,19 @@ const witnessFile = (...records: [string, ...string[]][]) =>
 const sha512Multihash = (data: string) =>
   base58btcEncode(Uint8Array.from([0x13, 0x40, ...createHash("sha512").update(data).digest()]));
 
+/**
+ * A genesis entry plus a hand-written second line whose `state` is `stateText`
+ * verbatim, so number and key spellings survive; the hash and proof use the parsed value.
+ */
+function rawSecondLine(stateText: string): string {
+  const b = new LogBuilder().genesis();
+  const prev = b.vid(1);
+  const doc = { versionId: prev, versionTime: t(2), parameters: {}, state: JSON.parse(stateText) };
+  const versionId = `2-${computeEntryHash(doc, prev)}`;
+  const proof = [createProof({ ...doc, versionId }, KEYS.k1, { created: t(2) })];
+  return b.log + `{"versionId":"${versionId}","versionTime":"${t(2)}","parameters":{},"state":${stateText},"proof":${JSON.stringify(proof)}}\n`;
+}
+
 // ---------------------------------------------------------------- resolution cases
 
 interface Expect {
@@ -257,22 +270,18 @@ group("structure", () => {
   vector("parameters-not-object", "Entry 2's parameters is a JSON array.", ["#the-vh-log-file"],
     { log: new LogBuilder().genesis().update([] as unknown as Json).log }, partial("invalid-entry", 2));
   vector("jcs-numbers-in-state", "State with numbers whose JCS form differs from their source text (IEEE-754 doubles).",
-    ["#generate-entry-hash"], {
-      log: new LogBuilder().genesis().log + (() => {
-        // Built by hand so the line keeps the source number text; the hash uses JCS (doubles).
-        const b = new LogBuilder().genesis();
-        const prev = b.vid(1);
-        const stateText = '{"big":123456789012345678,"one":1.0,"exp":1E21,"small":0.000001,"neg":-0}';
-        const state = JSON.parse(stateText);
-        const doc = { versionId: prev, versionTime: t(2), parameters: {}, state };
-        const versionId = `2-${computeEntryHash(doc, prev)}`;
-        const signed = { ...doc, versionId };
-        const proof = [createProof(signed, KEYS.k1, { created: t(2) })];
-        const line = `{"versionId":"${versionId}","versionTime":"${t(2)}","parameters":{},"state":${stateText},"proof":${JSON.stringify(proof)}}\n`;
-        if (b.vid(1) !== new LogBuilder().genesis().vid(1)) throw new Error("genesis not deterministic");
-        return line;
-      })(),
-    }, ok({ metadata: { versionNumber: 2 } }));
+    ["#generate-entry-hash"], { log: rawSecondLine('{"big":123456789012345678,"one":1.0,"exp":1E21,"small":0.000001,"neg":-0,"f":896365914996807.2}') },
+    ok({ metadata: { versionNumber: 2 } }));
+  vector("duplicate-key-last-wins", "Entry 2's state repeats a key; the last value is the one hashed, signed and returned.",
+    ["#the-vh-log-file"], { log: rawSecondLine('{"a":1,"a":2}') }, ok({ state: { a: 2 } }));
+  vector("number-overflow", "Entry 2 contains 1e400, which is not a finite double.", ["#the-vh-log-file"], {
+    log: new LogBuilder().genesis().log +
+      `{"versionId":"2-QmUnused","versionTime":"${t(2)}","parameters":{},"state":{"n":1e400},"proof":[]}\n`,
+  }, partial("invalid-log", 2));
+  vector("lone-surrogate", "Entry 2's state contains a lone surrogate escape; it is hashed and signed, but not I-JSON.",
+    ["#the-vh-log-file"], { log: new LogBuilder().genesis().update({}, { state: { s: "x\ud800" } }).log }, partial("invalid-log", 2));
+  vector("lone-surrogate-key", "Entry 2's state has a key containing a lone surrogate.",
+    ["#the-vh-log-file"], { log: new LogBuilder().genesis().update({}, { state: { "\udc00": 1 } }).log }, partial("invalid-log", 2));
 });
 
 // ---- versionId
@@ -315,6 +324,22 @@ group("version-time", () => {
     { log: new LogBuilder().genesis({}, { time: t(5) }).update({}, { time: t(4) }).log }, partial("invalid-version-time", 2));
   vector("one-second-apart", "Entries one second apart are allowed.", ["#the-vh-log-file"],
     { log: g().update({}, { time: t(1, 1) }).log }, ok({ metadata: { versionNumber: 2 } }));
+  vector("early-years", "Years 0000–0099 are valid four-digit years.", ["#read-resolve"], {
+    log: new LogBuilder().genesis({}, { time: "0000-01-01T00:00:00Z" }).update({}, { time: "0099-12-31T23:59:59Z" })
+      .update({}, { time: "0100-03-01T00:00:00Z" }).log,
+  }, ok({ metadata: { versionNumber: 3, created: "0000-01-01T00:00:00Z" } }));
+  vector("leap-day", "29 February 2000 and 2024 exist.", ["#read-resolve"], {
+    log: new LogBuilder().genesis({}, { time: "2000-02-29T12:00:00Z" }).update({}, { time: "2024-02-29T12:00:00Z" }).log,
+  }, ok({ metadata: { versionNumber: 2 } }));
+  vector("century-not-leap", "29 February 1900 does not exist.", ["#read-resolve"], {
+    log: new LogBuilder().genesis({}, { time: "1900-01-01T00:00:00Z" }).update({}, { time: "1900-02-29T00:00:00Z" }).log,
+  }, partial("invalid-version-time", 2));
+  vector("hour-24", "24:00:00 is not accepted.", ["#read-resolve"],
+    { log: g().update({}, { time: "2026-01-01T24:00:00Z" }).log }, partial("invalid-version-time", 2));
+  vector("leap-second", "Second 60 is not accepted.", ["#read-resolve"],
+    { log: g().update({}, { time: "2026-01-01T23:59:60Z" }).log }, partial("invalid-version-time", 2));
+  vector("lowercase-z", "A lowercase z zone designator is not accepted.", ["#read-resolve"],
+    { log: g().update({}, { time: "2026-01-02T00:00:00z" }).log }, partial("invalid-version-time", 2));
   vector("future-within-tolerance", "versionTime 4 minutes after `now`.", ["#read-resolve"],
     { log: g().update({}, { time: "2026-06-01T00:04:00Z" }).log }, ok({ metadata: { versionNumber: 2 } }));
   vector("future-beyond-tolerance", "versionTime 1 hour after `now`.", ["#read-resolve"],
@@ -398,6 +423,16 @@ group("parameters", () => {
   for (const [name, ttl] of [["negative", -1], ["fractional", 1.5], ["string", "60"], ["too-large", 2 ** 31 + 1]] as const) {
     vector(`ttl-${name}`, `ttl is ${JSON.stringify(ttl)}.`, ["#vh-log-parameters"], { log: g().update({ ttl }).log },
       partial("invalid-parameter", 2));
+  }
+  vector("watchers-valid-forms", "http and https URLs with userinfo, port, path, query and fragment.", ["#vh-log-parameters"], {
+    log: g({ watchers: ["http://w.example", "https://u@w.example:8443/a/b?c=d#e", "https://w.example/xn--wtcher-cua/{SCID}"] }).log,
+  }, ok());
+  for (const [name, url] of [
+    ["ftp", "ftp://w.example/log"], ["no-authority", "https://"], ["path-only-authority", "https:///log"],
+    ["space", "https://w.example/a b"], ["non-ascii", "https://wätcher.example"], ["uppercase-scheme", "HTTPS://w.example"],
+  ] as const) {
+    vector(`watchers-${name}`, `watchers contains ${JSON.stringify(url)}.`, ["#vh-log-parameters"],
+      { log: g().update({ watchers: [url] }).log }, partial("invalid-parameter", 2));
   }
   vector("deactivated-not-boolean", "deactivated is a string.", ["#vh-log-parameters"],
     { log: g().update({ deactivated: "yes" }).log }, partial("invalid-parameter", 2));
@@ -657,6 +692,7 @@ function primitives() {
   const jcsTexts = [
     '{"b":1,"a":[true,null,false]}',
     '{"numbers":[333333333.33333329,1E30,4.50,2e-3,0.000000000000000000000000001,-0,1.0,100,1e21,1e-7,0.1,5e-324,1.7976931348623157e308]}',
+    '{"doubles":[896365914996807.2,0.30000000000000004,4.35,2.2250738585072014e-308,9.999999999999999e22,1e22,123e-20,1e-6,1e20,295147905179352830000,0.000001234,1.5e-9,-1e-7]}',
     '{"big":123456789012345678,"bigger":9007199254740993}',
     '{"string":"\\u20ac$\\u000F\\u000aA\'\\u0042\\u0022\\u005c\\\\\\"\\/","del":"\\u007f","ls":"\\u2028"}',
     '{"\\u20ac":"Euro","\\r":"CR","\\ufb33":"Hebrew","1":"One","\\ud83d\\ude00":"Smiley","\\u0080":"Control","\\u00f6":"Latin","a":"lower","A":"upper"}',

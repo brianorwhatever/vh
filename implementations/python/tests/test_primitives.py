@@ -15,8 +15,11 @@ from vh_log import (
     create_proof,
     format_number,
     hash_b58,
+    is_safe_json,
+    is_watcher_url,
     key_hash,
     parse_json,
+    parse_version_time,
     public_key_from_multikey,
     signer_from_seed,
     to_json,
@@ -117,3 +120,56 @@ def test_sign_and_verify_vectors(case: dict[str, Any]) -> None:
     assert verify_proof(case["document"], case["proof"])
     assert not verify_proof({**case["document"], "extra": 1}, case["proof"])
     assert not verify_proof(case["document"], {**case["proof"], "proofPurpose": "authentication"})
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("1970-01-01T00:00:00Z", 0),
+        ("2000-02-29T12:34:56+00:00", 951827696),
+        ("0000-01-01T00:00:00Z", -62167219200),
+        ("0000-02-29T00:00:00Z", -62162121600),  # year 0 is a leap year (proleptic Gregorian)
+        ("0099-12-31T23:59:59Z", -59011459201),
+        ("9999-12-31T23:59:59Z", 253402300799),
+        ("1900-02-29T00:00:00Z", None),
+        ("2026-04-31T00:00:00Z", None),
+        ("2026-13-01T00:00:00Z", None),
+        ("2026-01-01T24:00:00Z", None),
+        ("2026-01-01T23:59:60Z", None),
+        ("2026-01-01T00:00:00z", None),
+        ("2026-01-01T00:00:00.5Z", None),
+        ("2026-01-01T00:00:00+01:00", None),
+        ("2026-01-01T00:00:00Z\n", None),
+        ("\uff12026-01-01T00:00:00Z", None),
+    ],
+)
+def test_parse_version_time(text: str, expected: int | None) -> None:
+    assert parse_version_time(text) == expected
+
+
+@pytest.mark.parametrize(
+    ("url", "ok"),
+    [
+        ("https://w.example", True),
+        ("http://w.example:8080/path?q#f", True),
+        ("HTTPS://w.example", False),
+        ("https:///path", False),
+        ("https://", False),
+        ("https://?q", False),
+        ("ftp://w.example", False),
+        ("https://wätcher.example", False),
+        ("https://w.example/a b", False),
+        ("not a url", False),
+    ],
+)
+def test_is_watcher_url(url: str, ok: bool) -> None:
+    assert is_watcher_url(url) is ok
+
+
+def test_is_safe_json() -> None:
+    assert is_safe_json(parse_json('{"a":[1,"\\ud83d\\ude00",{"b":null}]}'))
+    assert is_safe_json({"pair": "😀"})  # a pair stored as two code points is well formed
+    assert not is_safe_json(parse_json("[1e400]"))
+    assert not is_safe_json(parse_json('{"s":"x\\ud800"}'))
+    assert not is_safe_json(parse_json('{"\\udc00":1}'))
+    assert parse_json('{"a":1,"a":2}') == {"a": 2}

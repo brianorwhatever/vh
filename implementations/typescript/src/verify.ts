@@ -50,21 +50,39 @@ const isObject = (v: unknown): v is Record<string, unknown> =>
 
 const isStringArray = (v: unknown): v is string[] => Array.isArray(v) && v.every((x) => typeof x === "string");
 
-/** Parses a `versionTime`; returns null unless it is a whole-second UTC timestamp. */
+/** Parses a `versionTime`; returns null unless it is a whole-second UTC timestamp (profile §4). */
 export function parseVersionTime(value: unknown): number | null {
   if (typeof value !== "string") return null;
   const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:Z|\+00:00)$/.exec(value);
   if (!m) return null;
   const [y, mo, d, h, mi, s] = m.slice(1).map(Number);
-  const ms = Date.UTC(y, mo - 1, d, h, mi, s);
-  const date = new Date(ms);
-  if (
-    date.getUTCFullYear() !== y || date.getUTCMonth() !== mo - 1 || date.getUTCDate() !== d ||
-    date.getUTCHours() !== h || date.getUTCMinutes() !== mi || date.getUTCSeconds() !== s
-  ) {
-    return null;
-  }
-  return ms;
+  const leap = (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+  const days = [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][mo - 1];
+  if (days === undefined || d < 1 || d > days || h > 23 || mi > 59 || s > 59) return null;
+  // Date.UTC maps years 0–99 to 1900–1999, so set the full year explicitly.
+  const date = new Date(0);
+  date.setUTCFullYear(y, mo - 1, d);
+  date.setUTCHours(h, mi, s, 0);
+  return date.getTime();
+}
+
+/**
+ * Profile §4: an `http` or `https` URL made only of printable ASCII
+ * (U+0021–U+007E), with a non-empty authority.
+ */
+export function isWatcherUrl(value: string): boolean {
+  if (!/^[\x21-\x7e]+$/.test(value)) return false;
+  const rest = value.startsWith("https://") ? value.slice(8) : value.startsWith("http://") ? value.slice(7) : null;
+  return rest !== null && /^[^/?#]/.test(rest);
+}
+
+/** Profile §4: a log line must be I-JSON-safe — finite numbers and well-formed Unicode strings. */
+function isSafeJson(value: unknown): boolean {
+  if (typeof value === "number") return Number.isFinite(value);
+  if (typeof value === "string") return value.isWellFormed();
+  if (Array.isArray(value)) return value.every(isSafeJson);
+  if (isObject(value)) return Object.entries(value).every(([k, v]) => k.isWellFormed() && isSafeJson(v));
+  return true;
 }
 
 function validateWitness(value: unknown, version: number): WitnessConfig | null {
@@ -124,7 +142,7 @@ function applyParameters(raw: Record<string, unknown>, previous: Parameters | nu
   }
   const witness = "witness" in raw ? validateWitness(raw.witness, version) : previous?.witness ?? null;
   if ("watchers" in raw) {
-    if (!isStringArray(raw.watchers) || raw.watchers.some((u) => !URL.canParse(u))) {
+    if (!isStringArray(raw.watchers) || raw.watchers.some((u) => !isWatcherUrl(u))) {
       throw invalid("watchers must be an array of URLs");
     }
   }
@@ -306,6 +324,9 @@ export function verifyLog(log: string, witness: unknown, now: number): VerifiedL
         throw new VHLogError("invalid-log", `line ${i + 1} is not JSON`, i + 1);
       }
       if (!isObject(raw)) throw new VHLogError("invalid-log", `line ${i + 1} is not a JSON object`, i + 1);
+      if (!isSafeJson(raw)) {
+        throw new VHLogError("invalid-log", `line ${i + 1} has a non-finite number or a lone surrogate`, i + 1);
+      }
       entries.push(verifyEntry(raw, entries.at(-1) ?? null, now));
     } catch (e) {
       if (!(e instanceof VHLogError)) throw e;
