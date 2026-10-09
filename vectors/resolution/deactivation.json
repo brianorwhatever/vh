@@ -1,0 +1,157 @@
+{
+  "description": "Resolution vectors: deactivation.",
+  "cases": [
+    {
+      "name": "deactivated",
+      "description": "Entry 2 deactivates the log.",
+      "spec": [
+        "https://github.com/swcurran/VH-Log/blob/f2f9fda/spec/specification.md#deactivate"
+      ],
+      "input": {
+        "now": "2026-06-01T00:00:00Z",
+        "log": "{\"versionId\":\"1-Qmc3wTfUMTgQ8Swi1npEst5ko4cHT4KiZyhRmg8HMrPpnM\",\"versionTime\":\"2026-01-01T00:00:00Z\",\"parameters\":{\"logVersion\":\"vh-log:1.0\",\"scid\":\"QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\",\"updateKeys\":[\"z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\"]},\"state\":{\"id\":\"example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\"},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-01T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z4rR392BUVMZ2FtaT1x9KujuELRWdrU8cetMNGCiBwa44hpr8EPvnzwuXkh19UarbDSNag1pbuiojXeE9ekyEa42c\"}]}\n{\"versionId\":\"2-QmNaVskACYiNriZMZiFbeP7fmLp9KHg3XGi9uh99dDxmKC\",\"versionTime\":\"2026-01-02T00:00:00Z\",\"parameters\":{\"deactivated\":true},\"state\":{\"id\":\"example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\",\"version\":2},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-02T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z2nXwiVZoh6snzuAh1dg4qkUJqUEA7w17AfHShUdW5MmoxDzaiBc7XT35BKQJAAtzrxbMsq5KNy66iCHSPoaM8j3u\"}]}\n"
+      },
+      "expect": {
+        "valid": true,
+        "metadata": {
+          "versionId": "2-QmNaVskACYiNriZMZiFbeP7fmLp9KHg3XGi9uh99dDxmKC",
+          "versionNumber": 2,
+          "versionTime": "2026-01-02T00:00:00Z",
+          "created": "2026-01-01T00:00:00Z",
+          "updated": "2026-01-02T00:00:00Z",
+          "scid": "QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7",
+          "deactivated": true,
+          "ttl": 3600,
+          "witness": null,
+          "watchers": [],
+          "updateKeys": [
+            "z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv"
+          ],
+          "nextKeyHashes": []
+        },
+        "state": {
+          "id": "example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7",
+          "version": 2
+        },
+        "firstInvalidVersion": null,
+        "warnings": []
+      }
+    },
+    {
+      "name": "deactivated-earlier-version",
+      "description": "Resolving version 1 of a deactivated log still reports it deactivated.",
+      "spec": [
+        "https://github.com/swcurran/VH-Log/blob/f2f9fda/spec/specification.md#deactivate"
+      ],
+      "input": {
+        "now": "2026-06-01T00:00:00Z",
+        "log": "{\"versionId\":\"1-Qmc3wTfUMTgQ8Swi1npEst5ko4cHT4KiZyhRmg8HMrPpnM\",\"versionTime\":\"2026-01-01T00:00:00Z\",\"parameters\":{\"logVersion\":\"vh-log:1.0\",\"scid\":\"QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\",\"updateKeys\":[\"z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\"]},\"state\":{\"id\":\"example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\"},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-01T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z4rR392BUVMZ2FtaT1x9KujuELRWdrU8cetMNGCiBwa44hpr8EPvnzwuXkh19UarbDSNag1pbuiojXeE9ekyEa42c\"}]}\n{\"versionId\":\"2-QmNaVskACYiNriZMZiFbeP7fmLp9KHg3XGi9uh99dDxmKC\",\"versionTime\":\"2026-01-02T00:00:00Z\",\"parameters\":{\"deactivated\":true},\"state\":{\"id\":\"example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\",\"version\":2},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-02T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z2nXwiVZoh6snzuAh1dg4qkUJqUEA7w17AfHShUdW5MmoxDzaiBc7XT35BKQJAAtzrxbMsq5KNy66iCHSPoaM8j3u\"}]}\n",
+        "options": {
+          "versionNumber": 1
+        }
+      },
+      "expect": {
+        "valid": true,
+        "metadata": {
+          "versionId": "1-Qmc3wTfUMTgQ8Swi1npEst5ko4cHT4KiZyhRmg8HMrPpnM",
+          "versionNumber": 1,
+          "versionTime": "2026-01-01T00:00:00Z",
+          "created": "2026-01-01T00:00:00Z",
+          "updated": "2026-01-02T00:00:00Z",
+          "scid": "QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7",
+          "deactivated": true,
+          "ttl": 3600,
+          "witness": null,
+          "watchers": [],
+          "updateKeys": [
+            "z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv"
+          ],
+          "nextKeyHashes": []
+        },
+        "state": {
+          "id": "example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7"
+        },
+        "firstInvalidVersion": null,
+        "warnings": []
+      }
+    },
+    {
+      "name": "entry-after-deactivation",
+      "description": "An entry follows the deactivating entry.",
+      "spec": [
+        "https://github.com/swcurran/VH-Log/blob/f2f9fda/spec/specification.md#deactivate"
+      ],
+      "input": {
+        "now": "2026-06-01T00:00:00Z",
+        "log": "{\"versionId\":\"1-Qmc3wTfUMTgQ8Swi1npEst5ko4cHT4KiZyhRmg8HMrPpnM\",\"versionTime\":\"2026-01-01T00:00:00Z\",\"parameters\":{\"logVersion\":\"vh-log:1.0\",\"scid\":\"QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\",\"updateKeys\":[\"z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\"]},\"state\":{\"id\":\"example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\"},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-01T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z4rR392BUVMZ2FtaT1x9KujuELRWdrU8cetMNGCiBwa44hpr8EPvnzwuXkh19UarbDSNag1pbuiojXeE9ekyEa42c\"}]}\n{\"versionId\":\"2-QmNaVskACYiNriZMZiFbeP7fmLp9KHg3XGi9uh99dDxmKC\",\"versionTime\":\"2026-01-02T00:00:00Z\",\"parameters\":{\"deactivated\":true},\"state\":{\"id\":\"example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\",\"version\":2},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-02T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z2nXwiVZoh6snzuAh1dg4qkUJqUEA7w17AfHShUdW5MmoxDzaiBc7XT35BKQJAAtzrxbMsq5KNy66iCHSPoaM8j3u\"}]}\n{\"versionId\":\"3-QmSC8hVZ4UNumKEuGr8WcsdkVd5kum6iMjSawmqQ9qCczP\",\"versionTime\":\"2026-01-03T00:00:00Z\",\"parameters\":{},\"state\":{\"id\":\"example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\",\"version\":3},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-03T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z2Qys9XaydjKvKywWWB8AeTvqctFcMVZ99ftZMt9FTZGcGA1FiszhPfRvoh4jMxyWYwa3S3xEbZBypRzTxnxA8egr\"}]}\n"
+      },
+      "expect": {
+        "valid": true,
+        "error": {
+          "code": "entry-after-deactivation",
+          "version": 3
+        },
+        "firstInvalidVersion": 3,
+        "warnings": [
+          "invalid-entries"
+        ],
+        "metadata": {
+          "versionId": "2-QmNaVskACYiNriZMZiFbeP7fmLp9KHg3XGi9uh99dDxmKC",
+          "versionNumber": 2,
+          "versionTime": "2026-01-02T00:00:00Z",
+          "created": "2026-01-01T00:00:00Z",
+          "updated": "2026-01-02T00:00:00Z",
+          "scid": "QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7",
+          "deactivated": true,
+          "ttl": 3600,
+          "witness": null,
+          "watchers": [],
+          "updateKeys": [
+            "z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv"
+          ],
+          "nextKeyHashes": []
+        },
+        "state": {
+          "id": "example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7",
+          "version": 2
+        }
+      }
+    },
+    {
+      "name": "deactivated-false",
+      "description": "deactivated: false is allowed and does nothing.",
+      "spec": [
+        "https://github.com/swcurran/VH-Log/blob/f2f9fda/spec/specification.md#vh-log-parameters"
+      ],
+      "input": {
+        "now": "2026-06-01T00:00:00Z",
+        "log": "{\"versionId\":\"1-QmRGu5XBmcomRcYQt2MFr6sc27Zrehow4bipeFZrHJFgbJ\",\"versionTime\":\"2026-01-01T00:00:00Z\",\"parameters\":{\"logVersion\":\"vh-log:1.0\",\"scid\":\"Qmd2wsaqQiW65YDfitddAo4T5yMxRLWkL33NRSrLNQKYE6\",\"updateKeys\":[\"z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\"],\"deactivated\":false},\"state\":{\"id\":\"example:Qmd2wsaqQiW65YDfitddAo4T5yMxRLWkL33NRSrLNQKYE6\"},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-01T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"zooHL19GMCfZoUth2Eb2AazsnMLsTdNNbNHKQgaobDKpPz6jkwHwUpg4uojN72eSGduXJNq4vw8BdpVTC5nHrvrr\"}]}\n{\"versionId\":\"2-QmZo7s69poQj2ZuDam4hHNW9aAHkVWhQXAawTdqPMxCuxM\",\"versionTime\":\"2026-01-02T00:00:00Z\",\"parameters\":{},\"state\":{\"id\":\"example:Qmd2wsaqQiW65YDfitddAo4T5yMxRLWkL33NRSrLNQKYE6\",\"version\":2},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-02T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z4j1EGodhgsJphAJHihMBYYKdv1yoLzVJxxGTRDXDBxVxtrgguDZQVZNUuFpZKizptoXzhbNuiJsViymvzmtWPSub\"}]}\n"
+      },
+      "expect": {
+        "valid": true,
+        "metadata": {
+          "versionId": "2-QmZo7s69poQj2ZuDam4hHNW9aAHkVWhQXAawTdqPMxCuxM",
+          "versionNumber": 2,
+          "versionTime": "2026-01-02T00:00:00Z",
+          "created": "2026-01-01T00:00:00Z",
+          "updated": "2026-01-02T00:00:00Z",
+          "scid": "Qmd2wsaqQiW65YDfitddAo4T5yMxRLWkL33NRSrLNQKYE6",
+          "deactivated": false,
+          "ttl": 3600,
+          "witness": null,
+          "watchers": [],
+          "updateKeys": [
+            "z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv"
+          ],
+          "nextKeyHashes": []
+        },
+        "state": {
+          "id": "example:Qmd2wsaqQiW65YDfitddAo4T5yMxRLWkL33NRSrLNQKYE6",
+          "version": 2
+        },
+        "firstInvalidVersion": null,
+        "warnings": []
+      }
+    }
+  ]
+}

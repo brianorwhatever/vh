@@ -1,0 +1,102 @@
+{
+  "description": "Resolution vectors: scid.",
+  "cases": [
+    {
+      "name": "scid-in-state-and-parameters",
+      "description": "The SCID placeholder appears in nested state and in a parameter value.",
+      "spec": [
+        "https://github.com/swcurran/VH-Log/blob/f2f9fda/spec/specification.md#create",
+        "https://github.com/swcurran/VH-Log/blob/f2f9fda/spec/specification.md#generate-scid"
+      ],
+      "input": {
+        "now": "2026-06-01T00:00:00Z",
+        "log": "{\"versionId\":\"1-QmXcpzTM5bCEz68Pfn9zrvVrCWrE7sCfGbrsNM914EuiNe\",\"versionTime\":\"2026-01-01T00:00:00Z\",\"parameters\":{\"logVersion\":\"vh-log:1.0\",\"scid\":\"QmcJtU516J7Ai7NyNiBhyQWLshU6r2AtxxoqUZ71epXrmj\",\"updateKeys\":[\"z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\"],\"watchers\":[\"https://watcher.example/QmcJtU516J7Ai7NyNiBhyQWLshU6r2AtxxoqUZ71epXrmj\"]},\"state\":{\"id\":\"example:QmcJtU516J7Ai7NyNiBhyQWLshU6r2AtxxoqUZ71epXrmj\",\"links\":[{\"self\":\"example:QmcJtU516J7Ai7NyNiBhyQWLshU6r2AtxxoqUZ71epXrmj/a\"}]},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-01T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z5ZD1YtYX9K6hGLU2HZjarTNKbxU4GTDsmY1FFm2h5Wm9tup1GpVJ1vKdnixvFWekPByM4JYq1jpoZ83TvBSabk5Q\"}]}\n"
+      },
+      "expect": {
+        "valid": true,
+        "state": {
+          "id": "example:QmcJtU516J7Ai7NyNiBhyQWLshU6r2AtxxoqUZ71epXrmj",
+          "links": [
+            {
+              "self": "example:QmcJtU516J7Ai7NyNiBhyQWLshU6r2AtxxoqUZ71epXrmj/a"
+            }
+          ]
+        },
+        "firstInvalidVersion": null,
+        "warnings": [],
+        "metadata": {
+          "versionId": "1-QmXcpzTM5bCEz68Pfn9zrvVrCWrE7sCfGbrsNM914EuiNe",
+          "versionNumber": 1,
+          "versionTime": "2026-01-01T00:00:00Z",
+          "created": "2026-01-01T00:00:00Z",
+          "updated": "2026-01-01T00:00:00Z",
+          "scid": "QmcJtU516J7Ai7NyNiBhyQWLshU6r2AtxxoqUZ71epXrmj",
+          "deactivated": false,
+          "ttl": 3600,
+          "witness": null,
+          "watchers": [
+            "https://watcher.example/QmcJtU516J7Ai7NyNiBhyQWLshU6r2AtxxoqUZ71epXrmj"
+          ],
+          "updateKeys": [
+            "z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv"
+          ],
+          "nextKeyHashes": []
+        }
+      }
+    },
+    {
+      "name": "scid-mismatch",
+      "description": "The genesis entry is correctly hashed and signed, but its SCID was derived from different content.",
+      "spec": [
+        "https://github.com/swcurran/VH-Log/blob/f2f9fda/spec/specification.md#verify-scid"
+      ],
+      "input": {
+        "now": "2026-06-01T00:00:00Z",
+        "log": "{\"versionId\":\"1-QmZrVZ22SiZF1tuk1xCfSmV6UGX1oHi847BwyFbjHkPp7P\",\"versionTime\":\"2026-01-01T00:00:00Z\",\"parameters\":{\"logVersion\":\"vh-log:1.0\",\"scid\":\"QmY1LoD9mATqx4fZmeBUeWFUKjeCuK9RW8ZF1RMWS3YWzJ\",\"updateKeys\":[\"z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\"]},\"state\":{\"id\":\"example:QmY1LoD9mATqx4fZmeBUeWFUKjeCuK9RW8ZF1RMWS3YWzJ\"},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-01T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z2afUm7hqUgduAg9LEzGNsQCGfyJGsg8k3MNqFEsCGFmoKN1aLaCWuF8JFqmPSDETaFek5QKFJFUwgTHRiiwpLLJQ\"}]}\n"
+      },
+      "expect": {
+        "valid": false,
+        "error": {
+          "code": "scid-mismatch",
+          "version": 1
+        }
+      }
+    },
+    {
+      "name": "sha512-scid",
+      "description": "The SCID is a SHA-512 multihash.",
+      "spec": [
+        "https://github.com/swcurran/VH-Log/blob/f2f9fda/spec/specification.md#verify-scid"
+      ],
+      "input": {
+        "now": "2026-06-01T00:00:00Z",
+        "log": "{\"versionId\":\"1-QmdqCab5c47CcpBeXH3mUKBB3t6YgquqVe8ier7yzAxLu5\",\"versionTime\":\"2026-01-01T00:00:00Z\",\"parameters\":{\"logVersion\":\"vh-log:1.0\",\"scid\":\"8VvyhLems7W7Nk1hH6N3uUSJuT2Uy3FsGffHPfxdFyAbSUvvH44CLdKQge9mZFn8mLSs8wLhnweMvZgSwEt1E7tPbb\",\"updateKeys\":[\"z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\"]},\"state\":{\"id\":\"example:8VvyhLems7W7Nk1hH6N3uUSJuT2Uy3FsGffHPfxdFyAbSUvvH44CLdKQge9mZFn8mLSs8wLhnweMvZgSwEt1E7tPbb\"},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-01T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z3oeCWfa9fRepCYNdz1F43TaTr81EU2cEAHzM3L7YTfSSMM1wp7pqhkm6yRBkBCkbjdNH8Mr7JPeSruKTKEqiTvaw\"}]}\n"
+      },
+      "expect": {
+        "valid": false,
+        "error": {
+          "code": "invalid-hash-algorithm",
+          "version": 1
+        }
+      }
+    },
+    {
+      "name": "genesis-tampered",
+      "description": "The genesis state was changed after sealing; the proof check fails first.",
+      "spec": [
+        "https://github.com/swcurran/VH-Log/blob/f2f9fda/spec/specification.md#verify-scid"
+      ],
+      "input": {
+        "now": "2026-06-01T00:00:00Z",
+        "log": "{\"versionId\":\"1-Qmc3wTfUMTgQ8Swi1npEst5ko4cHT4KiZyhRmg8HMrPpnM\",\"versionTime\":\"2026-01-01T00:00:00Z\",\"parameters\":{\"logVersion\":\"vh-log:1.0\",\"scid\":\"QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\",\"updateKeys\":[\"z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\"]},\"state\":{\"id\":\"example:{SCID}\"},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-01T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z4rR392BUVMZ2FtaT1x9KujuELRWdrU8cetMNGCiBwa44hpr8EPvnzwuXkh19UarbDSNag1pbuiojXeE9ekyEa42c\"}]}\n"
+      },
+      "expect": {
+        "valid": false,
+        "error": {
+          "code": "invalid-proof",
+          "version": 1
+        }
+      }
+    }
+  ]
+}

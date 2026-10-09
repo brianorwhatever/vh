@@ -1,0 +1,454 @@
+{
+  "description": "Resolution vectors: selection.",
+  "cases": [
+    {
+      "name": "by-version-id",
+      "description": "Select entry 2 by versionId.",
+      "spec": [
+        "https://github.com/swcurran/VH-Log/blob/f2f9fda/spec/specification.md#selecting-a-version"
+      ],
+      "input": {
+        "now": "2026-06-01T00:00:00Z",
+        "log": "{\"versionId\":\"1-Qmc3wTfUMTgQ8Swi1npEst5ko4cHT4KiZyhRmg8HMrPpnM\",\"versionTime\":\"2026-01-01T00:00:00Z\",\"parameters\":{\"logVersion\":\"vh-log:1.0\",\"scid\":\"QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\",\"updateKeys\":[\"z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\"]},\"state\":{\"id\":\"example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\"},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-01T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z4rR392BUVMZ2FtaT1x9KujuELRWdrU8cetMNGCiBwa44hpr8EPvnzwuXkh19UarbDSNag1pbuiojXeE9ekyEa42c\"}]}\n{\"versionId\":\"2-QmZgjD1qiA7HQNKEqs7x8owFiDfMs9BUaTE7XyFPMiFQxD\",\"versionTime\":\"2026-01-02T00:00:00Z\",\"parameters\":{},\"state\":{\"id\":\"example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\",\"version\":2},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-02T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z4dibrG9o19ihZ3scwn8S77A22uUGPFYcHsTbM9ruzkYTEQr84A8YxvuE19oAUzpk6bCS8roxZ8xRtimvoQTqvNX6\"}]}\n{\"versionId\":\"3-QmaaTV7E8XSvUmoLjgbnPjCDhF4beCkELE3qLPi8d5qpB3\",\"versionTime\":\"2026-01-03T00:00:00Z\",\"parameters\":{},\"state\":{\"id\":\"example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\",\"version\":3},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-03T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"zHvdHvZxANwL18Rr7wrreQ8e4DVsQdwNdWFxM6URwL7WKV7PSvq94iXy1p8yUjqNkp5Sw3muP6tz2ESb7aw6YKnf\"}]}\n",
+        "options": {
+          "versionId": "2-QmZgjD1qiA7HQNKEqs7x8owFiDfMs9BUaTE7XyFPMiFQxD"
+        }
+      },
+      "expect": {
+        "valid": true,
+        "state": {
+          "id": "example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7",
+          "version": 2
+        },
+        "metadata": {
+          "versionId": "2-QmZgjD1qiA7HQNKEqs7x8owFiDfMs9BUaTE7XyFPMiFQxD",
+          "versionNumber": 2,
+          "versionTime": "2026-01-02T00:00:00Z",
+          "created": "2026-01-01T00:00:00Z",
+          "updated": "2026-01-03T00:00:00Z",
+          "scid": "QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7",
+          "deactivated": false,
+          "ttl": 3600,
+          "witness": null,
+          "watchers": [],
+          "updateKeys": [
+            "z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv"
+          ],
+          "nextKeyHashes": []
+        },
+        "firstInvalidVersion": null,
+        "warnings": []
+      }
+    },
+    {
+      "name": "by-version-number",
+      "description": "Select entry 1 by version number.",
+      "spec": [
+        "https://github.com/swcurran/VH-Log/blob/f2f9fda/spec/specification.md#selecting-a-version"
+      ],
+      "input": {
+        "now": "2026-06-01T00:00:00Z",
+        "log": "{\"versionId\":\"1-Qmc3wTfUMTgQ8Swi1npEst5ko4cHT4KiZyhRmg8HMrPpnM\",\"versionTime\":\"2026-01-01T00:00:00Z\",\"parameters\":{\"logVersion\":\"vh-log:1.0\",\"scid\":\"QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\",\"updateKeys\":[\"z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\"]},\"state\":{\"id\":\"example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\"},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-01T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z4rR392BUVMZ2FtaT1x9KujuELRWdrU8cetMNGCiBwa44hpr8EPvnzwuXkh19UarbDSNag1pbuiojXeE9ekyEa42c\"}]}\n{\"versionId\":\"2-QmZgjD1qiA7HQNKEqs7x8owFiDfMs9BUaTE7XyFPMiFQxD\",\"versionTime\":\"2026-01-02T00:00:00Z\",\"parameters\":{},\"state\":{\"id\":\"example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\",\"version\":2},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-02T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z4dibrG9o19ihZ3scwn8S77A22uUGPFYcHsTbM9ruzkYTEQr84A8YxvuE19oAUzpk6bCS8roxZ8xRtimvoQTqvNX6\"}]}\n{\"versionId\":\"3-QmaaTV7E8XSvUmoLjgbnPjCDhF4beCkELE3qLPi8d5qpB3\",\"versionTime\":\"2026-01-03T00:00:00Z\",\"parameters\":{},\"state\":{\"id\":\"example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\",\"version\":3},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-03T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"zHvdHvZxANwL18Rr7wrreQ8e4DVsQdwNdWFxM6URwL7WKV7PSvq94iXy1p8yUjqNkp5Sw3muP6tz2ESb7aw6YKnf\"}]}\n",
+        "options": {
+          "versionNumber": 1
+        }
+      },
+      "expect": {
+        "valid": true,
+        "metadata": {
+          "versionId": "1-Qmc3wTfUMTgQ8Swi1npEst5ko4cHT4KiZyhRmg8HMrPpnM",
+          "versionNumber": 1,
+          "versionTime": "2026-01-01T00:00:00Z",
+          "created": "2026-01-01T00:00:00Z",
+          "updated": "2026-01-03T00:00:00Z",
+          "scid": "QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7",
+          "deactivated": false,
+          "ttl": 3600,
+          "witness": null,
+          "watchers": [],
+          "updateKeys": [
+            "z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv"
+          ],
+          "nextKeyHashes": []
+        },
+        "state": {
+          "id": "example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7"
+        },
+        "firstInvalidVersion": null,
+        "warnings": []
+      }
+    },
+    {
+      "name": "by-version-time-between",
+      "description": "A time between entries 2 and 3 selects entry 2.",
+      "spec": [
+        "https://github.com/swcurran/VH-Log/blob/f2f9fda/spec/specification.md#selecting-a-version"
+      ],
+      "input": {
+        "now": "2026-06-01T00:00:00Z",
+        "log": "{\"versionId\":\"1-Qmc3wTfUMTgQ8Swi1npEst5ko4cHT4KiZyhRmg8HMrPpnM\",\"versionTime\":\"2026-01-01T00:00:00Z\",\"parameters\":{\"logVersion\":\"vh-log:1.0\",\"scid\":\"QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\",\"updateKeys\":[\"z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\"]},\"state\":{\"id\":\"example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\"},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-01T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z4rR392BUVMZ2FtaT1x9KujuELRWdrU8cetMNGCiBwa44hpr8EPvnzwuXkh19UarbDSNag1pbuiojXeE9ekyEa42c\"}]}\n{\"versionId\":\"2-QmZgjD1qiA7HQNKEqs7x8owFiDfMs9BUaTE7XyFPMiFQxD\",\"versionTime\":\"2026-01-02T00:00:00Z\",\"parameters\":{},\"state\":{\"id\":\"example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\",\"version\":2},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-02T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z4dibrG9o19ihZ3scwn8S77A22uUGPFYcHsTbM9ruzkYTEQr84A8YxvuE19oAUzpk6bCS8roxZ8xRtimvoQTqvNX6\"}]}\n{\"versionId\":\"3-QmaaTV7E8XSvUmoLjgbnPjCDhF4beCkELE3qLPi8d5qpB3\",\"versionTime\":\"2026-01-03T00:00:00Z\",\"parameters\":{},\"state\":{\"id\":\"example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\",\"version\":3},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-03T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"zHvdHvZxANwL18Rr7wrreQ8e4DVsQdwNdWFxM6URwL7WKV7PSvq94iXy1p8yUjqNkp5Sw3muP6tz2ESb7aw6YKnf\"}]}\n",
+        "options": {
+          "versionTime": "2026-01-02T00:00:30Z"
+        }
+      },
+      "expect": {
+        "valid": true,
+        "metadata": {
+          "versionId": "2-QmZgjD1qiA7HQNKEqs7x8owFiDfMs9BUaTE7XyFPMiFQxD",
+          "versionNumber": 2,
+          "versionTime": "2026-01-02T00:00:00Z",
+          "created": "2026-01-01T00:00:00Z",
+          "updated": "2026-01-03T00:00:00Z",
+          "scid": "QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7",
+          "deactivated": false,
+          "ttl": 3600,
+          "witness": null,
+          "watchers": [],
+          "updateKeys": [
+            "z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv"
+          ],
+          "nextKeyHashes": []
+        },
+        "state": {
+          "id": "example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7",
+          "version": 2
+        },
+        "firstInvalidVersion": null,
+        "warnings": []
+      }
+    },
+    {
+      "name": "by-version-time-exact",
+      "description": "A time equal to entry 3's selects entry 3.",
+      "spec": [
+        "https://github.com/swcurran/VH-Log/blob/f2f9fda/spec/specification.md#selecting-a-version"
+      ],
+      "input": {
+        "now": "2026-06-01T00:00:00Z",
+        "log": "{\"versionId\":\"1-Qmc3wTfUMTgQ8Swi1npEst5ko4cHT4KiZyhRmg8HMrPpnM\",\"versionTime\":\"2026-01-01T00:00:00Z\",\"parameters\":{\"logVersion\":\"vh-log:1.0\",\"scid\":\"QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\",\"updateKeys\":[\"z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\"]},\"state\":{\"id\":\"example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\"},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-01T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z4rR392BUVMZ2FtaT1x9KujuELRWdrU8cetMNGCiBwa44hpr8EPvnzwuXkh19UarbDSNag1pbuiojXeE9ekyEa42c\"}]}\n{\"versionId\":\"2-QmZgjD1qiA7HQNKEqs7x8owFiDfMs9BUaTE7XyFPMiFQxD\",\"versionTime\":\"2026-01-02T00:00:00Z\",\"parameters\":{},\"state\":{\"id\":\"example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\",\"version\":2},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-02T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z4dibrG9o19ihZ3scwn8S77A22uUGPFYcHsTbM9ruzkYTEQr84A8YxvuE19oAUzpk6bCS8roxZ8xRtimvoQTqvNX6\"}]}\n{\"versionId\":\"3-QmaaTV7E8XSvUmoLjgbnPjCDhF4beCkELE3qLPi8d5qpB3\",\"versionTime\":\"2026-01-03T00:00:00Z\",\"parameters\":{},\"state\":{\"id\":\"example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\",\"version\":3},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-03T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"zHvdHvZxANwL18Rr7wrreQ8e4DVsQdwNdWFxM6URwL7WKV7PSvq94iXy1p8yUjqNkp5Sw3muP6tz2ESb7aw6YKnf\"}]}\n",
+        "options": {
+          "versionTime": "2026-01-03T00:00:00Z"
+        }
+      },
+      "expect": {
+        "valid": true,
+        "metadata": {
+          "versionId": "3-QmaaTV7E8XSvUmoLjgbnPjCDhF4beCkELE3qLPi8d5qpB3",
+          "versionNumber": 3,
+          "versionTime": "2026-01-03T00:00:00Z",
+          "created": "2026-01-01T00:00:00Z",
+          "updated": "2026-01-03T00:00:00Z",
+          "scid": "QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7",
+          "deactivated": false,
+          "ttl": 3600,
+          "witness": null,
+          "watchers": [],
+          "updateKeys": [
+            "z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv"
+          ],
+          "nextKeyHashes": []
+        },
+        "state": {
+          "id": "example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7",
+          "version": 3
+        },
+        "firstInvalidVersion": null,
+        "warnings": []
+      }
+    },
+    {
+      "name": "by-version-time-before-genesis",
+      "description": "A time before the genesis entry.",
+      "spec": [
+        "https://github.com/swcurran/VH-Log/blob/f2f9fda/spec/specification.md#selecting-a-version"
+      ],
+      "input": {
+        "now": "2026-06-01T00:00:00Z",
+        "log": "{\"versionId\":\"1-Qmc3wTfUMTgQ8Swi1npEst5ko4cHT4KiZyhRmg8HMrPpnM\",\"versionTime\":\"2026-01-01T00:00:00Z\",\"parameters\":{\"logVersion\":\"vh-log:1.0\",\"scid\":\"QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\",\"updateKeys\":[\"z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\"]},\"state\":{\"id\":\"example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\"},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-01T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z4rR392BUVMZ2FtaT1x9KujuELRWdrU8cetMNGCiBwa44hpr8EPvnzwuXkh19UarbDSNag1pbuiojXeE9ekyEa42c\"}]}\n{\"versionId\":\"2-QmZgjD1qiA7HQNKEqs7x8owFiDfMs9BUaTE7XyFPMiFQxD\",\"versionTime\":\"2026-01-02T00:00:00Z\",\"parameters\":{},\"state\":{\"id\":\"example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\",\"version\":2},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-02T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z4dibrG9o19ihZ3scwn8S77A22uUGPFYcHsTbM9ruzkYTEQr84A8YxvuE19oAUzpk6bCS8roxZ8xRtimvoQTqvNX6\"}]}\n{\"versionId\":\"3-QmaaTV7E8XSvUmoLjgbnPjCDhF4beCkELE3qLPi8d5qpB3\",\"versionTime\":\"2026-01-03T00:00:00Z\",\"parameters\":{},\"state\":{\"id\":\"example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\",\"version\":3},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-03T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"zHvdHvZxANwL18Rr7wrreQ8e4DVsQdwNdWFxM6URwL7WKV7PSvq94iXy1p8yUjqNkp5Sw3muP6tz2ESb7aw6YKnf\"}]}\n",
+        "options": {
+          "versionTime": "2025-01-01T00:00:00Z"
+        }
+      },
+      "expect": {
+        "valid": false,
+        "error": {
+          "code": "not-found",
+          "version": null
+        }
+      }
+    },
+    {
+      "name": "version-number-not-found",
+      "description": "Version 9 does not exist.",
+      "spec": [
+        "https://github.com/swcurran/VH-Log/blob/f2f9fda/spec/specification.md#selecting-a-version"
+      ],
+      "input": {
+        "now": "2026-06-01T00:00:00Z",
+        "log": "{\"versionId\":\"1-Qmc3wTfUMTgQ8Swi1npEst5ko4cHT4KiZyhRmg8HMrPpnM\",\"versionTime\":\"2026-01-01T00:00:00Z\",\"parameters\":{\"logVersion\":\"vh-log:1.0\",\"scid\":\"QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\",\"updateKeys\":[\"z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\"]},\"state\":{\"id\":\"example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\"},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-01T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z4rR392BUVMZ2FtaT1x9KujuELRWdrU8cetMNGCiBwa44hpr8EPvnzwuXkh19UarbDSNag1pbuiojXeE9ekyEa42c\"}]}\n{\"versionId\":\"2-QmZgjD1qiA7HQNKEqs7x8owFiDfMs9BUaTE7XyFPMiFQxD\",\"versionTime\":\"2026-01-02T00:00:00Z\",\"parameters\":{},\"state\":{\"id\":\"example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\",\"version\":2},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-02T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z4dibrG9o19ihZ3scwn8S77A22uUGPFYcHsTbM9ruzkYTEQr84A8YxvuE19oAUzpk6bCS8roxZ8xRtimvoQTqvNX6\"}]}\n{\"versionId\":\"3-QmaaTV7E8XSvUmoLjgbnPjCDhF4beCkELE3qLPi8d5qpB3\",\"versionTime\":\"2026-01-03T00:00:00Z\",\"parameters\":{},\"state\":{\"id\":\"example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\",\"version\":3},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-03T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"zHvdHvZxANwL18Rr7wrreQ8e4DVsQdwNdWFxM6URwL7WKV7PSvq94iXy1p8yUjqNkp5Sw3muP6tz2ESb7aw6YKnf\"}]}\n",
+        "options": {
+          "versionNumber": 9
+        }
+      },
+      "expect": {
+        "valid": false,
+        "error": {
+          "code": "not-found",
+          "version": null
+        }
+      }
+    },
+    {
+      "name": "version-id-not-found",
+      "description": "An unknown versionId.",
+      "spec": [
+        "https://github.com/swcurran/VH-Log/blob/f2f9fda/spec/specification.md#selecting-a-version"
+      ],
+      "input": {
+        "now": "2026-06-01T00:00:00Z",
+        "log": "{\"versionId\":\"1-Qmc3wTfUMTgQ8Swi1npEst5ko4cHT4KiZyhRmg8HMrPpnM\",\"versionTime\":\"2026-01-01T00:00:00Z\",\"parameters\":{\"logVersion\":\"vh-log:1.0\",\"scid\":\"QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\",\"updateKeys\":[\"z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\"]},\"state\":{\"id\":\"example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\"},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-01T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z4rR392BUVMZ2FtaT1x9KujuELRWdrU8cetMNGCiBwa44hpr8EPvnzwuXkh19UarbDSNag1pbuiojXeE9ekyEa42c\"}]}\n{\"versionId\":\"2-QmZgjD1qiA7HQNKEqs7x8owFiDfMs9BUaTE7XyFPMiFQxD\",\"versionTime\":\"2026-01-02T00:00:00Z\",\"parameters\":{},\"state\":{\"id\":\"example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\",\"version\":2},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-02T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z4dibrG9o19ihZ3scwn8S77A22uUGPFYcHsTbM9ruzkYTEQr84A8YxvuE19oAUzpk6bCS8roxZ8xRtimvoQTqvNX6\"}]}\n{\"versionId\":\"3-QmaaTV7E8XSvUmoLjgbnPjCDhF4beCkELE3qLPi8d5qpB3\",\"versionTime\":\"2026-01-03T00:00:00Z\",\"parameters\":{},\"state\":{\"id\":\"example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\",\"version\":3},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-03T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"zHvdHvZxANwL18Rr7wrreQ8e4DVsQdwNdWFxM6URwL7WKV7PSvq94iXy1p8yUjqNkp5Sw3muP6tz2ESb7aw6YKnf\"}]}\n",
+        "options": {
+          "versionId": "2-QmUnknown"
+        }
+      },
+      "expect": {
+        "valid": false,
+        "error": {
+          "code": "not-found",
+          "version": null
+        }
+      }
+    },
+    {
+      "name": "two-selectors",
+      "description": "versionId and versionNumber together.",
+      "spec": [
+        "https://github.com/swcurran/VH-Log/blob/f2f9fda/spec/specification.md#selecting-a-version"
+      ],
+      "input": {
+        "now": "2026-06-01T00:00:00Z",
+        "log": "{\"versionId\":\"1-Qmc3wTfUMTgQ8Swi1npEst5ko4cHT4KiZyhRmg8HMrPpnM\",\"versionTime\":\"2026-01-01T00:00:00Z\",\"parameters\":{\"logVersion\":\"vh-log:1.0\",\"scid\":\"QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\",\"updateKeys\":[\"z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\"]},\"state\":{\"id\":\"example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\"},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-01T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z4rR392BUVMZ2FtaT1x9KujuELRWdrU8cetMNGCiBwa44hpr8EPvnzwuXkh19UarbDSNag1pbuiojXeE9ekyEa42c\"}]}\n{\"versionId\":\"2-QmZgjD1qiA7HQNKEqs7x8owFiDfMs9BUaTE7XyFPMiFQxD\",\"versionTime\":\"2026-01-02T00:00:00Z\",\"parameters\":{},\"state\":{\"id\":\"example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\",\"version\":2},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-02T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z4dibrG9o19ihZ3scwn8S77A22uUGPFYcHsTbM9ruzkYTEQr84A8YxvuE19oAUzpk6bCS8roxZ8xRtimvoQTqvNX6\"}]}\n{\"versionId\":\"3-QmaaTV7E8XSvUmoLjgbnPjCDhF4beCkELE3qLPi8d5qpB3\",\"versionTime\":\"2026-01-03T00:00:00Z\",\"parameters\":{},\"state\":{\"id\":\"example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\",\"version\":3},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-03T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"zHvdHvZxANwL18Rr7wrreQ8e4DVsQdwNdWFxM6URwL7WKV7PSvq94iXy1p8yUjqNkp5Sw3muP6tz2ESb7aw6YKnf\"}]}\n",
+        "options": {
+          "versionId": "1-Qmc3wTfUMTgQ8Swi1npEst5ko4cHT4KiZyhRmg8HMrPpnM",
+          "versionNumber": 1
+        }
+      },
+      "expect": {
+        "valid": false,
+        "error": {
+          "code": "invalid-option",
+          "version": null
+        }
+      }
+    },
+    {
+      "name": "unsupported-option",
+      "description": "An option the resolver does not support must fail resolution.",
+      "spec": [
+        "https://github.com/swcurran/VH-Log/blob/f2f9fda/spec/specification.md#resolution-options"
+      ],
+      "input": {
+        "now": "2026-06-01T00:00:00Z",
+        "log": "{\"versionId\":\"1-Qmc3wTfUMTgQ8Swi1npEst5ko4cHT4KiZyhRmg8HMrPpnM\",\"versionTime\":\"2026-01-01T00:00:00Z\",\"parameters\":{\"logVersion\":\"vh-log:1.0\",\"scid\":\"QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\",\"updateKeys\":[\"z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\"]},\"state\":{\"id\":\"example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\"},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-01T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z4rR392BUVMZ2FtaT1x9KujuELRWdrU8cetMNGCiBwa44hpr8EPvnzwuXkh19UarbDSNag1pbuiojXeE9ekyEa42c\"}]}\n{\"versionId\":\"2-QmZgjD1qiA7HQNKEqs7x8owFiDfMs9BUaTE7XyFPMiFQxD\",\"versionTime\":\"2026-01-02T00:00:00Z\",\"parameters\":{},\"state\":{\"id\":\"example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\",\"version\":2},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-02T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z4dibrG9o19ihZ3scwn8S77A22uUGPFYcHsTbM9ruzkYTEQr84A8YxvuE19oAUzpk6bCS8roxZ8xRtimvoQTqvNX6\"}]}\n{\"versionId\":\"3-QmaaTV7E8XSvUmoLjgbnPjCDhF4beCkELE3qLPi8d5qpB3\",\"versionTime\":\"2026-01-03T00:00:00Z\",\"parameters\":{},\"state\":{\"id\":\"example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\",\"version\":3},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-03T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"zHvdHvZxANwL18Rr7wrreQ8e4DVsQdwNdWFxM6URwL7WKV7PSvq94iXy1p8yUjqNkp5Sw3muP6tz2ESb7aw6YKnf\"}]}\n",
+        "options": {
+          "checkWatchers": 1
+        }
+      },
+      "expect": {
+        "valid": false,
+        "error": {
+          "code": "invalid-option",
+          "version": null
+        }
+      }
+    },
+    {
+      "name": "metadata-created-updated",
+      "description": "created/updated are the first and last entry times regardless of the target.",
+      "spec": [
+        "https://github.com/swcurran/VH-Log/blob/f2f9fda/spec/specification.md#resolution-result"
+      ],
+      "input": {
+        "now": "2026-06-01T00:00:00Z",
+        "log": "{\"versionId\":\"1-Qmc3wTfUMTgQ8Swi1npEst5ko4cHT4KiZyhRmg8HMrPpnM\",\"versionTime\":\"2026-01-01T00:00:00Z\",\"parameters\":{\"logVersion\":\"vh-log:1.0\",\"scid\":\"QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\",\"updateKeys\":[\"z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\"]},\"state\":{\"id\":\"example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\"},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-01T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z4rR392BUVMZ2FtaT1x9KujuELRWdrU8cetMNGCiBwa44hpr8EPvnzwuXkh19UarbDSNag1pbuiojXeE9ekyEa42c\"}]}\n{\"versionId\":\"2-QmZgjD1qiA7HQNKEqs7x8owFiDfMs9BUaTE7XyFPMiFQxD\",\"versionTime\":\"2026-01-02T00:00:00Z\",\"parameters\":{},\"state\":{\"id\":\"example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\",\"version\":2},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-02T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z4dibrG9o19ihZ3scwn8S77A22uUGPFYcHsTbM9ruzkYTEQr84A8YxvuE19oAUzpk6bCS8roxZ8xRtimvoQTqvNX6\"}]}\n{\"versionId\":\"3-QmaaTV7E8XSvUmoLjgbnPjCDhF4beCkELE3qLPi8d5qpB3\",\"versionTime\":\"2026-01-03T00:00:00Z\",\"parameters\":{},\"state\":{\"id\":\"example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\",\"version\":3},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-03T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"zHvdHvZxANwL18Rr7wrreQ8e4DVsQdwNdWFxM6URwL7WKV7PSvq94iXy1p8yUjqNkp5Sw3muP6tz2ESb7aw6YKnf\"}]}\n",
+        "options": {
+          "versionNumber": 2
+        }
+      },
+      "expect": {
+        "valid": true,
+        "metadata": {
+          "versionId": "2-QmZgjD1qiA7HQNKEqs7x8owFiDfMs9BUaTE7XyFPMiFQxD",
+          "versionNumber": 2,
+          "versionTime": "2026-01-02T00:00:00Z",
+          "created": "2026-01-01T00:00:00Z",
+          "updated": "2026-01-03T00:00:00Z",
+          "scid": "QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7",
+          "deactivated": false,
+          "ttl": 3600,
+          "witness": null,
+          "watchers": [],
+          "updateKeys": [
+            "z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv"
+          ],
+          "nextKeyHashes": []
+        },
+        "state": {
+          "id": "example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7",
+          "version": 2
+        },
+        "firstInvalidVersion": null,
+        "warnings": []
+      }
+    },
+    {
+      "name": "partial-latest",
+      "description": "Entry 3 is invalid: the latest valid state (entry 2) is returned with a warning.",
+      "spec": [
+        "https://github.com/swcurran/VH-Log/blob/f2f9fda/spec/specification.md#read-resolve"
+      ],
+      "input": {
+        "now": "2026-06-01T00:00:00Z",
+        "log": "{\"versionId\":\"1-Qmc3wTfUMTgQ8Swi1npEst5ko4cHT4KiZyhRmg8HMrPpnM\",\"versionTime\":\"2026-01-01T00:00:00Z\",\"parameters\":{\"logVersion\":\"vh-log:1.0\",\"scid\":\"QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\",\"updateKeys\":[\"z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\"]},\"state\":{\"id\":\"example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\"},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-01T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z4rR392BUVMZ2FtaT1x9KujuELRWdrU8cetMNGCiBwa44hpr8EPvnzwuXkh19UarbDSNag1pbuiojXeE9ekyEa42c\"}]}\n{\"versionId\":\"2-QmZgjD1qiA7HQNKEqs7x8owFiDfMs9BUaTE7XyFPMiFQxD\",\"versionTime\":\"2026-01-02T00:00:00Z\",\"parameters\":{},\"state\":{\"id\":\"example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\",\"version\":2},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-02T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z4dibrG9o19ihZ3scwn8S77A22uUGPFYcHsTbM9ruzkYTEQr84A8YxvuE19oAUzpk6bCS8roxZ8xRtimvoQTqvNX6\"}]}\n{\"versionId\":\"3-QmXVnuVFrKYPz8kRp4SBaGbWyeX4KtQB5AUJrQLkEcGJXE\",\"versionTime\":\"2026-01-03T00:00:00Z\",\"parameters\":{},\"state\":{\"id\":\"example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\",\"version\":3},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-03T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z2jR1Cj3hWmtWC6qyCw7S2PpE7rCzBgyqQc1jkG2wU5F6FUMjc7PQCF3VzPsPBk4ouDpTAgizT82VAMgjDnDucZzh\"}]}\n"
+      },
+      "expect": {
+        "valid": true,
+        "error": {
+          "code": "entry-hash-mismatch",
+          "version": 3
+        },
+        "firstInvalidVersion": 3,
+        "warnings": [
+          "invalid-entries"
+        ],
+        "metadata": {
+          "versionId": "2-QmZgjD1qiA7HQNKEqs7x8owFiDfMs9BUaTE7XyFPMiFQxD",
+          "versionNumber": 2,
+          "versionTime": "2026-01-02T00:00:00Z",
+          "created": "2026-01-01T00:00:00Z",
+          "updated": "2026-01-02T00:00:00Z",
+          "scid": "QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7",
+          "deactivated": false,
+          "ttl": 3600,
+          "witness": null,
+          "watchers": [],
+          "updateKeys": [
+            "z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv"
+          ],
+          "nextKeyHashes": []
+        },
+        "state": {
+          "id": "example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7",
+          "version": 2
+        }
+      }
+    },
+    {
+      "name": "partial-earlier-target",
+      "description": "A valid target before the invalid entry is returned.",
+      "spec": [
+        "https://github.com/swcurran/VH-Log/blob/f2f9fda/spec/specification.md#read-resolve"
+      ],
+      "input": {
+        "now": "2026-06-01T00:00:00Z",
+        "log": "{\"versionId\":\"1-Qmc3wTfUMTgQ8Swi1npEst5ko4cHT4KiZyhRmg8HMrPpnM\",\"versionTime\":\"2026-01-01T00:00:00Z\",\"parameters\":{\"logVersion\":\"vh-log:1.0\",\"scid\":\"QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\",\"updateKeys\":[\"z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\"]},\"state\":{\"id\":\"example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\"},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-01T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z4rR392BUVMZ2FtaT1x9KujuELRWdrU8cetMNGCiBwa44hpr8EPvnzwuXkh19UarbDSNag1pbuiojXeE9ekyEa42c\"}]}\n{\"versionId\":\"2-QmZgjD1qiA7HQNKEqs7x8owFiDfMs9BUaTE7XyFPMiFQxD\",\"versionTime\":\"2026-01-02T00:00:00Z\",\"parameters\":{},\"state\":{\"id\":\"example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\",\"version\":2},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-02T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z4dibrG9o19ihZ3scwn8S77A22uUGPFYcHsTbM9ruzkYTEQr84A8YxvuE19oAUzpk6bCS8roxZ8xRtimvoQTqvNX6\"}]}\n{\"versionId\":\"3-QmXVnuVFrKYPz8kRp4SBaGbWyeX4KtQB5AUJrQLkEcGJXE\",\"versionTime\":\"2026-01-03T00:00:00Z\",\"parameters\":{},\"state\":{\"id\":\"example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\",\"version\":3},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-03T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z2jR1Cj3hWmtWC6qyCw7S2PpE7rCzBgyqQc1jkG2wU5F6FUMjc7PQCF3VzPsPBk4ouDpTAgizT82VAMgjDnDucZzh\"}]}\n",
+        "options": {
+          "versionNumber": 1
+        }
+      },
+      "expect": {
+        "valid": true,
+        "error": {
+          "code": "entry-hash-mismatch",
+          "version": 3
+        },
+        "firstInvalidVersion": 3,
+        "warnings": [
+          "invalid-entries"
+        ],
+        "metadata": {
+          "versionId": "1-Qmc3wTfUMTgQ8Swi1npEst5ko4cHT4KiZyhRmg8HMrPpnM",
+          "versionNumber": 1,
+          "versionTime": "2026-01-01T00:00:00Z",
+          "created": "2026-01-01T00:00:00Z",
+          "updated": "2026-01-02T00:00:00Z",
+          "scid": "QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7",
+          "deactivated": false,
+          "ttl": 3600,
+          "witness": null,
+          "watchers": [],
+          "updateKeys": [
+            "z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv"
+          ],
+          "nextKeyHashes": []
+        },
+        "state": {
+          "id": "example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7"
+        }
+      }
+    },
+    {
+      "name": "partial-invalid-target-number",
+      "description": "Selecting the invalid entry by number fails.",
+      "spec": [
+        "https://github.com/swcurran/VH-Log/blob/f2f9fda/spec/specification.md#read-resolve"
+      ],
+      "input": {
+        "now": "2026-06-01T00:00:00Z",
+        "log": "{\"versionId\":\"1-Qmc3wTfUMTgQ8Swi1npEst5ko4cHT4KiZyhRmg8HMrPpnM\",\"versionTime\":\"2026-01-01T00:00:00Z\",\"parameters\":{\"logVersion\":\"vh-log:1.0\",\"scid\":\"QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\",\"updateKeys\":[\"z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\"]},\"state\":{\"id\":\"example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\"},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-01T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z4rR392BUVMZ2FtaT1x9KujuELRWdrU8cetMNGCiBwa44hpr8EPvnzwuXkh19UarbDSNag1pbuiojXeE9ekyEa42c\"}]}\n{\"versionId\":\"2-QmZgjD1qiA7HQNKEqs7x8owFiDfMs9BUaTE7XyFPMiFQxD\",\"versionTime\":\"2026-01-02T00:00:00Z\",\"parameters\":{},\"state\":{\"id\":\"example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\",\"version\":2},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-02T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z4dibrG9o19ihZ3scwn8S77A22uUGPFYcHsTbM9ruzkYTEQr84A8YxvuE19oAUzpk6bCS8roxZ8xRtimvoQTqvNX6\"}]}\n{\"versionId\":\"3-QmXVnuVFrKYPz8kRp4SBaGbWyeX4KtQB5AUJrQLkEcGJXE\",\"versionTime\":\"2026-01-03T00:00:00Z\",\"parameters\":{},\"state\":{\"id\":\"example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\",\"version\":3},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-03T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z2jR1Cj3hWmtWC6qyCw7S2PpE7rCzBgyqQc1jkG2wU5F6FUMjc7PQCF3VzPsPBk4ouDpTAgizT82VAMgjDnDucZzh\"}]}\n",
+        "options": {
+          "versionNumber": 3
+        }
+      },
+      "expect": {
+        "valid": false,
+        "error": {
+          "code": "entry-hash-mismatch",
+          "version": 3
+        }
+      }
+    },
+    {
+      "name": "partial-invalid-target-id",
+      "description": "Selecting the invalid entry by versionId fails.",
+      "spec": [
+        "https://github.com/swcurran/VH-Log/blob/f2f9fda/spec/specification.md#read-resolve"
+      ],
+      "input": {
+        "now": "2026-06-01T00:00:00Z",
+        "log": "{\"versionId\":\"1-Qmc3wTfUMTgQ8Swi1npEst5ko4cHT4KiZyhRmg8HMrPpnM\",\"versionTime\":\"2026-01-01T00:00:00Z\",\"parameters\":{\"logVersion\":\"vh-log:1.0\",\"scid\":\"QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\",\"updateKeys\":[\"z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\"]},\"state\":{\"id\":\"example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\"},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-01T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z4rR392BUVMZ2FtaT1x9KujuELRWdrU8cetMNGCiBwa44hpr8EPvnzwuXkh19UarbDSNag1pbuiojXeE9ekyEa42c\"}]}\n{\"versionId\":\"2-QmZgjD1qiA7HQNKEqs7x8owFiDfMs9BUaTE7XyFPMiFQxD\",\"versionTime\":\"2026-01-02T00:00:00Z\",\"parameters\":{},\"state\":{\"id\":\"example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\",\"version\":2},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-02T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z4dibrG9o19ihZ3scwn8S77A22uUGPFYcHsTbM9ruzkYTEQr84A8YxvuE19oAUzpk6bCS8roxZ8xRtimvoQTqvNX6\"}]}\n{\"versionId\":\"3-QmXVnuVFrKYPz8kRp4SBaGbWyeX4KtQB5AUJrQLkEcGJXE\",\"versionTime\":\"2026-01-03T00:00:00Z\",\"parameters\":{},\"state\":{\"id\":\"example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\",\"version\":3},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-03T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z2jR1Cj3hWmtWC6qyCw7S2PpE7rCzBgyqQc1jkG2wU5F6FUMjc7PQCF3VzPsPBk4ouDpTAgizT82VAMgjDnDucZzh\"}]}\n",
+        "options": {
+          "versionId": "3-QmXVnuVFrKYPz8kRp4SBaGbWyeX4KtQB5AUJrQLkEcGJXE"
+        }
+      },
+      "expect": {
+        "valid": false,
+        "error": {
+          "code": "entry-hash-mismatch",
+          "version": 3
+        }
+      }
+    },
+    {
+      "name": "partial-invalid-target-time",
+      "description": "Selecting a time at which the invalid entry was active fails.",
+      "spec": [
+        "https://github.com/swcurran/VH-Log/blob/f2f9fda/spec/specification.md#read-resolve"
+      ],
+      "input": {
+        "now": "2026-06-01T00:00:00Z",
+        "log": "{\"versionId\":\"1-Qmc3wTfUMTgQ8Swi1npEst5ko4cHT4KiZyhRmg8HMrPpnM\",\"versionTime\":\"2026-01-01T00:00:00Z\",\"parameters\":{\"logVersion\":\"vh-log:1.0\",\"scid\":\"QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\",\"updateKeys\":[\"z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\"]},\"state\":{\"id\":\"example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\"},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-01T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z4rR392BUVMZ2FtaT1x9KujuELRWdrU8cetMNGCiBwa44hpr8EPvnzwuXkh19UarbDSNag1pbuiojXeE9ekyEa42c\"}]}\n{\"versionId\":\"2-QmZgjD1qiA7HQNKEqs7x8owFiDfMs9BUaTE7XyFPMiFQxD\",\"versionTime\":\"2026-01-02T00:00:00Z\",\"parameters\":{},\"state\":{\"id\":\"example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\",\"version\":2},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-02T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z4dibrG9o19ihZ3scwn8S77A22uUGPFYcHsTbM9ruzkYTEQr84A8YxvuE19oAUzpk6bCS8roxZ8xRtimvoQTqvNX6\"}]}\n{\"versionId\":\"3-QmXVnuVFrKYPz8kRp4SBaGbWyeX4KtQB5AUJrQLkEcGJXE\",\"versionTime\":\"2026-01-03T00:00:00Z\",\"parameters\":{},\"state\":{\"id\":\"example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7\",\"version\":3},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-03T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z2jR1Cj3hWmtWC6qyCw7S2PpE7rCzBgyqQc1jkG2wU5F6FUMjc7PQCF3VzPsPBk4ouDpTAgizT82VAMgjDnDucZzh\"}]}\n",
+        "options": {
+          "versionTime": "2026-01-04T00:00:00Z"
+        }
+      },
+      "expect": {
+        "valid": false,
+        "error": {
+          "code": "entry-hash-mismatch",
+          "version": 3
+        }
+      }
+    }
+  ]
+}

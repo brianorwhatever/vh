@@ -1,0 +1,20 @@
+{
+  "name": "vh-log",
+  "version": "0.1.0",
+  "description": "VH-Log (Verifiable History Log) — TypeScript reference implementation",
+  "license": "Apache-2.0",
+  "type": "module",
+  "exports": "./src/index.ts",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "driver": "node src/driver.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.0"
+  }
+}

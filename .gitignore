@@ -1,0 +1,9 @@
+node_modules/
+target/
+_build/
+deps/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.DS_Store

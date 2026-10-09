@@ -1,0 +1,55 @@
+{
+  "description": "Ed25519 seeds (hex) used by the vectors. Test keys only — never use them for anything real.",
+  "keys": {
+    "k1": {
+      "seed": "90930409d492fb6cd7b50542c97fc6003fcedd59012b47ac114417373796eaaa",
+      "multikey": "z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv",
+      "keyHash": "QmchKW5rynK1kqB1CAUt9B7NEP7TYnnMKRrGQDMXpRV4QG"
+    },
+    "k2": {
+      "seed": "e0203d7f35f898d2c66bbc45b1d5ed23410af56e775d3601a1f4ee3f22987ea6",
+      "multikey": "z6MkfiGunxr8zjX823MQsSL4R28pKqebqhDrwKypVfLdFJjA",
+      "keyHash": "QmQeWRgjW9UDto37p4UPx7ovp6jJGyxKo4D1CC8Tibacco"
+    },
+    "k3": {
+      "seed": "b2f56f12a0b0513455e61f01bb11b5af580fdf1bd4ea1b560bc4bf96ee1e0162",
+      "multikey": "z6MkmiJAb1P6jU8piAvHBy7FRPUcN6y9hvKx5ZpyyAL7dKs9",
+      "keyHash": "QmUQZm7vxXkg274eyLtwBVWkJAFsSULrWC14JPcmdtyUCE"
+    },
+    "k4": {
+      "seed": "37643241c97fce1f65665f0d8ec789b45b3ae1ae0315f7a35b64e832954834f6",
+      "multikey": "z6MkqHLFmqk4UzrJj4wk696R9ptcPQjDNai9SrUbb6YPMrDR",
+      "keyHash": "QmSASASXfNa2P4WseLiMXDovj6FoAmKujmBE6yD8fJcuw1"
+    },
+    "k5": {
+      "seed": "2cc4a29f52b9fac6f3ccff29b97d090ab83d0faf637644fb8f3782407a66c59d",
+      "multikey": "z6MkvzDVEGYxf3cFrz7ocwK3rWGEFqeV3whciAcYZS2VT9Su",
+      "keyHash": "QmPCv56mK22WnRt8BcRjeDT9MpwFUtGMFUW4DhdbJgRSVU"
+    },
+    "attacker": {
+      "seed": "520daf15fbfcb2a2d449894a2404dbe72c8141feb8e2f9a5d4ca694bec7f7f18",
+      "multikey": "z6MkwMiyLRhbQoqcDuf1ioigaty4hiGeggPHJLKycg75JUuf",
+      "keyHash": "QmUiQ2Z8mQEqqWSVRgKeaDTbFbme65SZ8U3n96PiHiYpZM"
+    },
+    "wA": {
+      "seed": "9bbc62934fb3ae67bb95142af8e2660a56576bdb6801d10ddbe9b31b1a87593e",
+      "multikey": "z6MkfZM53uaGQVNUuaxQB1rtcErHoHVuQrm5WfJmFtNaXPv3",
+      "keyHash": "QmcD5Kj5GjZd9x8N4npFyLk5UL3teiHxDPaAsRWjHGLBaW"
+    },
+    "wB": {
+      "seed": "1c0a4ab97f14bbf94ef7598c3481699f920a4e42e961ee2a3e659aeac06de578",
+      "multikey": "z6Mkij8ran44p1frij95Pk5DVVamdWYcWoxEi3DJYPVhU1uC",
+      "keyHash": "QmSSzjgey9mzudRN7ce7fek8F1mF1AyzxhgvyxPuZK5i62"
+    },
+    "wC": {
+      "seed": "b13f26fe52f96e5356a408b2dd77cf51d087d2901a89c334683accba9daed65c",
+      "multikey": "z6MkecwFBhKiTNWwSJXHqTPqKWnr7VopdQm84ZRtSAL8wFZY",
+      "keyHash": "QmbxpVyjRSreTL4CRZxuCjTBE64nhHwQD6fPKHC7kUNJvj"
+    },
+    "wD": {
+      "seed": "706c109c58809f8ceb8272771c06a43795cebc8337a485ce08a97f29651e8cfb",
+      "multikey": "z6Mksau1Z7RPuebA6BxqK2DJfzCsJfwWN8DjXT65HmzqE1Cb",
+      "keyHash": "QmbCWCDidhY63NQrgr461zpdQYeat4ogGXjnuhdnw4omio"
+    }
+  }
+}

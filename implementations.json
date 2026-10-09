@@ -1,0 +1,29 @@
+{
+  "implementations": [
+    {
+      "name": "typescript",
+      "cwd": "implementations/typescript",
+      "command": ["node", "src/driver.ts"]
+    },
+    {
+      "name": "rust",
+      "cwd": "implementations/rust",
+      "build": ["cargo", "build", "--release", "--quiet", "--bin", "vh-log-driver"],
+      "command": ["target/release/vh-log-driver"],
+      "env": { "PATH_PREPEND": ["/opt/homebrew/opt/rustup/bin", "~/.cargo/bin"] }
+    },
+    {
+      "name": "python",
+      "cwd": "implementations/python",
+      "build": ["uv", "sync", "--quiet"],
+      "command": ["uv", "run", "--quiet", "--no-sync", "python", "-m", "vh_log.driver"]
+    },
+    {
+      "name": "elixir",
+      "cwd": "implementations/elixir",
+      "build": ["mix", "do", "deps.get", "+", "compile"],
+      "command": ["mix", "run", "--no-compile", "-e", "VHLog.Driver.main()"],
+      "env": { "MIX_ENV": "prod" }
+    }
+  ]
+}

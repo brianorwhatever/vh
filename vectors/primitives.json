@@ -1,0 +1,221 @@
+{
+  "description": "Primitive operation vectors. `jcs` inputs are raw JSON text, parsed by the implementation itself.",
+  "jcs": [
+    {
+      "text": "{\"b\":1,\"a\":[true,null,false]}",
+      "output": "{\"a\":[true,null,false],\"b\":1}"
+    },
+    {
+      "text": "{\"numbers\":[333333333.33333329,1E30,4.50,2e-3,0.000000000000000000000000001,-0,1.0,100,1e21,1e-7,0.1,5e-324,1.7976931348623157e308]}",
+      "output": "{\"numbers\":[333333333.3333333,1e+30,4.5,0.002,1e-27,0,1,100,1e+21,1e-7,0.1,5e-324,1.7976931348623157e+308]}"
+    },
+    {
+      "text": "{\"big\":123456789012345678,\"bigger\":9007199254740993}",
+      "output": "{\"big\":123456789012345680,\"bigger\":9007199254740992}"
+    },
+    {
+      "text": "{\"string\":\"\\u20ac$\\u000F\\u000aA'\\u0042\\u0022\\u005c\\\\\\\"\\/\",\"del\":\"\\u007f\",\"ls\":\"\\u2028\"}",
+      "output": "{\"del\":\"\",\"ls\":\" \",\"string\":\"€$\\u000f\\nA'B\\\"\\\\\\\\\\\"/\"}"
+    },
+    {
+      "text": "{\"\\u20ac\":\"Euro\",\"\\r\":\"CR\",\"\\ufb33\":\"Hebrew\",\"1\":\"One\",\"\\ud83d\\ude00\":\"Smiley\",\"\\u0080\":\"Control\",\"\\u00f6\":\"Latin\",\"a\":\"lower\",\"A\":\"upper\"}",
+      "output": "{\"\\r\":\"CR\",\"1\":\"One\",\"A\":\"upper\",\"a\":\"lower\",\"\":\"Control\",\"ö\":\"Latin\",\"€\":\"Euro\",\"😀\":\"Smiley\",\"דּ\":\"Hebrew\"}"
+    },
+    {
+      "text": "{\"nested\":{\"z\":{\"y\":[{\"b\":2,\"a\":1}]},\"a\":[]},\"empty\":{}}",
+      "output": "{\"empty\":{},\"nested\":{\"a\":[],\"z\":{\"y\":[{\"a\":1,\"b\":2}]}}}"
+    },
+    {
+      "text": "\"top-level string\"",
+      "output": "\"top-level string\""
+    },
+    {
+      "text": "[1,[2,[3]],{}]",
+      "output": "[1,[2,[3]],{}]"
+    }
+  ],
+  "hash": [
+    {
+      "data": "",
+      "output": "QmdfTbBqBPQ7VNxZEYEj14VmRuZBkqFbiwReogJgS1zR1n"
+    },
+    {
+      "data": "abc",
+      "output": "QmatYkNGZnELf8cAGdyJpUca2PyY4szai3RHyyWofNY1pY"
+    },
+    {
+      "data": "{SCID}",
+      "output": "QmQMximRsv8XugVuxpuZ46z9zW3mmPzEjADWyphrwek5Ly"
+    },
+    {
+      "data": "€😀",
+      "output": "QmZotSWasiEV5EAqXqNKYMwey34zL64gJEqzNdNcD9Qvno"
+    }
+  ],
+  "multikey": [
+    {
+      "seed": "0000000000000000000000000000000000000000000000000000000000000000",
+      "multikey": "z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp"
+    },
+    {
+      "seed": "0101010101010101010101010101010101010101010101010101010101010101",
+      "multikey": "z6Mkon3Necd6NkkyfoGoHxid2znGc59LU3K7mubaRcFbLfLX"
+    },
+    {
+      "seed": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "multikey": "z6MknSLrJoTcukLrE435hVNQT4JUhbvWLX4kUzqkEStBU8Vi"
+    },
+    {
+      "seed": "90930409d492fb6cd7b50542c97fc6003fcedd59012b47ac114417373796eaaa",
+      "multikey": "z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv"
+    },
+    {
+      "seed": "e0203d7f35f898d2c66bbc45b1d5ed23410af56e775d3601a1f4ee3f22987ea6",
+      "multikey": "z6MkfiGunxr8zjX823MQsSL4R28pKqebqhDrwKypVfLdFJjA"
+    }
+  ],
+  "keyHash": [
+    {
+      "multikey": "z6MkiTBz1ymuepAQ4HEHYSF1H8quG5GLVVQR3djdX3mDooWp",
+      "output": "QmXAyqGTyhkaF3ARQCHU1bja8uwGPxAzywkGEY1fAyfxBw"
+    },
+    {
+      "multikey": "z6Mkon3Necd6NkkyfoGoHxid2znGc59LU3K7mubaRcFbLfLX",
+      "output": "QmYNnuNDPHYff6szX69HyChiTz16KVoz1nrAPLtSU8X8of"
+    },
+    {
+      "multikey": "z6MknSLrJoTcukLrE435hVNQT4JUhbvWLX4kUzqkEStBU8Vi",
+      "output": "QmQeb5boHJzXN7yyow5r4cFTV83nnq7jUSGHeDi8W9SZg4"
+    },
+    {
+      "multikey": "z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv",
+      "output": "QmchKW5rynK1kqB1CAUt9B7NEP7TYnnMKRrGQDMXpRV4QG"
+    },
+    {
+      "multikey": "z6MkfiGunxr8zjX823MQsSL4R28pKqebqhDrwKypVfLdFJjA",
+      "output": "QmQeWRgjW9UDto37p4UPx7ovp6jJGyxKo4D1CC8Tibacco"
+    }
+  ],
+  "scid": [
+    {
+      "entry": {
+        "versionId": "{SCID}",
+        "versionTime": "2026-01-01T00:00:00Z",
+        "parameters": {
+          "logVersion": "vh-log:1.0",
+          "scid": "{SCID}",
+          "updateKeys": [
+            "z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv"
+          ]
+        },
+        "state": {
+          "id": "example:{SCID}"
+        }
+      },
+      "scid": "QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7"
+    }
+  ],
+  "entryHash": [
+    {
+      "entry": {
+        "versionId": "QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7",
+        "versionTime": "2026-01-01T00:00:00Z",
+        "parameters": {
+          "logVersion": "vh-log:1.0",
+          "scid": "QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7",
+          "updateKeys": [
+            "z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv"
+          ]
+        },
+        "state": {
+          "id": "example:QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7"
+        }
+      },
+      "previousVersionId": "QmfZEwVdGDqkzNvbRjUnX3EHQwT569yChMNNN4mBYE6Fg7",
+      "hash": "Qmc3wTfUMTgQ8Swi1npEst5ko4cHT4KiZyhRmg8HMrPpnM"
+    },
+    {
+      "description": "The example from the spec's Generate Entry Hash section. The spec states QmQ6FJ4fk2xheSSQoEjVpTgx9AQPKhJgtR9hn1nr4EeCrZ, which does not reproduce (see docs/spec-notes.md).",
+      "entry": {
+        "versionId": "QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE",
+        "versionTime": "2025-04-01T17:39:50Z",
+        "parameters": {
+          "witness": {
+            "threshold": 2,
+            "witnesses": [
+              {
+                "id": "witness-1"
+              },
+              {
+                "id": "witness-2"
+              },
+              {
+                "id": "witness-3"
+              }
+            ]
+          },
+          "updateKeys": [
+            "z6MkgzBDcBFV3sk4ypPE5YXMZHmS213A3HpYY2LmcVKV15jr"
+          ],
+          "nextKeyHashes": [
+            "QmZreDcjvWEpyRFznQeExWNCsvMLk5i59AcRJJuQC8UodJ"
+          ],
+          "logVersion": "vh-log:1.0",
+          "scid": "QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE"
+        },
+        "state": {
+          "id": "example:QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE"
+        }
+      },
+      "previousVersionId": "QmdmPkUdYzbr9txmx8gM2rsHPgr5L6m3gHjJGAf4vUFoGE",
+      "hash": "QmXoHG2Z6Hg1kmryaRxcqgzF6nv2vgLZnYHvGirL9t2a8U"
+    }
+  ],
+  "sign": [
+    {
+      "document": {
+        "versionId": "1-QmExample",
+        "hello": "world"
+      },
+      "seed": "90930409d492fb6cd7b50542c97fc6003fcedd59012b47ac114417373796eaaa",
+      "created": "2026-01-01T00:00:00Z",
+      "proof": {
+        "type": "DataIntegrityProof",
+        "cryptosuite": "eddsa-jcs-2022",
+        "verificationMethod": "did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv",
+        "created": "2026-01-01T00:00:00Z",
+        "proofPurpose": "assertionMethod",
+        "proofValue": "z528XY5PUhkrXjtbAWHryp8yhKWfPaBEDfQT3SMStNwMSZsDw1au8YWBxoqCGzgoFxhQg2JG7PdT8HnTHyJygSca3"
+      }
+    },
+    {
+      "document": {
+        "versionId": "1-QmExample",
+        "hello": "world"
+      },
+      "seed": "e0203d7f35f898d2c66bbc45b1d5ed23410af56e775d3601a1f4ee3f22987ea6",
+      "proof": {
+        "type": "DataIntegrityProof",
+        "cryptosuite": "eddsa-jcs-2022",
+        "verificationMethod": "did:key:z6MkfiGunxr8zjX823MQsSL4R28pKqebqhDrwKypVfLdFJjA#z6MkfiGunxr8zjX823MQsSL4R28pKqebqhDrwKypVfLdFJjA",
+        "proofPurpose": "assertionMethod",
+        "proofValue": "z59iDoTJo3Uc3mdMng3cvEzStw4ZdsSbXjGGZcac395mBNPDpsAJ1CHuekrbjMe4fWhd9wwJwtA4gRrbfGA95mhC4"
+      }
+    },
+    {
+      "document": {
+        "versionId": "2-QmWitnessed"
+      },
+      "seed": "9bbc62934fb3ae67bb95142af8e2660a56576bdb6801d10ddbe9b31b1a87593e",
+      "created": "2026-01-02T00:00:00Z",
+      "proof": {
+        "type": "DataIntegrityProof",
+        "cryptosuite": "eddsa-jcs-2022",
+        "verificationMethod": "did:key:z6MkfZM53uaGQVNUuaxQB1rtcErHoHVuQrm5WfJmFtNaXPv3#z6MkfZM53uaGQVNUuaxQB1rtcErHoHVuQrm5WfJmFtNaXPv3",
+        "created": "2026-01-02T00:00:00Z",
+        "proofPurpose": "assertionMethod",
+        "proofValue": "z4Cgf5f9BXyFve7oRfTHqNSefMFbrZ1aTy3uEhyWGNB4jCXgKazJQwZ7F6qUkcmitZ5WymfEqnx4iWm1R3Do6Sh7H"
+      }
+    }
+  ]
+}
