@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
 
 # Each implementation's own tests run in their own job, printing every test.
-# The interop job then runs the cross-implementation harness, with each
-# implementation × suite as an expandable log group, and posts the matrix to
-# the run's summary page.
+# The interop job then runs the cross-implementation harness: conformance checks
+# are collapsible groups, and every producer → resolver interop run is printed
+# as a visible line. The matrix is posted to the run's summary page.
 jobs:
   typescript:
     runs-on: ubuntu-latest
@@ -100,16 +100,10 @@ jobs:
           node tools/generate-vectors.ts
           git diff --exit-code vectors/
 
-      - name: Interop matrix
-        run: node harness/run.ts --list --markdown "$GITHUB_STEP_SUMMARY" --json interop-results.json
+      - name: Interoperability tests
+        run: node harness/run.ts --list --markdown "$GITHUB_STEP_SUMMARY"
 
       - name: README matrix is up to date
         run: |
           node harness/run.ts --update-readme > /dev/null
           git diff --exit-code README.md || (echo "::error::README interop matrix is stale; run node harness/run.ts --update-readme" && exit 1)
-
-      - uses: actions/upload-artifact@v4
-        if: ${{ !cancelled() }}
-        with:
-          name: interop-results
-          path: interop-results.json
