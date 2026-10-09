@@ -3,10 +3,14 @@
 //
 //   node harness/run.ts                      # all implementations, all suites
 //   node harness/run.ts --impl python        # only these implementations (repeatable)
-//   node harness/run.ts --suite resolution   # primitives | resolution | generation | cross (repeatable)
+//   node harness/run.ts --suite resolution   # primitives | resolution | generation | cross | external (repeatable)
+//   node harness/run.ts --list               # print every test result, not just failures
 //   node harness/run.ts --verbose            # print every failure in full
+//   node harness/run.ts --markdown out.md    # also write the results as Markdown (CI job summary)
+//   node harness/run.ts --json out.json      # also write every result as JSON
+//   node harness/run.ts --update-readme      # rewrite the interop matrix in README.md
 import { spawn, spawnSync, type ChildProcessWithoutNullStreams } from "node:child_process";
-import { readdirSync, readFileSync } from "node:fs";
+import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
@@ -112,25 +116,20 @@ class Driver {
 
 // ---------------------------------------------------------------- results
 
-interface Failure {
+interface Result {
   impl: string;
   suite: string;
   test: string;
-  message: string;
+  /** null when the test passed. */
+  problem: string | null;
+  /** For the cross suite: the implementation that generated the log. */
+  producer?: string;
 }
 
-const failures: Failure[] = [];
-const counts = new Map<string, { pass: number; fail: number }>();
+const results: Result[] = [];
 
-function record(impl: string, suite: string, test: string, problem: string | null) {
-  const key = `${impl}\t${suite}`;
-  const c = counts.get(key) ?? { pass: 0, fail: 0 };
-  if (problem === null) c.pass++;
-  else {
-    c.fail++;
-    failures.push({ impl, suite, test, message: problem });
-  }
-  counts.set(key, c);
+function record(impl: string, suite: string, test: string, problem: string | null, producer?: string) {
+  results.push({ impl, suite, test, problem, ...(producer ? { producer } : {}) });
 }
 
 const same = (a: unknown, b: unknown) => {
@@ -275,7 +274,7 @@ async function cross(d: Driver, generated: Generated[]) {
     const res = await d.call("resolve", { log: g.log, witness: g.witnessFile, now: g.scenario.resolve.now });
     const test = `${g.scenario.name} (made by ${g.producer})`;
     if (!res.ok) {
-      record(d.impl.name, "cross", test, `driver error: ${res.error}`);
+      record(d.impl.name, "cross", test, `driver error: ${res.error}`, g.producer);
       continue;
     }
     const r = res.result;
@@ -284,7 +283,62 @@ async function cross(d: Driver, generated: Generated[]) {
       : !same(r.state, g.scenario.resolve.state) ? `state differs: ${show(r.state)}`
       : r.metadata.versionId !== g.scenario.resolve.versionId ? `versionId ${r.metadata.versionId}`
       : null;
-    record(d.impl.name, "cross", test, problem);
+    record(d.impl.name, "cross", test, problem, g.producer);
+  }
+}
+
+/**
+ * Checks did:webvh logs made by the independent didwebvh-ts implementation
+ * (vectors/external). did:webvh's parameters differ from VH-Log's, so the logs
+ * aren't resolved as VH-Logs; instead every shared cryptographic step is checked.
+ */
+async function external(d: Driver) {
+  const root = join(VECTORS, "external");
+  for (const source of readdirSync(root).sort()) {
+    const { scenarios } = JSON.parse(readFileSync(join(root, source, "manifest.json"), "utf8"));
+    for (const sc of scenarios) {
+      const entries = readFileSync(join(root, source, `${sc.name}.jsonl`), "utf8").trim().split("\n").map((l) => JSON.parse(l));
+      const scid = entries[0].parameters.scid;
+      const check = async (test: string, op: string, input: Json, ok: (r: Json) => boolean, describe: (r: Json) => string) => {
+        const res = await d.call(op, input);
+        const name = `${source}/${sc.name} ${test}`;
+        if (!res.ok) record(d.impl.name, "external", name, `driver error: ${res.error}`);
+        else record(d.impl.name, "external", name, ok(res.result) ? null : describe(res.result));
+      };
+      for (const [i, entry] of entries.entries()) {
+        const { proof, ...doc } = entry;
+        const n = i + 1;
+        if (i === 0) {
+          const preliminary = JSON.parse(JSON.stringify({ ...doc, versionId: "{SCID}" }).replaceAll(scid, "{SCID}"));
+          await check("#1 scid", "scid", { entry: preliminary }, (r) => r.scid === scid, (r) => `got ${r.scid}, log says ${scid}`);
+        }
+        const hash = entry.versionId.split("-")[1];
+        const previous = i === 0 ? scid : entries[i - 1].versionId;
+        await check(`#${n} entry hash`, "entry-hash", { entry: doc, previousVersionId: previous }, (r) => r.hash === hash,
+          (r) => `got ${r.hash}, log says ${hash}`);
+        for (const [j, p] of proof.entries()) {
+          await check(`#${n} proof ${j + 1}`, "verify", { document: doc, proof: p }, (r) => r.valid === true, () => "proof did not verify");
+          await check(`#${n} proof ${j + 1} rejects tampering`, "verify", { document: { ...doc, versionTime: "1999-01-01T00:00:00Z" }, proof: p },
+            (r) => r.valid === false, () => "proof verified over tampered content");
+        }
+        const committed: string[] = i > 0 ? entries[i - 1].parameters.nextKeyHashes ?? [] : [];
+        if (committed.length) {
+          for (const k of entry.parameters.updateKeys) {
+            await check(`#${n} pre-rotation key hash`, "key-hash", { multikey: k }, (r) => committed.includes(r.output),
+              (r) => `${r.output} not in previous nextKeyHashes`);
+          }
+        }
+      }
+      if (sc.witness) {
+        const file = JSON.parse(readFileSync(join(root, source, `${sc.name}.witness.json`), "utf8"));
+        for (const record of file) {
+          for (const [j, p] of record.proof.entries()) {
+            await check(`witness proof ${record.versionId.split("-")[0]}.${j + 1}`, "verify", { document: { versionId: record.versionId }, proof: p },
+              (r) => r.valid === true, () => "witness proof did not verify over {versionId}");
+          }
+        }
+      }
+    }
   }
 }
 
@@ -296,11 +350,16 @@ const { values } = parseArgs({
     suite: { type: "string", multiple: true, default: [] },
     group: { type: "string", multiple: true, default: [] },
     verbose: { type: "boolean", default: false },
+    list: { type: "boolean", default: false },
+    markdown: { type: "string" },
+    json: { type: "string" },
+    "update-readme": { type: "boolean", default: false },
   },
 });
 const registry: ImplConfig[] = JSON.parse(readFileSync(join(ROOT, "implementations.json"), "utf8")).implementations;
 const selected = registry.filter((i) => values.impl!.length === 0 || values.impl!.includes(i.name));
-const suites = values.suite!.length ? values.suite! : ["primitives", "resolution", "generation", "cross"];
+const ALL_SUITES = ["primitives", "resolution", "generation", "cross", "external"];
+const suites = values.suite!.length ? values.suite! : ALL_SUITES;
 const impls = selected.filter((i) => {
   const error = build(i);
   if (error) record(i.name, "build", "build", error);
@@ -312,6 +371,7 @@ await Promise.all(
   drivers.map(async (d) => {
     if (suites.includes("primitives")) await primitives(d);
     if (suites.includes("resolution")) await resolution(d, values.group!);
+    if (suites.includes("external")) await external(d);
   }),
 );
 if (suites.includes("generation") || suites.includes("cross")) {
@@ -320,24 +380,106 @@ if (suites.includes("generation") || suites.includes("cross")) {
 }
 for (const d of drivers) d.close();
 
-// Report
-const suiteNames = suites;
+// ---------------------------------------------------------------- report
+
+const SUITE_TITLES: Record<string, string> = {
+  primitives: "Primitives",
+  resolution: "Resolution",
+  generation: "Generation",
+  cross: "Cross",
+  external: "didwebvh-ts",
+};
+const failures = results.filter((r) => r.problem !== null);
+const tally = (rs: Result[]) => ({ pass: rs.filter((r) => r.problem === null).length, total: rs.length });
+const cell = (rs: Result[], plain: boolean) => {
+  const { pass, total } = tally(rs);
+  if (total === 0) return "–";
+  return pass === total ? `${plain ? "✓" : "✅"} ${total}` : `${plain ? "✗" : "❌"} ${pass}/${total}`;
+};
+const of = (impl: string, suite: string) => results.filter((r) => r.impl === impl && r.suite === suite);
+const buildFailed = (impl: string) => results.some((r) => r.impl === impl && r.suite === "build");
+
+// Every test, grouped (collapsible in GitHub Actions logs).
+const ci = Boolean(process.env.GITHUB_ACTIONS);
+if (values.list) {
+  for (const impl of selected) {
+    for (const suite of ["build", ...suites]) {
+      const rs = of(impl.name, suite);
+      if (!rs.length) continue;
+      const title = `${impl.name} › ${suite} (${cell(rs, true)})`;
+      console.log(ci ? `::group::${title}` : `\n── ${title}`);
+      for (const r of rs) {
+        console.log(`  ${r.problem === null ? "✓" : "✗"} ${r.test}`);
+        if (r.problem !== null) console.log(`      ${r.problem.replaceAll("\n", "\n      ")}`);
+      }
+      if (ci) console.log("::endgroup::");
+    }
+  }
+}
+
 const pad = (s: string, n: number) => s.padEnd(n);
-console.log("\n" + pad("implementation", 16) + suiteNames.map((s) => pad(s, 14)).join(""));
+console.log("\n" + pad("implementation", 16) + suites.map((s) => pad(s, 14)).join(""));
 for (const impl of selected) {
-  const cells = suiteNames.map((s) => {
-    const c = counts.get(`${impl.name}\t${s}`);
-    if (!c) return pad(counts.has(`${impl.name}\tbuild`) ? "build failed" : "-", 14);
-    return pad(c.fail ? `✗ ${c.pass}/${c.pass + c.fail}` : `✓ ${c.pass}`, 14);
-  });
+  const cells = suites.map((s) => pad(buildFailed(impl.name) ? "build failed" : cell(of(impl.name, s), true), 14));
   console.log(pad(impl.name, 16) + cells.join(""));
 }
+
+function markdown(): string {
+  const names = selected.map((i) => i.name);
+  const lines = [
+    `| Implementation | ${suites.map((s) => SUITE_TITLES[s] ?? s).join(" | ")} |`,
+    `| --- | ${suites.map(() => "---").join(" | ")} |`,
+    ...names.map((n) => `| ${n} | ${suites.map((s) => (buildFailed(n) ? "build failed" : cell(of(n, s), false))).join(" | ")} |`),
+  ];
+  if (suites.includes("cross")) {
+    lines.push(
+      "",
+      "Cross-resolution: each row's implementation resolving logs and witness files generated by each column's implementation.",
+      "",
+      `| resolver ↓ / producer → | ${names.join(" | ")} |`,
+      `| --- | ${names.map(() => "---").join(" | ")} |`,
+      ...names.map(
+        (r) => `| ${r} | ${names.map((p) => cell(results.filter((x) => x.suite === "cross" && x.impl === r && x.producer === p), false)).join(" | ")} |`,
+      ),
+    );
+  }
+  return lines.join("\n");
+}
+
+const summary = [
+  `### VH-Log interop matrix`,
+  "",
+  markdown(),
+  "",
+  failures.length ? `**${failures.length} failure(s)**` : `**All ${results.length} checks passed.**`,
+  ...failures.slice(0, 50).map((f) => `- \`${f.impl}\` ${f.suite} › ${f.test}: ${f.problem!.split("\n")[0]}`),
+].join("\n");
+if (values.markdown) writeFileSync(values.markdown, summary + "\n", { flag: "a" });
+if (values.json) writeFileSync(values.json, JSON.stringify({ suites, results }, null, 2) + "\n");
+
+if (values["update-readme"]) {
+  if (failures.length) {
+    console.error("\nnot updating README.md: there are failures");
+  } else if (values.impl!.length || values.suite!.length || values.group!.length) {
+    console.error("\nnot updating README.md: run without --impl/--suite/--group");
+  } else {
+    const readme = join(ROOT, "README.md");
+    const text = readFileSync(readme, "utf8");
+    const start = "<!-- interop-matrix:start -->";
+    const end = "<!-- interop-matrix:end -->";
+    if (!text.includes(start) || !text.includes(end)) throw new Error("README.md has no interop-matrix markers");
+    const block = `${start}\n<!-- Generated by \`node harness/run.ts --update-readme\`; CI fails if this is out of date. -->\n\n${markdown()}\n\n${end}`;
+    writeFileSync(readme, text.slice(0, text.indexOf(start)) + block + text.slice(text.indexOf(end) + end.length));
+    console.log("\nupdated README.md");
+  }
+}
+
 if (failures.length) {
   console.log(`\n${failures.length} failure(s):`);
   const shown = values.verbose ? failures : failures.slice(0, 40);
-  for (const f of shown) console.log(`\n  [${f.impl}] ${f.suite} › ${f.test}\n     ${f.message}`);
+  for (const f of shown) console.log(`\n  [${f.impl}] ${f.suite} › ${f.test}\n     ${f.problem}`);
   if (shown.length < failures.length) console.log(`\n  … ${failures.length - shown.length} more (use --verbose)`);
   process.exitCode = 1;
 } else {
-  console.log("\nall passed");
+  console.log(`\nall ${results.length} checks passed`);
 }

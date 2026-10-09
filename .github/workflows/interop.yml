@@ -4,54 +4,96 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
 
+# Each implementation's own tests run in their own job, printing every test.
+# The interop job then runs the cross-implementation harness, with each
+# implementation × suite as an expandable log group, and posts the matrix to
+# the run's summary page.
 jobs:
-  interop:
+  typescript:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: implementations/typescript
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
+      - run: npm ci
+      - name: Typecheck
+        run: npx tsc --noEmit
+      - name: Unit tests
+        run: node --test --test-reporter=spec test/*.test.ts
+
+  rust:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: implementations/rust
+    steps:
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy, rustfmt
+      - name: Format
+        run: cargo fmt --check
+      - name: Clippy
+        run: cargo clippy --all-targets -- -D warnings
+      - name: Unit tests
+        run: cargo test -- --show-output
+
+  python:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: implementations/python
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync
+      - name: Lint
+        run: uv run ruff check && uv run ruff format --check
+      - name: Typecheck
+        run: uv run mypy
+      - name: Unit tests
+        run: uv run pytest -v
+
+  elixir:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: implementations/elixir
+    steps:
+      - uses: actions/checkout@v5
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: "28"
+          elixir-version: "1.19"
+      - run: mix deps.get
+      - name: Format
+        run: mix format --check-formatted
+      - name: Compile
+        run: mix compile --warnings-as-errors
+      - name: Unit tests
+        run: mix test --trace
+
+  interop:
+    needs: [typescript, rust, python, elixir]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - uses: dtolnay/rust-toolchain@stable
       - uses: astral-sh/setup-uv@v6
       - uses: erlef/setup-beam@v1
         with:
           otp-version: "28"
           elixir-version: "1.19"
-
-      - name: TypeScript
-        working-directory: implementations/typescript
-        run: |
-          npm ci
-          npx tsc --noEmit
-          npm test
-
-      - name: Rust
-        working-directory: implementations/rust
-        run: |
-          cargo fmt --check
-          cargo clippy --all-targets -- -D warnings
-          cargo test
-
-      - name: Python
-        working-directory: implementations/python
-        run: |
-          uv sync
-          uv run ruff check
-          uv run mypy
-          uv run pytest
-
-      - name: Elixir
-        working-directory: implementations/elixir
-        run: |
-          mix deps.get
-          mix format --check-formatted
-          mix compile --warnings-as-errors
-          mix test
 
       - name: Vectors are up to date
         run: |
@@ -59,4 +101,15 @@ jobs:
           git diff --exit-code vectors/
 
       - name: Interop matrix
-        run: node harness/run.ts
+        run: node harness/run.ts --list --markdown "$GITHUB_STEP_SUMMARY" --json interop-results.json
+
+      - name: README matrix is up to date
+        run: |
+          node harness/run.ts --update-readme > /dev/null
+          git diff --exit-code README.md || (echo "::error::README interop matrix is stale; run node harness/run.ts --update-readme" && exit 1)
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: interop-results
+          path: interop-results.json
