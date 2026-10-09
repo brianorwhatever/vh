@@ -7,3 +7,11 @@ __pycache__/
 *.pyc
 .pytest_cache/
 .DS_Store
+bin/
+.build/
+.swiftpm/
+.gradle/
+build/
+.kotlin/
+zig-out/
+.zig-cache/

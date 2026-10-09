@@ -14,7 +14,7 @@ Section links point at the pinned
 1. **The entry-hash example does not reproduce.** In *Generate Entry Hash*,
    JCS → SHA-256 multihash → base58btc of the example gives
    `QmXoHG2Z6Hg1kmryaRxcqgzF6nv2vgLZnYHvGirL9t2a8U`, not the stated
-   `QmQ6FJ4fk2xheSSQoEjVpTgx9AQPKhJgtR9hn1nr4EeCrZ`. All four implementations
+   `QmQ6FJ4fk2xheSSQoEjVpTgx9AQPKhJgtR9hn1nr4EeCrZ`. All eight implementations
    here agree on the computed value (`vectors/primitives.json`, `entryHash[1]`).
    So does the independent didwebvh-ts (`deriveHash`, at `1622d03`). The
    example also lists the SCID itself as the input `versionId`, and the SCID

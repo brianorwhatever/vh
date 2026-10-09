@@ -3,27 +3,128 @@
     {
       "name": "typescript",
       "cwd": "implementations/typescript",
-      "command": ["node", "src/driver.ts"]
+      "command": [
+        "node",
+        "src/driver.ts"
+      ]
     },
     {
       "name": "rust",
       "cwd": "implementations/rust",
-      "build": ["cargo", "build", "--release", "--quiet", "--bin", "vh-log-driver"],
-      "command": ["target/release/vh-log-driver"],
-      "env": { "PATH_PREPEND": ["/opt/homebrew/opt/rustup/bin", "~/.cargo/bin"] }
+      "build": [
+        "cargo",
+        "build",
+        "--release",
+        "--quiet",
+        "--bin",
+        "vh-log-driver"
+      ],
+      "command": [
+        "target/release/vh-log-driver"
+      ],
+      "env": {
+        "PATH_PREPEND": [
+          "/opt/homebrew/opt/rustup/bin",
+          "~/.cargo/bin"
+        ]
+      }
     },
     {
       "name": "python",
       "cwd": "implementations/python",
-      "build": ["uv", "sync", "--quiet"],
-      "command": ["uv", "run", "--quiet", "--no-sync", "python", "-m", "vh_log.driver"]
+      "build": [
+        "uv",
+        "sync",
+        "--quiet"
+      ],
+      "command": [
+        "uv",
+        "run",
+        "--quiet",
+        "--no-sync",
+        "python",
+        "-m",
+        "vh_log.driver"
+      ]
     },
     {
       "name": "elixir",
       "cwd": "implementations/elixir",
-      "build": ["mix", "do", "deps.get", "+", "compile"],
-      "command": ["mix", "run", "--no-compile", "-e", "VHLog.Driver.main()"],
-      "env": { "MIX_ENV": "prod" }
+      "build": [
+        "mix",
+        "do",
+        "deps.get",
+        "+",
+        "compile"
+      ],
+      "command": [
+        "mix",
+        "run",
+        "--no-compile",
+        "-e",
+        "VHLog.Driver.main()"
+      ],
+      "env": {
+        "MIX_ENV": "prod"
+      }
+    },
+    {
+      "name": "go",
+      "cwd": "implementations/go",
+      "build": [
+        "go",
+        "build",
+        "-o",
+        "bin/vh-log-driver",
+        "./cmd/vh-log-driver"
+      ],
+      "command": [
+        "bin/vh-log-driver"
+      ]
+    },
+    {
+      "name": "swift",
+      "cwd": "implementations/swift",
+      "build": [
+        "swift",
+        "build",
+        "-c",
+        "release",
+        "--product",
+        "vh-log-driver"
+      ],
+      "command": [
+        ".build/release/vh-log-driver"
+      ]
+    },
+    {
+      "name": "kotlin",
+      "cwd": "implementations/kotlin",
+      "build": [
+        "./gradlew",
+        "--quiet",
+        "installDist"
+      ],
+      "command": [
+        "build/install/vh-log-driver/bin/vh-log-driver"
+      ],
+      "env": {
+        "PATH_PREPEND": [
+          "/opt/homebrew/opt/openjdk@21/bin"
+        ]
+      }
+    },
+    {
+      "name": "zig",
+      "cwd": "implementations/zig",
+      "build": [
+        "zig",
+        "build",
+        "-Doptimize=ReleaseSafe"
+      ],
+      "command": [
+        "zig-out/bin/vh-log-driver"
+      ]
     }
   ]
 }
