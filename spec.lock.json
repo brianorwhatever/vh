@@ -1,0 +1,12 @@
+{
+  "spec": "VH-Log (Verifiable History Log)",
+  "editor": "Stephen Curran",
+  "repository": "https://github.com/swcurran/VH-Log",
+  "commit": "f2f9fda",
+  "commitDate": "2026-10-07",
+  "commitMessage": "Updates from a full review of the specification",
+  "rendered": "https://swcurran.github.io/VH-Log/next/",
+  "version": "vh-log:1.0 (spec status: Pre-Draft — Editors Draft v0.1)",
+  "retrieved": "2026-10-08",
+  "profile": "docs/profile.md (vh-log-interop-0)"
+}

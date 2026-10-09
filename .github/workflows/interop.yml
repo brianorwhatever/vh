@@ -1,0 +1,62 @@
+name: interop
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  interop:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - uses: astral-sh/setup-uv@v6
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: "28"
+          elixir-version: "1.19"
+
+      - name: TypeScript
+        working-directory: implementations/typescript
+        run: |
+          npm ci
+          npx tsc --noEmit
+          npm test
+
+      - name: Rust
+        working-directory: implementations/rust
+        run: |
+          cargo fmt --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test
+
+      - name: Python
+        working-directory: implementations/python
+        run: |
+          uv sync
+          uv run ruff check
+          uv run mypy
+          uv run pytest
+
+      - name: Elixir
+        working-directory: implementations/elixir
+        run: |
+          mix deps.get
+          mix format --check-formatted
+          mix compile --warnings-as-errors
+          mix test
+
+      - name: Vectors are up to date
+        run: |
+          node tools/generate-vectors.ts
+          git diff --exit-code vectors/
+
+      - name: Interop matrix
+        run: node harness/run.ts
