@@ -153,8 +153,27 @@ jobs:
       - name: Library tests
         run: sh scripts/test.sh
 
+  forth:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: implementations/forth
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - name: Install Gforth and native support libraries
+        run: sudo apt-get update && sudo apt-get install -y gforth libtool-bin g++ libsodium-dev libutf8proc-dev nlohmann-json3-dev
+      - name: Build native support library
+        run: sh build.sh
+      - name: Library and driver tests
+        run: |
+          sh run.sh test.fs
+          node --test driver.test.mjs
+
   interop:
-    needs: [typescript, rust, python, elixir, go, swift, kotlin, zig, common-lisp]
+    needs: [typescript, rust, python, elixir, go, swift, kotlin, zig, common-lisp, forth]
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
@@ -181,6 +200,9 @@ jobs:
 
       - name: Install SBCL
         run: sudo apt-get update && sudo apt-get install -y sbcl
+
+      - name: Install Gforth and native support libraries
+        run: sudo apt-get update && sudo apt-get install -y gforth libtool-bin g++ libsodium-dev libutf8proc-dev nlohmann-json3-dev
 
       - name: Vectors are up to date
         run: |

@@ -21,6 +21,7 @@ const LANGS = [
   { id: "kotlin", name: "Kotlin", short: "Kt" },
   { id: "zig", name: "Zig", short: "Zig" },
   { id: "common-lisp", name: "Common Lisp", short: "CL" },
+  { id: "forth", name: "Forth", short: "Forth" },
 ];
 const WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve"];
 const N = WORDS[LANGS.length] || String(LANGS.length);
@@ -48,6 +49,7 @@ const MOVEMENTS = [
       kotlin: { ranges: [["kotlin/src/main/kotlin/org/vhlog/Proof.kt", 33, 34]], marks: [[1, "Hashes.sha256(Jcs.canonicalize(proofConfig))"], [2, "Hashes.sha256(Jcs.canonicalize(document))"], [3, " + "]] },
       zig: { ranges: [["zig/src/proof.zig", 29, 38]], marks: [[1, "json.canonicalize(allocator, config)"], [1, "Sha256.hash(c, out[0..32], .{})"], [2, "json.canonicalize(allocator, document)"], [2, "Sha256.hash(d, out[32..64], .{})"], [3, "var out: [64]u8 = undefined"]] },
       "common-lisp": { ranges: [["common-lisp/src/proof.lisp", 44, 47]], marks: [[1, "(sha256 (utf8 (canonicalize proof-config)))"], [2, "(sha256 (utf8 (canonicalize document)))"], [3, "concat-octets"]] },
+      forth: {"ranges": [["forth/crypto.fs", 53, 55]], "marks": [[1, "config jcs j-sha"], [2, "document without-proof jcs j-sha"], [3, "j-cat"]]},
     },
   },
   {
@@ -65,6 +67,7 @@ const MOVEMENTS = [
       kotlin: { ranges: [["kotlin/src/main/kotlin/org/vhlog/Log.kt", 33, 36]], marks: [[1, "entry.without(\"proof\")"], [2, ".with(\"versionId\", JsonString(previousVersionId))"], [3, "Jcs.canonicalize("], [4, "Hashes.hashB58("]] },
       zig: { ranges: [["zig/src/log.zig", 17, 21], ["zig/src/log.zig", 29, 36]], marks: [[1, "json.without(a, entry, \"proof\")"], [2, "json.with("], [2, "\"versionId\", .{ .string = previous_version_id }"], [3, "json.canonicalize(allocator, v)"], [4, "codec.hashString(allocator, c)"]] },
       "common-lisp": { ranges: [["common-lisp/src/log.lisp", 33, 36]], marks: [[1, "(jwithout entry \"proof\")"], [2, "\"versionId\" previous-version-id"], [2, "(jwith "], [3, "(canonicalize "], [4, "hash-string"]] },
+      forth: {"ranges": [["forth/crypto.fs", 75, 76]], "marks": [[1, "entry without-proof"], [2, "previous pre s\" versionId\" put"], [3, "jcs"], [4, "multihash"]]},
     },
   },
   {
@@ -82,6 +85,7 @@ const MOVEMENTS = [
       kotlin: { ranges: [["kotlin/src/main/kotlin/org/vhlog/Verify.kt", 219, 234]], marks: [[1, "Hashes.checkSha256Multihash(scid)"], [2, "entry.without(\"proof\").with(\"versionId\", JsonString(LogController.SCID_PLACEHOLDER))"], [3, "LogController.replaceInText("], [4, "LogController.computeScid(preliminary) != scid"]] },
       zig: { ranges: [["zig/src/resolve.zig", 253, 265], ["zig/src/log.zig", 44, 55]], marks: [[1, "codec.classifyMultihash(a, params.scid)"], [4, "!std.mem.eql(u8, recomputed, params.scid)"], [2, "json.without(a, entry, \"proof\")"], [2, "\"versionId\", .{ .string = scid_placeholder }"], [3, "replaceAll(a, text, the_scid, scid_placeholder)"], [4, "hashValue(allocator, reparsed.value)"]] },
       "common-lisp": { ranges: [["common-lisp/src/resolve.lisp", 224, 231]], marks: [[1, "(decode-multihash scid) :sha-256"], [2, "(jwith (jwithout json \"proof\") \"versionId\" +scid-placeholder+)"], [3, "(replace-all (to-json preliminary) scid +scid-placeholder+)"], [4, "(string= scid (compute-scid restored))"]] },
+      forth: {"ranges": [["forth/validation.fs", 83, 87]], "marks": [[1, "id hash?"], [2, "entry without-proof"], [2, "placeholder pre s\" versionId\" put"], [3, "pre j-dump id placeholder j-replace"], [4, "json-parse scid id j-equal"]]},
     },
   },
   {
@@ -99,6 +103,7 @@ const MOVEMENTS = [
       kotlin: { ranges: [["kotlin/src/main/kotlin/org/vhlog/Verify.kt", 161, 168]], marks: [[1, "previous != null && previous.nextKeyHashes.isNotEmpty()"], [2, "updateKeys == null"], [2, "nextKeyHashes == null"], [3, "Hashes.keyHash(key)"], [4, "!in previous.nextKeyHashes"]] },
       zig: { ranges: [["zig/src/resolve.zig", 355, 367]], marks: [[1, "pp.next_key_hashes.len > 0"], [2, "update_keys == null"], [2, "next_key_hashes == null"], [3, "codec.hashString(a, key)"], [4, "std.mem.eql(u8, c, h)"]] },
       "common-lisp": { ranges: [["common-lisp/src/resolve.lisp", 155, 162]], marks: [[1, "(and prior (plusp (length (params-next-key-hashes prior))))"], [2, "(jhas raw \"updateKeys\")"], [2, "(jhas raw \"nextKeyHashes\")"], [3, "(key-hash key)"], [4, "unless (find"], [4, "(params-next-key-hashes prior) :test #'string=)"]] },
+      forth: {"ranges": [["forth/validation.fs", 53, 59]], "marks": [[1, "first 0= old s\" nextKeyHashes\" j-get j-size 0> and"], [2, "p s\" updateKeys\" j-has p s\" nextKeyHashes\" j-has and"], [3, "keys i j-at multihash"], [4, "contains?"]]},
     },
   },
 ];
@@ -114,8 +119,9 @@ const PARTS = {
   kotlin: { note: "For Android, EUDI wallets and Java callers. Ed25519 comes from the JDK.", src: ["src/main"], skip: [/[Dd]river/] },
   zig: { note: "Clean-room: written only from the spec, the profile and the vectors, without reading the other implementations. Standard library only.", src: ["src"], skip: [/tests\.zig$/, /main\.zig$/] },
   "common-lisp": { note: "Clean-room too, for SBCL, from the same documents. Cryptography from Ironclad. Its notes record what the spec still leaves ambiguous.", src: ["src"], skip: [/driver\.lisp$/] },
+  forth: { note: "Clean-room Gforth. Protocol logic and JCS traversal in Forth, with native JSON/Unicode support and libsodium cryptography.", src: ["."], skip: [/driver\.fs$/, /test\.fs$/] },
 };
-const EXT = { typescript: ".ts", rust: ".rs", python: ".py", elixir: ".ex", go: ".go", swift: ".swift", kotlin: ".kt", zig: ".zig", "common-lisp": ".lisp" };
+const EXT = { typescript: ".ts", rust: ".rs", python: ".py", elixir: ".ex", go: ".go", swift: ".swift", kotlin: ".kt", zig: ".zig", "common-lisp": ".lisp", forth: ".fs" };
 
 const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const read = (rel) => fs.readFileSync(path.join(IMPL, rel), "utf8").split("\n");
@@ -395,7 +401,7 @@ const html = `<!doctype html>
     <ol class="steps">
       <li>
         <h3>Read the documents, not the code</h3>
-        <p>Work from the <a href="${spec.repository}/tree/${spec.commit}">pinned spec</a>, the <a href="${REPO}/blob/${REF}/docs/profile.md">interop profile</a>, the <a href="${REPO}/blob/${REF}/docs/interop-protocol.md">driver protocol</a> and the shared <a href="${REPO}/tree/${REF}/vectors">vectors</a>. Zig and Common Lisp were built that way, so each is an independent check that the documents are enough. Note anything you had to guess.</p>
+        <p>Work from the <a href="${spec.repository}/tree/${spec.commit}">pinned spec</a>, the <a href="${REPO}/blob/${REF}/docs/profile.md">interop profile</a>, the <a href="${REPO}/blob/${REF}/docs/interop-protocol.md">driver protocol</a> and the shared <a href="${REPO}/tree/${REF}/vectors">vectors</a>. Zig, Common Lisp and Forth were built that way, so each is an independent check that the documents are enough. Note anything you had to guess.</p>
       </li>
       <li>
         <h3>Write a driver</h3>
