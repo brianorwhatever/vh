@@ -172,6 +172,18 @@ jobs:
           sh run.sh test.fs
           node --test driver.test.mjs
 
+  benchmarks-site:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - name: Benchmark harness tests
+        run: node --test benchmarks/benchmark.test.mjs
+      - name: Build website and validate benchmark snapshot
+        run: node site/build.mjs
+
   interop:
     needs: [typescript, rust, python, elixir, go, swift, kotlin, zig, common-lisp, forth]
     if: ${{ !cancelled() }}

@@ -2,6 +2,7 @@
 // read from the implementations by line range, and the interop numbers are
 // parsed from the README's generated matrix. Run: node site/build.mjs
 import fs from "node:fs";
+import { benchmarkSection } from "./benchmarks.mjs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -306,6 +307,9 @@ const partsList = LANGS.map((l) => `<li>
 const tabs = MOVEMENTS.map((m, i) => `<button type="button" role="tab" id="t-${m.id}" aria-controls="m-${m.id}" aria-selected="${i === 0}" aria-label="${ROMAN[i]}. ${esc(m.title)}"><span class="numeral">${ROMAN[i]}</span><span class="t-title"> ${esc(m.title)}</span></button>`).join("\n        ");
 const toggles = LANGS.map((l) => `<button type="button" aria-pressed="true" data-part="${l.id}">${l.name}</button>`).join("");
 
+const benchmarkData = fs.readFileSync(path.join(ROOT, "benchmarks/latest.json"), "utf8");
+const benchmarkHTML = benchmarkSection(JSON.parse(benchmarkData), LANGS, REPO);
+
 const html = `<!doctype html>
 <html lang="en">
 <head>
@@ -333,7 +337,7 @@ const html = `<!doctype html>
     <p class="line">${Ncap} implementations of VH&#8209;Log that produce the same&nbsp;bytes.</p>
   </div>
   <div class="intro">
-    <p>${NAMES}, checked against each other and against <span class="nw">didwebvh-ts</span> on every push. Below: four algorithms that matter, in all ${N}, one beat at a time.</p>
+    <p>${NAMES}, checked against each other and against <span class="nw">didwebvh-ts</span> on every push. Below: four algorithms that matter, in all ${N}, one beat at a time, followed by <a href="#benchmarks">measured driver benchmarks</a>.</p>
     <a class="action" href="${REPO}">Source on GitHub</a>
   </div>
 </header>
@@ -362,6 +366,8 @@ const html = `<!doctype html>
       ${crossTable}
     </div>
   </section>
+
+  ${benchmarkHTML}
 
   <section class="parts" aria-labelledby="parts">
     <h2 id="parts">The ${N} parts</h2>
@@ -448,9 +454,11 @@ node harness/run.ts --suite resolution --verbose</code></pre>
   <p class="colophon">VH-Log is <a href="${spec.rendered}">Stephen Curran's Verifiable History Log</a>, pinned here at <a class="nw" href="${spec.repository}/tree/${spec.commit}">swcurran/VH-Log@${spec.commit}</a>. MIT licence. <a href="${REPO}">github.com/brianorwhatever/vh</a></p>
 </footer>
 <script src="main.js" defer></script>
+<script src="benchmarks.js" defer></script>
 </body>
 </html>
 `;
 
 fs.writeFileSync(path.join(SITE, "index.html"), html);
+fs.writeFileSync(path.join(SITE, "benchmarks.json"), benchmarkData);
 console.log(`wrote site/index.html (${MOVEMENTS.length} movements, ${perImplTotal} checks per implementation, ref ${REF})`);

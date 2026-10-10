@@ -489,3 +489,44 @@ h2 { font-size: var(--t-h2); font-weight: 480; line-height: 1.02; letter-spacing
   .movement[data-beat="3"] mark[data-b="3"], .movement[data-beat="4"] mark[data-b="4"] { background: Highlight; color: HighlightText; }
   .cross td.ok { border-color: CanvasText; }
 }
+
+/* Benchmarks use the same paper, rules and type as the code comparisons. */
+.benchmarks { margin: var(--s-8) var(--gutter); }
+.bench-controls { display: none; align-items: center; flex-wrap: wrap; gap: var(--s-3); margin: var(--s-5) 0; }
+.js .bench-controls { display: flex; }
+.bench-controls label { font-size: var(--t-small); }
+.bench-controls select { max-width: 100%; padding: var(--s-2) var(--s-3); background: var(--ground); color: var(--ink); border: 1px solid var(--rule); border-radius: 0; font: inherit; }
+.bench-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: var(--s-7); margin-top: var(--s-5); }
+.bench-results { min-width: 0; }
+[data-benchmark-panel] { margin-bottom: var(--s-6); }
+[data-benchmark-panel][hidden] { display: none; }
+.bench-description { color: var(--ink-2); font-size: var(--t-small); margin: var(--s-2) 0 var(--s-4); }
+.bench-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.bench-table caption { caption-side: bottom; text-align: left; font-size: var(--t-meta); color: var(--ink-2); padding-top: var(--s-3); }
+.bench-table th, .bench-table td { border-bottom: 1px solid var(--rule); padding: var(--s-3) var(--s-2); text-align: right; }
+.bench-table th:first-child { text-align: left; padding-left: 0; width: 52%; }
+.bench-table thead th { font-size: var(--t-small); font-weight: 400; color: var(--ink-2); white-space: nowrap; }
+.bench-table tbody th { font-weight: 400; }
+.bench-table td { font-family: var(--font-code); font-size: var(--t-code); }
+.bench-track { display: block; width: 100%; height: 4px; margin-top: var(--s-2); background: var(--rule); }
+.bench-track > span { display: block; height: 100%; background: var(--ink-2); }
+.bench-method { min-width: 0; font-size: var(--t-small); }
+.bench-method p { margin-top: var(--s-4); }
+.bench-machine { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--s-2) var(--s-4); margin: var(--s-5) 0; }
+.bench-machine dt { color: var(--ink-2); }
+.bench-method details { border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); padding: var(--s-3) 0; }
+.bench-method summary { cursor: pointer; }
+.bench-versions { list-style: none; padding: 0; }
+.bench-versions li { margin-top: var(--s-3); }
+.bench-versions pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: var(--t-meta); }
+.bench-command { margin-top: var(--s-4); overflow-x: auto; }
+@media (max-width: 900px) {
+  .bench-grid { grid-template-columns: minmax(0, 1fr); gap: var(--s-5); }
+}
+@media (max-width: 639px) {
+  .bench-table th, .bench-table td { padding-right: var(--s-1); }
+  .bench-table thead th span { display: block; }
+  .bench-table th:first-child { width: 46%; }
+  .bench-machine { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .bench-machine dd { margin-bottom: var(--s-3); }
+}

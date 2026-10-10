@@ -19,3 +19,6 @@ zig-out/
 # design working renders and the generated page
 design/shots/
 site/index.html
+
+# Generated benchmark download (source: benchmarks/latest.json)
+site/benchmarks.json

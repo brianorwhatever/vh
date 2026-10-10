@@ -129,6 +129,22 @@ error-code list and check order. Issues found in the spec along the way are in
 [`docs/spec-notes.md`](docs/spec-notes.md). Among them: the spec's only worked
 entry-hash example doesn't reproduce.
 
+## Benchmarks
+
+The [website](https://brianorwhatever.github.io/vh/#benchmarks) compares warm
+request latency for creation, signing, and resolution with and without witnesses.
+Each result includes machine context and downloadable samples. These measure the
+JSON Lines drivers, including transport overhead; they are not isolated library
+or general language benchmarks.
+
+```sh
+node benchmarks/run.mjs   # build and measure all implementations
+node site/build.mjs       # render the measured snapshot
+```
+
+See [methodology and reproduction](benchmarks/README.md) for workloads, warmup,
+measurement boundaries, and the Swift driver's distinct signing path.
+
 ## Development
 
 Toolchains: Node ≥ 24, Rust stable, [uv](https://docs.astral.sh/uv/) (Python
