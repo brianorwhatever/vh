@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>vh: B, the crosstable</title>
+<style>
+@font-face { font-family: "Big Shoulders Display"; src: url(https://cdn.jsdelivr.net/fontsource/fonts/big-shoulders-display:vf@latest/latin-wght-normal.woff2) format("woff2"); font-weight: 100 900; font-display: swap; }
+:root { color-scheme: light; --field: oklch(55% 0.24 325); --ink: oklch(14% 0.02 325); --paper: oklch(97% 0.02 325); --win: oklch(92% 0.17 105); }
+* { box-sizing: border-box; margin: 0; }
+body { background: var(--field); color: var(--ink); font: 500 18px/1.4 "Big Shoulders Display", "Arial Narrow", sans-serif; min-height: 100svh; }
+main { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; padding: 48px 56px; align-items: center; min-height: 100svh; }
+h1 { font-size: clamp(5rem, 2rem + 12vw, 14rem); line-height: .8; font-weight: 900; letter-spacing: -0.02em; text-transform: uppercase; }
+h1 span { display: block; font-size: .22em; line-height: 1.05; font-weight: 700; margin-top: 24px; letter-spacing: 0; text-transform: none; max-width: 16ch; }
+p { font-size: 1.35rem; max-width: 30ch; margin-top: 24px; font-weight: 500; }
+a.go { display: inline-block; margin-top: 28px; background: var(--ink); color: var(--paper); padding: 14px 22px; font-weight: 800; font-size: 1.2rem; text-decoration: none; letter-spacing: .02em; text-transform: uppercase; }
+table { border-collapse: collapse; font-weight: 700; font-size: 1rem; text-transform: uppercase; }
+th { padding: 6px 8px; text-align: left; }
+thead th { writing-mode: vertical-rl; transform: rotate(180deg); height: 96px; font-weight: 800; }
+td { width: 52px; height: 52px; border: 2px solid var(--ink); text-align: center; font-size: 1.4rem; font-variant-numeric: tabular-nums; }
+td.on { background: var(--ink); color: var(--win); }
+caption { caption-side: bottom; text-align: left; padding-top: 12px; font-size: 1rem; text-transform: none; font-weight: 500; }
+@media (max-width: 760px) {
+  main { grid-template-columns: 1fr; padding: 24px 16px; gap: 24px; }
+  td { width: 34px; height: 34px; font-size: 1rem; }
+  thead th { height: 72px; font-size: .8rem; }
+  th { padding: 2px 4px; font-size: .8rem; }
+}
+</style>
+</head>
+<body>
+<main>
+  <div>
+    <h1>vh <span>Eight VH-Log implementations, each made to resolve every other's logs.</span></h1>
+    <p>Every producer against every resolver, six logs per pairing, on every push.</p>
+    <a class="go" href="#">See the code side by side</a>
+  </div>
+  <table id="t"><caption>Resolver down, producer across. Each cell: 6 of 6 logs resolved.</caption></table>
+</main>
+<script>
+const L = ["TS", "Rust", "Py", "Ex", "Go", "Swift", "Kt", "Zig"], t = document.getElementById("t");
+let h = "<thead><tr><th></th>" + L.map(x => `<th>${x}</th>`).join("") + "</tr></thead><tbody>";
+L.forEach(r => { h += `<tr><th>${r}</th>` + L.map(() => `<td class="on">6</td>`).join("") + "</tr>"; });
+t.insertAdjacentHTML("beforeend", h + "</tbody>");
+const cells = [...t.querySelectorAll("td")];
+if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
+  const run = () => { cells.forEach(c => c.classList.remove("on")); cells.forEach((c, i) => setTimeout(() => c.classList.add("on"), 120 + i * 45)); };
+  run(); setInterval(run, 7000);
+}
+</script>
+</body>
+</html>

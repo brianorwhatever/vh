@@ -1,0 +1,491 @@
+/* vh: the score. Tokens first; every value below reads from them. */
+
+@font-face {
+  font-family: "Newsreader";
+  src: url(fonts/newsreader-var.woff2) format("woff2");
+  font-weight: 200 800;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Newsreader";
+  src: url(fonts/newsreader-var-italic.woff2) format("woff2");
+  font-weight: 200 800;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Commit Mono";
+  src: url(fonts/commit-mono-400.woff2) format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+/* Metric-matched fallback, so the swap does not reflow the score. */
+@font-face {
+  font-family: "Newsreader Fallback";
+  src: local("Times New Roman"), local("Liberation Serif"), local("Tinos");
+  size-adjust: 104.24%;
+  ascent-override: 70.99%;
+  descent-override: 24.94%;
+  line-gap-override: 0%;
+}
+
+:root {
+  color-scheme: light dark;
+  /* Engraved score paper: cool, not cream. */
+  --ground: oklch(98.6% 0.004 290);
+  --ink: oklch(21% 0.02 300);
+  --ink-2: oklch(45% 0.02 300);
+  --rule: oklch(86% 0.01 300);
+  /* The VH icon's magenta. One job: the beat being played (and links). */
+  --accent: oklch(50% 0.22 325);
+  --hl: oklch(94% 0.05 325);
+  /* The interop section's colour field, deep enough for white type. */
+  --field: oklch(46% 0.21 325);
+  --field-ink: oklch(99% 0.005 325);
+  --field-rule: oklch(78% 0.09 325);
+
+  --font-text: "Newsreader", "Newsreader Fallback", Georgia, "Times New Roman", "Liberation Serif", serif;
+  --font-code: "Commit Mono", ui-monospace, "SF Mono", Menlo, Consolas, "Cascadia Mono", "Liberation Mono", monospace;
+
+  --t-display: clamp(4.25rem, 2rem + 6vw, 7.5rem);
+  --t-h1: clamp(1.625rem, 1.2rem + 1.4vw, 2.375rem);
+  --t-h2: clamp(2rem, 1.4rem + 2.2vw, 3.25rem);
+  --t-h3: 1.375rem;
+  --t-body: 1.125rem;
+  --t-small: 0.9375rem;
+  --t-meta: 0.8125rem;
+  --t-code: 0.875rem;
+
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px; --s-6: 40px; --s-7: 64px; --s-8: 104px;
+  --gutter: clamp(20px, 4.4vw, 64px);
+  --label: 10.5rem;
+  --ease-out: cubic-bezier(.2, .8, .2, 1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* A dark concert hall; the paper becomes the light. */
+    --ground: oklch(19% 0.02 310);
+    --ink: oklch(93% 0.01 300);
+    --ink-2: oklch(74% 0.02 300);
+    --rule: oklch(34% 0.02 300);
+    --accent: oklch(78% 0.15 325);
+    --hl: oklch(33% 0.09 325);
+    --field: oklch(40% 0.17 325);
+  }
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font: 400 var(--t-body)/1.55 var(--font-text);
+  font-optical-sizing: auto;
+  text-rendering: optimizeLegibility;
+}
+h1, h2, h3, p, ol, ul, dl, dd, figure, pre { margin: 0; }
+a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 0.18em; }
+a:hover { text-decoration-thickness: 2px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+code, pre { font-family: var(--font-code); font-size: var(--t-code); }
+.nw { white-space: nowrap; }
+.num { font-variant-numeric: tabular-nums lining-nums; }
+
+.skip { position: absolute; left: var(--gutter); top: -100px; background: var(--ground); padding: var(--s-2) var(--s-3); z-index: 2; }
+.skip:focus { top: var(--s-3); }
+
+/* ---- Masthead ------------------------------------------------------------------- */
+
+.masthead {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: var(--s-5) var(--s-7);
+  align-items: end;
+  padding: var(--s-6) var(--gutter) var(--s-5);
+  max-width: 1600px;
+  margin: 0 auto;
+}
+h1 {
+  font-size: var(--t-display);
+  font-weight: 480;
+  line-height: 0.78;
+  letter-spacing: -0.045em;
+  margin-left: -0.04em;
+}
+.line {
+  font-size: var(--t-h1);
+  line-height: 1.15;
+  letter-spacing: -0.012em;
+  margin-top: var(--s-5);
+  max-width: 27ch;
+  text-wrap: balance;
+}
+.intro p { max-width: 46ch; color: var(--ink); text-wrap: pretty; }
+.action {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin-top: var(--s-4);
+  min-height: 44px;
+  padding: 0 var(--s-4);
+  border: 1.5px solid var(--ink);
+  border-radius: 3px;
+  color: var(--ink);
+  font-weight: 560;
+  text-decoration: none;
+  transition: background .18s var(--ease-out), color .18s var(--ease-out);
+}
+.action::after { content: "→"; font-weight: 400; }
+.action:hover { background: var(--ink); color: var(--ground); }
+
+/* ---- The score ------------------------------------------------------------------- */
+
+.score { padding: 0 var(--gutter) var(--s-8); max-width: 1600px; margin: 0 auto; }
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: end;
+  gap: var(--s-3) var(--s-6);
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: var(--s-5);
+}
+html:not(.js) .controls { display: none; }
+.tabs { display: flex; gap: var(--s-5); overflow-x: auto; scrollbar-width: none; }
+[role="tab"] {
+  font: 500 var(--t-small)/1.2 var(--font-text);
+  color: var(--ink-2);
+  background: none;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  padding: var(--s-3) 0 calc(var(--s-3) - 1px);
+  margin-bottom: -1px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+[role="tab"]:hover { color: var(--ink); }
+[role="tab"][aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+.numeral { font-variant: small-caps; font-feature-settings: "lnum"; letter-spacing: 0.04em; margin-right: 0.3em; }
+[role="tab"] .numeral { color: var(--accent); }
+
+.toggles { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 0.6em; font-size: var(--t-small); color: var(--ink-2); }
+.toggles button {
+  font: italic 400 var(--t-small)/1.2 var(--font-text);
+  color: var(--ink);
+  background: none;
+  border: 1px solid transparent;
+  padding: calc(var(--s-3) - 1px) 0 var(--s-3);
+  cursor: pointer;
+}
+.toggles button:hover { color: var(--accent); }
+/* A hidden part is tacet: still listed, struck through. */
+.toggles button[aria-pressed="false"] { color: var(--ink-2); opacity: .55; text-decoration: line-through; text-decoration-thickness: 1px; }
+
+.movement + .movement { margin-top: var(--s-8); }
+html.js .movement + .movement { margin-top: 0; }
+.m-title { font-size: var(--t-h3); font-weight: 500; margin-bottom: var(--s-2); }
+html.js .m-title { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.m-lede { color: var(--ink-2); max-width: 70ch; margin: 0 0 var(--s-2) calc(var(--label) + 19px); font-size: var(--t-small); text-wrap: pretty; }
+
+/* The system: eight staves bracketed together, as in an orchestral score. */
+.system { position: relative; border-left: 3px solid var(--ink); margin-left: 16px; }
+.system::before {
+  content: "";
+  position: absolute;
+  left: -16px; top: -4px; bottom: -4px;
+  width: 10px;
+  border: 2px solid var(--ink);
+  border-right: 0;
+  border-radius: 14px 0 0 14px;
+}
+.staff {
+  display: grid;
+  grid-template-columns: var(--label) minmax(0, 1fr);
+  align-items: baseline;
+  border-bottom: 1px solid var(--rule);
+  padding: var(--s-3) 0;
+}
+.staff:first-child { border-top: 1px solid var(--rule); }
+.staff[hidden] { display: none; }
+.part { display: flex; flex-direction: column; padding-left: var(--s-4); gap: 2px; }
+.instrument { font-style: italic; font-size: 1.0625rem; line-height: 1.2; }
+.where { font-size: var(--t-meta); color: var(--ink-2); text-decoration-color: var(--rule); }
+.code { position: relative; min-width: 0; padding-left: 2rem; }
+.staff pre { position: relative; overflow-x: auto; line-height: 1.6; padding: 2px var(--s-3) 2px 2px; scrollbar-width: thin; }
+/* The cue: the beat's numeral in the gutter of every stave, on the line being played.
+   Eight of them stacked make the bar line. */
+.cue {
+  position: absolute;
+  left: 0.5rem;
+  top: 0;
+  font: 600 1.0625rem/1 var(--font-text);
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  opacity: 0;
+  transform: translateY(var(--cue-y, 0));
+  transition: transform .32s var(--ease-out), opacity .2s var(--ease-out);
+}
+.cue.on { opacity: 1; }
+/* A beat clipped by a narrow stave: a tick at the right edge of its line. */
+.code.clipped::after {
+  content: "";
+  position: absolute;
+  right: 0; top: 0;
+  width: 2px; height: 1.4em;
+  background: var(--accent);
+  transform: translateY(var(--cue-y, 0));
+}
+/* The bar line: the eight cue numerals joined by one hairline. */
+.barline {
+  position: absolute;
+  left: 0; top: 0;
+  width: 1px;
+  height: var(--bar-h, 0);
+  background: var(--accent);
+  opacity: .6;
+  transform: translate(var(--bar-x, 0), var(--bar-y, 0));
+  transform-origin: top;
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .barline.draw { animation: bar .24s var(--ease-out) both; }
+}
+@keyframes bar { from { scale: 1 0; } }
+.c { color: var(--ink-2); }
+.ln { display: block; }
+
+mark {
+  background: transparent;
+  color: inherit;
+  border-radius: 3px;
+  text-decoration: underline 2px transparent;
+  text-underline-offset: 4px;
+  transition: background-color .28s var(--ease-out), color .28s var(--ease-out), box-shadow .28s var(--ease-out), text-decoration-color .28s var(--ease-out);
+}
+html:not(.js) mark,
+.movement[data-beat="1"] mark[data-b="1"],
+.movement[data-beat="2"] mark[data-b="2"],
+.movement[data-beat="3"] mark[data-b="3"],
+.movement[data-beat="4"] mark[data-b="4"] {
+  background: var(--hl);
+  color: var(--ink);
+  box-shadow: 0 0 0 2px var(--hl);
+  text-decoration: underline 2px var(--accent);
+  text-underline-offset: 4px;
+  text-decoration-skip-ink: none;
+}
+
+.beats {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2) var(--s-5);
+  margin: 0 0 var(--s-4);
+  padding-left: calc(var(--label) + 19px);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--ground);
+}
+html:not(.js) .beats { display: none; }
+.beats button {
+  font: 400 var(--t-small)/1.3 var(--font-text);
+  color: var(--ink-2);
+  background: none;
+  border: 0;
+  border-top: 2px solid transparent;
+  padding: var(--s-2) 0 var(--s-1);
+  min-height: 36px;
+  cursor: pointer;
+  text-align: left;
+  transition: color .2s var(--ease-out), border-color .2s var(--ease-out);
+}
+.beats button:hover { color: var(--ink); }
+.beats button { position: relative; }
+.beats button[aria-pressed="true"] { color: var(--accent); border-top-color: var(--hl); }
+/* The conductor: the active beat's rule fills over the beat's length. */
+.beats button[aria-pressed="true"]::before {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; top: -2px;
+  height: 2px;
+  background: var(--accent);
+  transform-origin: left;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .movement.playing .beats button[aria-pressed="true"]::before { animation: conduct var(--beat-ms, 2400ms) linear both; }
+}
+@keyframes conduct { from { transform: scaleX(0); } }
+.beats .n { font-weight: 650; font-variant-numeric: tabular-nums; margin-right: 0.2em; }
+
+/* ---- Every producer, every resolver: the colour field ---------------------------- */
+
+.field { background: var(--field); color: var(--field-ink); }
+.field a { color: var(--field-ink); }
+.field-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--s-7);
+  align-items: center;
+  padding: var(--s-8) var(--gutter);
+  max-width: 1600px;
+  margin: 0 auto;
+}
+h2 { font-size: var(--t-h2); font-weight: 480; line-height: 1.02; letter-spacing: -0.025em; text-wrap: balance; }
+.field-text { overflow-wrap: break-word; }
+.field-text > p { margin-top: var(--s-4); max-width: 52ch; text-wrap: pretty; }
+.suites { margin-top: var(--s-6); display: grid; gap: var(--s-3); max-width: 52ch; }
+.suites div { display: grid; grid-template-columns: 4ch 1fr; gap: var(--s-5); align-items: baseline; border-top: 1px solid var(--field-rule); padding-top: var(--s-3); }
+.suites dt { font-size: 1.75rem; line-height: 1; font-weight: 450; text-align: left; font-variant-numeric: tabular-nums lining-nums; }
+.suites dd { font-size: var(--t-small); }
+.suites b { font-weight: 620; margin-right: 0.25em; }
+.total { margin-top: var(--s-5); font-size: var(--t-h3); }
+
+.cross { border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.cross caption { caption-side: bottom; text-align: left; font-size: var(--t-small); padding-top: var(--s-4); max-width: 36ch; }
+.cross th { font: italic 400 var(--t-small)/1 var(--font-text); padding: 0 var(--s-2); text-align: right; }
+.cross thead th { text-align: center; padding: 0 0 var(--s-2); }
+.cross td { width: 48px; height: 48px; text-align: center; font-size: 1.0625rem; border: 1px solid oklch(100% 0 0 / .35); }
+.cross thead td { border: 0; }
+.cross td.ref { border-color: oklch(100% 0 0 / .75); }
+.claim { font-size: 1.375rem; line-height: 1.2; margin-bottom: var(--s-4); }
+.cue { z-index: 1; background: var(--ground); padding: 1px 0; }
+.cross td.self { font-style: italic; opacity: .72; }
+.cross td.bad { outline: 2px dashed var(--field-ink); outline-offset: -4px; }
+
+/* ---- The eight parts ---------------------------------------------------------------- */
+
+.parts, .open { padding: var(--s-8) var(--gutter) 0; max-width: 1600px; margin: 0 auto; }
+.section-lede { color: var(--ink-2); margin-top: var(--s-3); }
+.part-list { list-style: none; padding: 0; margin-top: var(--s-6); display: grid; grid-template-columns: 1fr 1fr; column-gap: var(--s-7); }
+.part-list li {
+  display: grid;
+  grid-template-columns: 7.5rem minmax(0, 1fr) auto;
+  gap: var(--s-4);
+  align-items: baseline;
+  border-top: 1px solid var(--rule);
+  padding: var(--s-4) 0 var(--s-5);
+}
+.part-list .instrument { font-size: var(--t-h3); }
+.part-list p { font-size: var(--t-small); max-width: 44ch; text-wrap: pretty; }
+.lines { font-size: var(--t-meta); color: var(--ink-2); white-space: nowrap; text-decoration-color: var(--rule); }
+.lines .num { font-size: var(--t-small); color: var(--ink); }
+
+/* ---- What the spec leaves open ----------------------------------------------------- */
+
+.open-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-7); margin-top: var(--s-6); }
+.open-grid p { max-width: 52ch; text-wrap: pretty; }
+.open-grid p + p, .open-grid p + ul, .hashes + p { margin-top: var(--s-4); }
+.hashes { margin-top: var(--s-5); display: grid; gap: var(--s-4); border-left: 3px solid var(--ink); padding-left: var(--s-4); }
+.hashes .label { display: block; font-style: italic; font-size: var(--t-small); color: var(--ink-2); }
+.hashes code { font-size: 0.9375rem; overflow-wrap: anywhere; }
+.hashes del { color: var(--ink-2); text-decoration-color: var(--accent); text-decoration-thickness: 1px; }
+.choices { padding-left: 1.1em; display: grid; gap: var(--s-2); }
+.choices li::marker { color: var(--ink-2); }
+.choices code { font-size: 0.8125rem; }
+
+/* ---- Add a language ----------------------------------------------------------------- */
+
+.add { padding: var(--s-8) var(--gutter) 0; max-width: 1600px; margin: 0 auto; }
+.steps { list-style: none; padding: 0; margin-top: var(--s-6); counter-reset: step; display: grid; gap: 0; }
+.steps li {
+  counter-increment: step;
+  display: grid;
+  grid-template-columns: 4rem minmax(0, 1fr);
+  column-gap: var(--s-5);
+  border-top: 1px solid var(--rule);
+  padding: var(--s-5) 0 var(--s-6);
+}
+.steps li::before {
+  content: counter(step);
+  grid-row: 1 / span 9;
+  font-size: var(--t-h2);
+  line-height: 0.9;
+  color: var(--accent);
+  font-variant-numeric: lining-nums;
+}
+.steps h3 { font-size: var(--t-h3); font-weight: 520; line-height: 1.25; }
+.steps p { margin-top: var(--s-2); max-width: 68ch; text-wrap: pretty; }
+.steps p code, .ops code { font-size: 0.8125rem; }
+.ops { display: flex; flex-wrap: wrap; gap: var(--s-1) var(--s-3); }
+.ops code { color: var(--ink-2); }
+.steps pre { margin-top: var(--s-3); max-width: 76ch; overflow-x: auto; line-height: 1.6; border-left: 3px solid var(--rule); padding: var(--s-1) 0 var(--s-1) var(--s-4); }
+
+/* ---- Run it ------------------------------------------------------------------------ */
+
+.run { padding: var(--s-8) var(--gutter) var(--s-7); max-width: 1600px; margin: 0 auto; }
+.run pre { margin-top: var(--s-5); border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); padding: var(--s-4) 0; overflow-x: auto; line-height: 1.7; }
+.run > p { margin-top: var(--s-4); max-width: 70ch; }
+.colophon { color: var(--ink-2); font-size: var(--t-small); }
+
+/* ---- Widths ------------------------------------------------------------------------ */
+
+@media (max-width: 1100px) {
+  .field-inner { grid-template-columns: minmax(0, 1fr); }
+  .cross-fig { overflow-x: auto; }
+  .part-list { grid-template-columns: 1fr; }
+}
+@media (max-width: 860px) {
+  :root { --label: 0px; }
+  .masthead { grid-template-columns: 1fr; padding-top: var(--s-5); padding-bottom: var(--s-4); gap: var(--s-4); }
+  .line { margin-top: var(--s-3); }
+  .action { margin-top: var(--s-3); }
+  .m-lede { margin-left: 0; }
+  .beats { padding-left: 0; }
+  .staff { grid-template-columns: 1fr; padding: var(--s-2) 0 var(--s-3); }
+  .part { flex-direction: row; align-items: baseline; gap: var(--s-3); padding-left: var(--s-3); margin-bottom: var(--s-1); }
+  .code { padding-left: 1.75rem; }
+  .cue { left: 0.4rem; }
+  .barline { display: none; }
+  .staff pre { font-size: 0.8125rem; }
+  .open-grid { grid-template-columns: 1fr; gap: var(--s-6); }
+  .part-list li { grid-template-columns: 1fr auto; }
+  .part-list li p { grid-column: 1 / -1; grid-row: 2; }
+  .steps li { grid-template-columns: 2.25rem minmax(0, 1fr); column-gap: var(--s-3); }
+  .steps li::before { font-size: 1.75rem; }
+}
+
+@media (max-width: 639px) {
+  :root { --t-display: 4.5rem; }
+  .intro p { font-size: var(--t-small); }
+  .controls { flex-direction: column; flex-wrap: nowrap; align-items: stretch; gap: 0; margin-bottom: var(--s-3); }
+  /* Movements as numerals only; the title sits below as its own line. */
+  .tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; overflow: visible; }
+  [role="tab"] { text-align: center; font-size: 1.25rem; padding: var(--s-2) 0 calc(var(--s-2) - 1px); }
+  [role="tab"] .numeral { margin: 0; }
+  .t-title { display: none; }
+  .toggles { display: none; }
+  html.js .m-title { position: static; width: auto; height: auto; overflow: visible; clip-path: none; white-space: normal; font-size: 1.25rem; margin-bottom: var(--s-1); }
+  .beats { flex-direction: column; gap: 0; margin-bottom: var(--s-3); }
+  .beats li + li button { border-top-color: var(--rule); }
+  .beats button { width: 100%; padding: var(--s-2) 0; }
+  /* A reduction: each stave keeps its signature and the line being played,
+     and each kept line scrolls on its own. */
+  .beats { position: static; }
+  .masthead { padding-bottom: var(--s-2); }
+  .action { border: 0; padding: 0; min-height: 32px; color: var(--accent); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.18em; font-size: 1.0625rem; }
+  .action:hover { background: none; color: var(--accent); text-decoration-thickness: 2px; }
+  .ln.cut { display: none; }
+  .ln.gapline .lc { display: none; }
+  .ln.gapline::before { content: "⋯"; color: var(--ink-2); }
+  .staff pre { font-size: 0.78125rem; overflow: hidden; }
+  .ln { position: relative; overflow-x: auto; scrollbar-width: none; -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent); }
+  .ln::-webkit-scrollbar { display: none; }
+  .ln.scrolled { -webkit-mask-image: linear-gradient(to right, transparent, transparent 18px, #000 30px, #000 calc(100% - 24px), transparent); mask-image: linear-gradient(to right, transparent, transparent 18px, #000 30px, #000 calc(100% - 24px), transparent); }
+  .ln[data-sig] { overflow: hidden; text-overflow: ellipsis; -webkit-mask-image: none; mask-image: none; }
+  .ln[data-sig] .lc { text-overflow: ellipsis; }
+  .cross td { width: 31px; height: 31px; font-size: 0.875rem; }
+  .cross th { padding: 0 var(--s-1); font-size: var(--t-meta); }
+}
+
+@media (forced-colors: active) {
+  mark { forced-color-adjust: none; }
+  .movement[data-beat] mark { background: Canvas; color: CanvasText; box-shadow: none; }
+  .movement[data-beat="1"] mark[data-b="1"], .movement[data-beat="2"] mark[data-b="2"],
+  .movement[data-beat="3"] mark[data-b="3"], .movement[data-beat="4"] mark[data-b="4"] { background: Highlight; color: HighlightText; }
+  .cross td.ok { border-color: CanvasText; }
+}
