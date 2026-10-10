@@ -144,11 +144,21 @@ writes it.
 To add an implementation:
 1. Write a driver for the protocol.
 2. Add it to `implementations.json`.
-3. Run the harness until it is green.
+3. Run the harness until it is green, then `node harness/run.ts --update-readme`.
+4. Give it a job in `.github/workflows/interop.yml`.
+5. Add it to the presentation page: in [`site/build.mjs`](site/build.mjs),
+   add it to `LANGS` and `PARTS` and give each movement its line ranges and
+   beat texts. `node site/build.mjs` fails if a beat's text isn't in the code.
 
 CI ([`.github/workflows/interop.yml`](.github/workflows/interop.yml)) runs each
 implementation's own checks, verifies that the vectors are up to date, and
 runs the full matrix.
+
+## Presentation page
+
+[`site/`](site) is a one-page comparison of the implementations, built from the
+code and the matrix above by `node site/build.mjs` and published to GitHub
+Pages by [`.github/workflows/pages.yml`](.github/workflows/pages.yml).
 
 ## License
 

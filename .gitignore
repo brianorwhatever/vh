@@ -15,3 +15,7 @@ build/
 .kotlin/
 zig-out/
 .zig-cache/
+
+# design working renders and the generated page
+design/shots/
+site/index.html

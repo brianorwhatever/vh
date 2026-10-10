@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>vh: A, the score</title>
+<style>
+@font-face { font-family: "Newsreader"; src: url(https://cdn.jsdelivr.net/fontsource/fonts/newsreader:vf@latest/latin-wght-normal.woff2) format("woff2"); font-weight: 200 800; font-display: swap; }
+@font-face { font-family: "Commit Mono"; src: url(https://cdn.jsdelivr.net/fontsource/fonts/commit-mono@latest/latin-400-normal.woff2) format("woff2"); font-weight: 400; font-display: swap; }
+:root {
+  color-scheme: light;
+  --ground: oklch(98.6% 0.004 280);
+  --ink: oklch(21% 0.02 300);
+  --ink-2: oklch(46% 0.02 300);
+  --rule: oklch(86% 0.01 300);
+  --accent: oklch(52% 0.23 325);
+  --hl: oklch(93% 0.06 325);
+}
+* { box-sizing: border-box; margin: 0; }
+body { background: var(--ground); color: var(--ink); font: 18px/1.5 "Newsreader", Georgia, serif; }
+header { display: grid; grid-template-columns: minmax(0, 30rem) 1fr; gap: 64px; padding: 56px 64px 32px; align-items: end; }
+h1 { font-size: clamp(3rem, 1rem + 6vw, 6.5rem); line-height: .95; font-weight: 500; letter-spacing: -0.03em; }
+h1 small { display: block; font-size: .32em; letter-spacing: 0; font-weight: 400; color: var(--ink-2); margin-top: 16px; line-height: 1.2; }
+.lede { font-size: 1.25rem; max-width: 34ch; }
+.lede a { color: var(--accent); }
+.score { margin: 24px 64px 0; position: relative; border-left: 3px solid var(--ink); padding-left: 0; }
+.score::before { content: ""; position: absolute; left: -14px; top: -6px; bottom: -6px; width: 10px; border: 2px solid var(--ink); border-right: 0; border-radius: 12px 0 0 12px; }
+.staff { display: grid; grid-template-columns: 9rem 1fr; align-items: center; border-bottom: 1px solid var(--rule); min-height: 46px; }
+.staff:first-child { border-top: 1px solid var(--rule); }
+.staff i { font-style: italic; color: var(--ink-2); padding-left: 16px; font-size: 1rem; }
+.staff code { font: 14px/1.4 "Commit Mono", ui-monospace, Menlo, Consolas, monospace; white-space: pre; overflow: hidden; }
+[data-s] { border-radius: 3px; transition: background .25s, color .25s; }
+.score[data-step="1"] [data-s="1"], .score[data-step="2"] [data-s="2"], .score[data-step="3"] [data-s="3"] { background: var(--hl); color: var(--accent); }
+.beats { display: flex; gap: 24px; margin: 20px 64px 0 calc(64px + 9rem); font-size: 1rem; color: var(--ink-2); }
+.beats b { font-weight: 500; }
+.beats span.on { color: var(--accent); }
+@media (max-width: 760px) {
+  header { grid-template-columns: 1fr; padding: 32px 20px 16px; gap: 20px; }
+  .score { margin: 16px 0 0 20px; overflow-x: auto; }
+  .staff { grid-template-columns: 6rem 1fr; }
+  .staff code { font-size: 12px; }
+  .beats { margin: 16px 20px; flex-wrap: wrap; gap: 12px; }
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>vh <small>Eight implementations of VH-Log that agree byte for byte</small></h1>
+  <p class="lede">The same log, in TypeScript, Rust, Python, Elixir, Go, Swift, Kotlin and Zig. 2,392 checks per run and every producer resolved by every resolver. <a href="#">Read the score</a></p>
+</header>
+<div class="score" data-step="1" id="score">
+  <div class="staff"><i>TypeScript</i><code>[...<span data-s="1">sha256(canonicalize(proofConfig))</span>, ...<span data-s="2">sha256(canonicalize(document))</span>]</code></div>
+  <div class="staff"><i>Rust</i><code><span data-s="1">sha256(canonicalize(&amp;config))</span>.to_vec()<span data-s="3">.extend_from_slice</span>(&amp;<span data-s="2">sha256(canonicalize(document))</span>)</code></div>
+  <div class="staff"><i>Python</i><code><span data-s="1">sha256(canonicalize(proof_config))</span> <span data-s="3">+</span> <span data-s="2">sha256(canonicalize(document))</span></code></div>
+  <div class="staff"><i>Elixir</i><code><span data-s="1">Hash.sha256(JCS.canonicalize(config))</span> <span data-s="3">&lt;&gt;</span> <span data-s="2">Hash.sha256(JCS.canonicalize(document))</span></code></div>
+  <div class="staff"><i>Go</i><code><span data-s="3">append(</span><span data-s="1">hc[:]</span>, <span data-s="2">hd[:]</span>...)</code></div>
+  <div class="staff"><i>Swift</i><code><span data-s="1">Multihash.sha256(try JCS.canonicalBytes(.object(config)))</span> <span data-s="3">+</span> <span data-s="2">Multihash.sha256(…(document))</span></code></div>
+  <div class="staff"><i>Kotlin</i><code><span data-s="1">Hashes.sha256(Jcs.canonicalize(proofConfig))</span> <span data-s="3">+</span> <span data-s="2">Hashes.sha256(Jcs.canonicalize(document))</span></code></div>
+  <div class="staff"><i>Zig</i><code><span data-s="1">Sha256.hash(c, out[0..32], .{})</span>; <span data-s="2">Sha256.hash(d, out[32..64], .{})</span><span data-s="3">;</span></code></div>
+</div>
+<p class="beats" id="beats"><span class="on"><b>1</b> hash the proof config</span><span><b>2</b> hash the document</span><span><b>3</b> join the two digests</span></p>
+<script>
+const s = document.getElementById("score"), b = [...document.querySelectorAll("#beats span")];
+if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
+  let i = 1; setInterval(() => { i = i % 3 + 1; s.dataset.step = i; b.forEach((x, k) => x.classList.toggle("on", k === i - 1)); }, 1800);
+}
+</script>
+</body>
+</html>
