@@ -136,6 +136,18 @@
       "command": [
         "bin/vh-log-driver"
       ]
+    },
+    {
+      "name": "forth",
+      "cwd": "implementations/forth",
+      "build": [
+        "sh",
+        "build.sh"
+      ],
+      "command": [
+        "sh",
+        "run.sh"
+      ]
     }
   ]
 }
