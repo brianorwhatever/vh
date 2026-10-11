@@ -2,6 +2,7 @@
 // read from the implementations by line range, and the interop numbers are
 // parsed from the README's generated matrix. Run: node site/build.mjs
 import fs from "node:fs";
+import { createHash } from "node:crypto";
 import { benchmarkSection } from "./benchmarks.mjs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -11,6 +12,16 @@ const ROOT = path.resolve(SITE, "..");
 const IMPL = path.join(ROOT, "implementations");
 const REPO = "https://github.com/brianorwhatever/vh";
 const REF = process.env.GITHUB_SHA || "main";
+
+// The HTML and its presentation assets must agree on the excerpt markup.
+// GitHub Pages caches unversioned assets independently of index.html.
+const assetVersion = createHash("sha256")
+  .update(fs.readFileSync(fileURLToPath(import.meta.url)))
+  .update(fs.readFileSync(path.join(SITE, "styles.css")))
+  .update(fs.readFileSync(path.join(SITE, "main.js")))
+  .update(fs.readFileSync(path.join(SITE, "benchmarks.js")))
+  .digest("hex").slice(0, 16);
+const assetURL = (file) => `${file}?v=${assetVersion}`;
 
 const LANGS = [
   { id: "typescript", name: "TypeScript", short: "TS" },
@@ -410,7 +421,7 @@ const html = `<!doctype html>
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="preload" href="fonts/newsreader-var.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/commit-mono-400.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="${assetURL("styles.css")}">
 <script>document.documentElement.classList.add("js")</script>
 </head>
 <body>
@@ -538,8 +549,8 @@ node harness/run.ts --suite resolution --verbose</code></pre>
   <p>Node 24 runs the harness. Each driver also needs its own toolchain; the <a href="${REPO}/blob/${REF}#development">README lists them</a>.</p>
   <p class="colophon">VH-Log is <a href="${spec.rendered}">Stephen Curran's Verifiable History Log</a>, pinned here at <a class="nw" href="${spec.repository}/tree/${spec.commit}">swcurran/VH-Log@${spec.commit}</a>. MIT licence. <a href="${REPO}">github.com/brianorwhatever/vh</a></p>
 </footer>
-<script src="main.js" defer></script>
-<script src="benchmarks.js" defer></script>
+<script src="${assetURL("main.js")}" defer></script>
+<script src="${assetURL("benchmarks.js")}" defer></script>
 </body>
 </html>
 `;
