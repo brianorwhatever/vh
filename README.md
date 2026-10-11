@@ -36,7 +36,6 @@ It is the log under did:vh and (in future) did:webvh.
 | Java | [`implementations/java`](implementations/java) | JDK 21 only. Native Java library with its own strict JSON parser and JCS formatter. |
 | Ruby | [`implementations/ruby`](implementations/ruby) | Ruby 3.4+; standard JSON and OpenSSL libraries. |
 | PHP | [`implementations/php`](implementations/php) | PHP 8.3+; Sodium and mbstring extensions. |
-
 | Raku | [`implementations/raku`](implementations/raku) | Native protocol with libsodium and a binary64 formatting helper. |
 | OCaml | [`implementations/ocaml`](implementations/ocaml) | Native library with OpenSSL cryptography. |
 | Ada | [`implementations/ada`](implementations/ada) | Native library with libsodium cryptography. |

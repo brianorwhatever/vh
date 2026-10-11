@@ -255,7 +255,7 @@ html.js .m-title { position: absolute; width: 1px; height: 1px; overflow: hidden
 }
 @keyframes bar { from { scale: 1 0; } }
 .c { color: var(--ink-2); }
-.ln { display: block; }
+.ln { display: inline; }
 
 mark {
   background: transparent;
@@ -458,26 +458,18 @@ h2 { font-size: var(--t-h2); font-weight: 480; line-height: 1.02; letter-spacing
   [role="tab"] { text-align: center; font-size: 1.25rem; padding: var(--s-2) 0 calc(var(--s-2) - 1px); }
   [role="tab"] .numeral { margin: 0; }
   .t-title { display: none; }
-  .toggles { display: none; }
+  .toggles { display: flex; gap: 0 .75em; }
+  .toggles button { padding: .5rem 0; }
   html.js .m-title { position: static; width: auto; height: auto; overflow: visible; clip-path: none; white-space: normal; font-size: 1.25rem; margin-bottom: var(--s-1); }
   .beats { flex-direction: column; gap: 0; margin-bottom: var(--s-3); }
   .beats li + li button { border-top-color: var(--rule); }
   .beats button { width: 100%; padding: var(--s-2) 0; }
-  /* A reduction: each stave keeps its signature and the line being played,
-     and each kept line scrolls on its own. */
+  /* Keep the same complete excerpts on phones, wrapping long lines. */
   .beats { position: static; }
   .masthead { padding-bottom: var(--s-2); }
   .action { border: 0; padding: 0; min-height: 32px; color: var(--accent); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.18em; font-size: 1.0625rem; }
   .action:hover { background: none; color: var(--accent); text-decoration-thickness: 2px; }
-  .ln.cut { display: none; }
-  .ln.gapline .lc { display: none; }
-  .ln.gapline::before { content: "⋯"; color: var(--ink-2); }
-  .staff pre { font-size: 0.78125rem; overflow: hidden; }
-  .ln { position: relative; overflow-x: auto; scrollbar-width: none; -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent); }
-  .ln::-webkit-scrollbar { display: none; }
-  .ln.scrolled { -webkit-mask-image: linear-gradient(to right, transparent, transparent 18px, #000 30px, #000 calc(100% - 24px), transparent); mask-image: linear-gradient(to right, transparent, transparent 18px, #000 30px, #000 calc(100% - 24px), transparent); }
-  .ln[data-sig] { overflow: hidden; text-overflow: ellipsis; -webkit-mask-image: none; mask-image: none; }
-  .ln[data-sig] .lc { text-overflow: ellipsis; }
+  .staff pre { font-size: 0.78125rem; white-space: pre-wrap; overflow-wrap: anywhere; }
   .cross td { width: 31px; height: 31px; font-size: 0.875rem; }
   .cross th { padding: 0 var(--s-1); font-size: var(--t-meta); }
 }
@@ -530,3 +522,7 @@ h2 { font-size: var(--t-h2); font-weight: 480; line-height: 1.02; letter-spacing
   .bench-machine { grid-template-columns: minmax(0, 1fr); gap: 0; }
   .bench-machine dd { margin-bottom: var(--s-3); }
 }
+
+.score-help { color: var(--ink-2); font-size: var(--t-small); margin-bottom: var(--s-3); max-width: 75ch; }
+.score-help button { font: inherit; color: var(--accent); background: none; border: 1px solid var(--rule); padding: .3em .7em; cursor: pointer; margin-top: .5em; }
+html:not(.js) .score-help { display: none; }
