@@ -153,8 +153,120 @@ jobs:
       - name: Library tests
         run: sh scripts/test.sh
 
+  forth:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: implementations/forth
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - name: Install Gforth and native support libraries
+        run: sudo apt-get update && sudo apt-get install -y gforth libtool-bin g++ libsodium-dev libutf8proc-dev nlohmann-json3-dev
+      - name: Build native support library
+        run: sh build.sh
+      - name: Library and driver tests
+        run: |
+          sh run.sh test.fs
+          node --test driver.test.mjs
+
+  c:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - name: Install native libraries
+        run: sudo apt-get update && sudo apt-get install -y libsodium-dev libjson-c-dev
+      - name: Conformance and cross-resolution
+        run: node harness/run.ts --impl c --impl typescript --list
+      - name: Driver boundary tests
+        run: VH_TEST_IMPLS=c node --test harness/driver-regressions.test.ts
+
+  cpp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - name: Install native libraries
+        run: sudo apt-get update && sudo apt-get install -y libsodium-dev nlohmann-json3-dev
+      - name: Conformance and cross-resolution
+        run: node harness/run.ts --impl cpp --impl typescript --list
+      - name: Driver boundary tests
+        run: VH_TEST_IMPLS=cpp node --test harness/driver-regressions.test.ts
+
+  csharp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+      - name: Restore locked dependencies
+        run: dotnet restore implementations/csharp/VHLog.csproj --locked-mode
+      - name: Conformance and cross-resolution
+        run: node harness/run.ts --impl csharp --impl typescript --list
+      - name: Driver boundary tests
+        run: VH_TEST_IMPLS=csharp node --test harness/driver-regressions.test.ts
+
+  java:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Conformance and cross-resolution
+        run: node harness/run.ts --impl java --impl typescript --list
+      - name: Driver boundary tests
+        run: VH_TEST_IMPLS=java node --test harness/driver-regressions.test.ts
+
+  ruby:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4'
+      - name: Conformance and cross-resolution
+        run: node harness/run.ts --impl ruby --impl typescript --list
+      - name: Driver boundary tests
+        run: VH_TEST_IMPLS=ruby node --test harness/driver-regressions.test.ts
+
+  php:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: sodium, mbstring
+          coverage: none
+      - name: Conformance and cross-resolution
+        run: node harness/run.ts --impl php --impl typescript --list
+      - name: Driver boundary tests
+        run: VH_TEST_IMPLS=php node --test harness/driver-regressions.test.ts
+
   interop:
-    needs: [typescript, rust, python, elixir, go, swift, kotlin, zig, common-lisp]
+    needs: [typescript, rust, python, elixir, go, swift, kotlin, zig, common-lisp, forth, c, cpp, csharp, java, ruby, php]
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
@@ -181,6 +293,25 @@ jobs:
 
       - name: Install SBCL
         run: sudo apt-get update && sudo apt-get install -y sbcl
+
+      - name: Install Gforth and native support libraries
+        run: sudo apt-get update && sudo apt-get install -y gforth libtool-bin g++ libsodium-dev libutf8proc-dev nlohmann-json3-dev
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4'
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: sodium, mbstring
+          coverage: none
+      - name: Install C JSON library
+        run: sudo apt-get update && sudo apt-get install -y libjson-c-dev
+      - name: Restore locked .NET dependencies
+        run: dotnet restore implementations/csharp/VHLog.csproj --locked-mode
 
       - name: Vectors are up to date
         run: |

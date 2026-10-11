@@ -1,0 +1,16 @@
+{
+  "name": "VHLog",
+  "version": "0.1.0",
+  "description": "Independent VH-Log interop profile library for Rakudo",
+  "auth": "user:vh-log-cleanroom",
+  "api": "0",
+  "perl": "6.d",
+  "provides": {
+    "VHLog": "lib/VHLog.rakumod",
+    "VHLog::JSON": "lib/VHLog/JSON.rakumod",
+    "VHLog::Crypto": "lib/VHLog/Crypto.rakumod"
+  },
+  "depends": [],
+  "test-depends": ["Test"],
+  "tags": ["VH-Log", "Ed25519", "JCS"]
+}

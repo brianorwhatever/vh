@@ -1,0 +1,11 @@
+_build/
+*.cmi
+*.cmo
+*.cmx
+*.o
+*.a
+
+_opamroot/
+
+_opam/
+_deps/

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>vh social card</title>
+<style>
+@font-face { font-family: "Newsreader"; src: url(fonts/newsreader-var.woff2) format("woff2"); font-weight: 200 800; }
+@font-face { font-family: "Newsreader"; src: url(fonts/newsreader-var-italic.woff2) format("woff2"); font-weight: 200 800; font-style: italic; }
+@font-face { font-family: "Commit Mono"; src: url(fonts/commit-mono-400.woff2) format("woff2"); }
+:root { --ground: oklch(98.6% 0.004 290); --ink: oklch(21% 0.02 300); --ink-2: oklch(45% 0.02 300); --rule: oklch(86% 0.01 300); --accent: oklch(50% 0.22 325); --hl: oklch(94% 0.05 325); }
+* { box-sizing: border-box; margin: 0; }
+html, body { width: 1200px; height: 630px; overflow: hidden; }
+body { background: var(--ground); color: var(--ink); font-family: "Newsreader", Georgia, serif; display: grid; grid-template-columns: 410px 1fr; gap: 40px; padding: 64px 56px; align-items: center; }
+h1 { font-size: 190px; font-weight: 480; line-height: .78; letter-spacing: -0.045em; }
+p { font-size: 38px; line-height: 1.12; margin-top: 32px; letter-spacing: -0.01em; }
+.system { position: relative; border-left: 3px solid var(--ink); margin-left: 14px; }
+.system::before { content: ""; position: absolute; left: -14px; top: -4px; bottom: -4px; width: 9px; border: 2px solid var(--ink); border-right: 0; border-radius: 12px 0 0 12px; }
+.staff { display: grid; grid-template-columns: 132px 1fr; align-items: baseline; border-bottom: 1px solid var(--rule); padding: 6px 0 6px 14px; }
+.staff:first-child { border-top: 1px solid var(--rule); }
+i { font-size: 21px; }
+code { font: 15px/1.3 "Commit Mono", monospace; white-space: nowrap; overflow: hidden; }
+mark { background: var(--hl); color: var(--accent); border-radius: 3px; box-shadow: 0 0 0 2px var(--hl); }
+</style>
+</head>
+<body>
+<div>
+  <h1>vh</h1>
+  <p>VH&#8209;Log in nine languages that produce the same bytes.</p>
+</div>
+<div class="system">
+  <div class="staff"><i>TypeScript</i><code>[...<mark>sha256(canonicalize(proofConfig))</mark>, ...]</code></div>
+  <div class="staff"><i>Rust</i><code><mark>sha256(canonicalize(&amp;config))</mark>.to_vec()</code></div>
+  <div class="staff"><i>Python</i><code><mark>sha256(canonicalize(proof_config))</mark> + …</code></div>
+  <div class="staff"><i>Elixir</i><code><mark>Hash.sha256(JCS.canonicalize(config))</mark> &lt;&gt; …</code></div>
+  <div class="staff"><i>Go</i><code>hc := <mark>sha256.Sum256(toUTF8(c))</mark></code></div>
+  <div class="staff"><i>Swift</i><code><mark>Multihash.sha256(try JCS…(config))</mark> + …</code></div>
+  <div class="staff"><i>Kotlin</i><code><mark>Hashes.sha256(Jcs.canonicalize(proofConfig))</mark></code></div>
+  <div class="staff"><i>Zig</i><code><mark>Sha256.hash(c, out[0..32], .{})</mark>;</code></div>
+  <div class="staff"><i>Common Lisp</i><code><mark>(sha256 (utf8 (canonicalize proof-config)))</mark></code></div>
+</div>
+</body>
+</html>
