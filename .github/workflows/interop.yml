@@ -359,6 +359,18 @@ jobs:
       - name: Driver boundary tests
         run: VH_TEST_IMPLS=scala node --test harness/driver-regressions.test.ts
 
+  benchmarks-site:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - name: Benchmark harness tests
+        run: node --test benchmarks/benchmark.test.mjs
+      - name: Build website and validate benchmark snapshot
+        run: node site/build.mjs
+
   interop:
     needs: [typescript, rust, python, elixir, go, swift, kotlin, zig, common-lisp, forth, c, cpp, csharp, java, ruby, php, dart, haskell, lua, gleam, scala]
     if: ${{ !cancelled() }}

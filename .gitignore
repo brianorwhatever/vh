@@ -28,3 +28,7 @@ implementations/csharp/obj/
 .bsp/
 dist-newstyle/
 implementations/lua/vh_native.so
+
+# Generated website artifacts
+site/index.html
+site/benchmarks.json
