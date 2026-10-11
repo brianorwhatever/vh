@@ -1,0 +1,19 @@
+cabal-version: 3.0
+name: vh-log
+version: 0.1.0.0
+synopsis: VH-Log controller and resolver
+license: MIT
+build-type: Simple
+
+library
+  exposed-modules: VHLog, Json, Crypto
+  hs-source-dirs: src
+  build-depends: base >=4.18 && <5, bytestring, containers, text, time
+  pkgconfig-depends: libsodium
+  default-language: Haskell2010
+
+executable vh-log-driver
+  main-is: Main.hs
+  hs-source-dirs: app
+  build-depends: base, vh-log, bytestring, text, deepseq
+  default-language: Haskell2010

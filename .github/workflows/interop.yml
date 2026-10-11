@@ -265,8 +265,102 @@ jobs:
       - name: Driver boundary tests
         run: VH_TEST_IMPLS=php node --test harness/driver-regressions.test.ts
 
+  dart:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: '3.13.5'
+      - name: Dependencies and static checks
+        working-directory: implementations/dart
+        run: |
+          dart pub get --enforce-lockfile
+          dart analyze
+          dart format --output=none --set-exit-if-changed lib tool
+      - name: Conformance and cross-resolution
+        run: node harness/run.ts --impl dart --impl typescript --list
+      - name: Driver boundary tests
+        run: VH_TEST_IMPLS=dart node --test harness/driver-regressions.test.ts
+
+  haskell:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - uses: haskell-actions/setup@v2
+        with:
+          ghc-version: '9.12.2'
+      - name: Install libsodium
+        run: sudo apt-get update && sudo apt-get install -y libsodium-dev pkg-config
+      - name: Conformance and cross-resolution
+        run: node harness/run.ts --impl haskell --impl typescript --list
+      - name: Driver boundary tests
+        run: VH_TEST_IMPLS=haskell node --test harness/driver-regressions.test.ts
+
+  lua:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - name: Install Lua and native primitives
+        run: sudo apt-get update && sudo apt-get install -y lua5.4 liblua5.4-dev libsodium-dev pkg-config g++
+      - name: Conformance and cross-resolution
+        env:
+          LUA_PKG: lua5.4
+        run: node harness/run.ts --impl lua --impl typescript --list
+      - name: Driver boundary tests
+        run: VH_TEST_IMPLS=lua node --test harness/driver-regressions.test.ts
+
+  gleam:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: '28'
+          gleam-version: '1.19.1'
+      - name: Format and compile
+        working-directory: implementations/gleam
+        run: |
+          gleam format --check src
+          gleam build --warnings-as-errors
+      - name: Conformance and cross-resolution
+        run: node harness/run.ts --impl gleam --impl typescript --list
+      - name: Driver boundary tests
+        run: VH_TEST_IMPLS=gleam node --test harness/driver-regressions.test.ts
+
+  scala:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: VirtusLab/scala-cli-setup@v1
+        with:
+          version: '1.18.0'
+      - name: Conformance and cross-resolution
+        run: node harness/run.ts --impl scala --impl typescript --list
+      - name: Driver boundary tests
+        run: VH_TEST_IMPLS=scala node --test harness/driver-regressions.test.ts
+
   interop:
-    needs: [typescript, rust, python, elixir, go, swift, kotlin, zig, common-lisp, forth, c, cpp, csharp, java, ruby, php]
+    needs: [typescript, rust, python, elixir, go, swift, kotlin, zig, common-lisp, forth, c, cpp, csharp, java, ruby, php, dart, haskell, lua, gleam, scala]
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
@@ -280,6 +374,7 @@ jobs:
         with:
           otp-version: "28"
           elixir-version: "1.19"
+          gleam-version: "1.19.1"
       - uses: actions/setup-go@v6
         with:
           go-version: stable
@@ -312,6 +407,18 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y libjson-c-dev
       - name: Restore locked .NET dependencies
         run: dotnet restore implementations/csharp/VHLog.csproj --locked-mode
+
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: '3.13.5'
+      - uses: haskell-actions/setup@v2
+        with:
+          ghc-version: '9.12.2'
+      - uses: VirtusLab/scala-cli-setup@v1
+        with:
+          version: '1.18.0'
+      - name: Install remaining language toolchains
+        run: sudo apt-get update && sudo apt-get install -y lua5.4 liblua5.4-dev pkg-config rakudo ocaml gnat libssl-dev
 
       - name: Vectors are up to date
         run: |

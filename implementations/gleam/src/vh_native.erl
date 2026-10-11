@@ -1,7 +1,12 @@
 -module(vh_native).
 -export([parse/1,quote/1,number/1,utf16_compare/2,integer/1,int/1,to_int/1,sha/1,hash/1,check_hash/1,valid_key/1,method_key/1,multikey/1,sign/2,verify/3,time/1,version/1,retained_version/1,url/1,run/0]).
 parse(Text) ->
-  try {ok,from_native(json:decode(Text))} catch _:_ -> {error,<<"invalid JSON">>} end.
+  try
+    Finish=fun(Acc,Old)->{maps:from_list(lists:reverse(Acc)),Old} end,
+    {Value,_,Rest}=json:decode(Text,ok,#{object_finish=>Finish}),
+    true=lists:all(fun(C)->lists:member(C," \t\r\n") end,binary_to_list(Rest)),
+    {ok,from_native(Value)}
+  catch _:_ -> {error,<<"invalid JSON">>} end.
 from_native(M) when is_map(M) -> {obj,maps:map(fun(_,V)->from_native(V) end,M)};
 from_native(A) when is_list(A) -> {arr,[from_native(V)||V<-A]};
 from_native(S) when is_binary(S) -> {str,S};
@@ -9,7 +14,16 @@ from_native(N) when is_number(N) -> {num,float(N)};
 from_native(true) -> {boolean,true};
 from_native(false) -> {boolean,false};
 from_native(null) -> null.
-quote(S) -> iolist_to_binary(json:encode(S)).
+quote(S) -> iolist_to_binary([<<"\"">>,[escape(C)||C<-binary_to_list(S)],<<"\"">>]).
+escape($") -> <<"\\\"">>;
+escape($\\) -> <<"\\\\">>;
+escape(8) -> <<"\\b">>;
+escape(12) -> <<"\\f">>;
+escape(10) -> <<"\\n">>;
+escape(13) -> <<"\\r">>;
+escape(9) -> <<"\\t">>;
+escape(C) when C<32 -> io_lib:format("\\u~4.16.0b",[C]);
+escape(C) -> <<C>>.
 utf16_compare(A,B) ->
   X=unicode:characters_to_binary(A,utf8,{utf16,big}), Y=unicode:characters_to_binary(B,utf8,{utf16,big}),
   if X<Y -> lt; X>Y -> gt; true -> eq end.

@@ -1,4 +1,4 @@
-// Additional boundary and stream tests for the six new drivers. Build with
+// Additional boundary and stream tests for the portable drivers. Build with
 // harness/run.ts first. VH_TEST_IMPLS may select a comma-separated subset.
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
@@ -12,7 +12,7 @@ import { signerFromSeed } from "../implementations/typescript/src/ed25519.ts";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const registry = JSON.parse(readFileSync(resolve(root, "implementations.json"), "utf8")).implementations;
-const names = (process.env.VH_TEST_IMPLS ?? "c,cpp,csharp,java,ruby,php").split(",");
+const names = (process.env.VH_TEST_IMPLS ?? "c,cpp,csharp,java,ruby,php,dart,scala,lua,haskell,gleam").split(",");
 const seed = "42".repeat(32);
 const key = signerFromSeed(seed).multikey;
 
@@ -60,6 +60,16 @@ for (const name of names) {
     assert.equal(responses[1].ok, false);
     assert.deepEqual(responses[2], { id: "last", ok: true, result: { output: '"line\u2028paragraph\u2029"' } });
   });
+  if (["dart", "scala", "lua", "haskell", "gleam"].includes(name)) {
+    test(`${name}: rejects unsafe JSON and preserves LF framing and false IDs`, () => {
+      const invalid = ['1e400', '"\\ud800"', '{"\\udfff":1}', '[1,]', '{"x":1} trailing'];
+      const requests = invalid.map((text, id) => JSON.stringify({ id, op: "jcs", input: { text } }));
+      requests.push('{"id":false,\r"op":"jcs","input":{"text":"true"}}');
+      const responses = run(requests);
+      responses.slice(0, invalid.length).forEach((r: any) => assert.equal(r.ok, false));
+      assert.deepEqual(responses.at(-1), { id: false, ok: true, result: { output: "true" } });
+    });
+  }
   test(`${name}: resolves both ends of the supported calendar`, () => {
     const times = ["0000-02-29T00:00:00Z", "9999-12-31T23:59:59Z"];
     const requests = times.map((versionTime, id) => {

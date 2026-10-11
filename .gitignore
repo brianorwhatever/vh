@@ -21,3 +21,10 @@ design/shots/
 
 # .NET intermediate outputs
 implementations/csharp/obj/
+
+# Dart, Scala, Lua and Haskell build outputs
+.dart_tool/
+.scala-build/
+.bsp/
+dist-newstyle/
+implementations/lua/vh_native.so
