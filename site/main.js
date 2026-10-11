@@ -1,18 +1,17 @@
-// The conductor: one movement at a time, its beats played through all eight parts together.
+// The conductor: one movement at a time, its beats played through all language examples together.
 const BEAT_MS = 2400;
 const tabs = [...document.querySelectorAll('[role="tab"]')];
 const panels = [...document.querySelectorAll(".movement")];
 const score = document.getElementById("score");
+const playback = document.getElementById("play-steps");
 const reduce = matchMedia("(prefers-reduced-motion: reduce)");
 
 let current = panels[0];
 let beat = 1;
 let timer = 0;
-let pinned = false; // a beat the reader clicked stays until the movement changes
+let pinned = true; // steps stay still until the reader opts into playback
 let held = false; // hover or focus on a beat holds it while there
 let onScreen = true;
-
-const narrow = matchMedia("(max-width: 639px)");
 
 function setBeat(n) {
   beat = n;
@@ -22,34 +21,11 @@ function setBeat(n) {
   barline();
 }
 
-// On a phone each stave is reduced to its signature and the lines holding the beat.
-function reduceStaff(staff, n) {
-  let seenKept = false;
-  let inGap = false;
-  for (const ln of staff.querySelectorAll(".ln")) {
-    const keep = !narrow.matches || ln.hasAttribute("data-sig") || (ln.dataset.has || "").split(" ").includes(String(n));
-    // The first hidden line after a kept one stands for the whole run as "⋯".
-    const gapline = !keep && seenKept && !inGap;
-    ln.classList.toggle("cut", !keep && !gapline);
-    ln.classList.toggle("gapline", gapline);
-    if (keep) { seenKept = true; inGap = false; } else if (gapline) inGap = true;
-  }
-  // A run of hidden lines at the end needs no marker.
-  const lines = [...staff.querySelectorAll(".ln")];
-  for (let i = lines.length - 1; i >= 0 && !lines[i].matches(":not(.cut):not(.gapline)"); i--) {
-    lines[i].classList.remove("gapline");
-    if (narrow.matches) lines[i].classList.add("cut");
-  }
-}
-
-// Moves a stave's cue numeral to the line its beat is on. On a phone the line
-// holding the beat scrolls on its own, only if the beat runs past its right
-// edge. Wider staves never scroll by themselves; a tick marks a clipped beat.
+// Keep the full excerpt visible; highlighting never hides or scrolls code.
 function cue(staff, n) {
   const el = staff.querySelector(".cue");
   const code = staff.querySelector(".code");
   const pre = staff.querySelector("pre");
-  reduceStaff(staff, n);
   const mark = staff.querySelector(`mark[data-b="${n}"]`);
   if (!mark || staff.hidden) { el.classList.remove("on"); code.classList.remove("clipped"); return; }
   const y = mark.getBoundingClientRect().top - pre.getBoundingClientRect().top;
@@ -57,16 +33,9 @@ function cue(staff, n) {
   el.style.setProperty("--cue-y", `${y + 2}px`);
   code.style.setProperty("--cue-y", `${y}px`);
   el.classList.add("on");
-  for (const ln of staff.querySelectorAll(".ln.scrolled")) { ln.classList.remove("scrolled"); ln.scrollLeft = 0; }
-  if (narrow.matches) {
-    const line = mark.closest(".ln");
-    const left = mark.offsetLeft + mark.offsetWidth > line.clientWidth - 24 ? Math.max(0, mark.offsetLeft - 30) : 0;
-    line.classList.toggle("scrolled", left > 0);
-    line.scrollLeft = left;
-    code.classList.remove("clipped");
-  } else {
-    code.classList.toggle("clipped", mark.offsetLeft + mark.offsetWidth > pre.scrollLeft + pre.clientWidth);
-  }
+  const bounds = mark.getBoundingClientRect();
+  const viewport = pre.getBoundingClientRect();
+  code.classList.toggle("clipped", bounds.left < viewport.left || bounds.right > viewport.right);
 }
 
 // Joins the visible cue numerals with one hairline, drawn top to bottom.
@@ -122,7 +91,9 @@ function show(id, focus = false) {
   }
   for (const p of panels) { p.hidden = p.dataset.movement !== id; p.style.setProperty("--beat-ms", `${BEAT_MS}ms`); }
   current = panels.find((p) => p.dataset.movement === id);
-  pinned = false;
+  pinned = true;
+  playback.textContent = "Play steps";
+  held = false;
   setBeat(1);
   schedule();
 }
@@ -139,7 +110,7 @@ tabs.forEach((t, i) => {
 
 for (const b of document.querySelectorAll("[data-beat]")) {
   const n = Number(b.dataset.beat);
-  b.addEventListener("click", () => { pinned = true; setBeat(n); schedule(); });
+  b.addEventListener("click", () => { pinned = true; playback.textContent = "Play steps"; setBeat(n); schedule(); });
   for (const ev of ["pointerenter", "focus"]) b.addEventListener(ev, () => { held = true; setBeat(n); schedule(); });
   for (const ev of ["pointerleave", "blur"]) b.addEventListener(ev, () => { held = false; schedule(); });
 }
@@ -156,11 +127,24 @@ for (const b of toggles) {
   });
 }
 
+playback.addEventListener("click", () => {
+  pinned = !pinned;
+  playback.textContent = pinned ? "Play steps" : "Pause steps";
+  schedule();
+});
+for (const pre of document.querySelectorAll(".staff pre")) {
+  pre.addEventListener("scroll", () => cue(pre.closest(".staff"), beat));
+}
+
 new IntersectionObserver(([e]) => { onScreen = e.isIntersecting; schedule(); }).observe(score);
 document.addEventListener("visibilitychange", schedule);
-reduce.addEventListener("change", schedule);
+function motionPreference() {
+  playback.hidden = reduce.matches;
+  schedule();
+}
+reduce.addEventListener("change", motionPreference);
+motionPreference();
 
 addEventListener("resize", () => setBeat(beat));
-narrow.addEventListener("change", () => setBeat(beat));
 document.fonts?.ready.then(() => setBeat(beat));
 show(panels[0].dataset.movement);

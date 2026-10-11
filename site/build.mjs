@@ -212,7 +212,16 @@ const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, 
 const read = (rel) => fs.readFileSync(path.join(IMPL, rel), "utf8").split("\n");
 
 function extract(ranges) {
-  const blocks = ranges.map(([file, from, to]) => read(file).slice(from - 1, to).map((l) => l.replace(/\t/g, "    ")));
+  if (!ranges?.length) throw new Error("Example has no source ranges");
+  const blocks = ranges.map(([file, from, to]) => {
+    const source = read(file);
+    if (!Number.isInteger(from) || !Number.isInteger(to) || from < 1 || to < from || to > source.length) {
+      throw new Error(`${file}: invalid example range ${from}–${to}`);
+    }
+    const block = source.slice(from - 1, to).map((l) => l.replace(/\t/g, "    "));
+    if (!block.some((l) => l.trim())) throw new Error(`${file}:${from}–${to}: empty example`);
+    return block;
+  });
   const lines = [];
   blocks.forEach((block, i) => {
     const indent = Math.min(...block.filter((l) => l.trim()).map((l) => l.match(/^ */)[0].length));
@@ -249,48 +258,39 @@ function render(text, marks, where, lisp = false) {
     }
   }
   const comment = commentMask(text, lisp);
-  // One block per line, tagged with the beats it holds, so a narrow screen can
-  // show just the signature and the line being played.
+  // Preserve real newlines so excerpts also copy as readable source.
   const lines = [];
-  let sigDone = false;
-  // The line that heads the excerpt: its declaration, else its first line of code.
-  const all = text.split("\n");
-  const offsets = all.map((_, k) => all.slice(0, k).reduce((a, l) => a + l.length + 1, 0));
-  const isCode = (k) => all[k].trim() && !comment[offsets[k] + all[k].search(/\S/)];
-  const decl = all.findIndex((l, k) => isCode(k) && /^\s*((export|pub|public|private|static|async)\s+)*(function|fn|def|defp|func|fun)\b|^\(defun\b/.test(l.trim()));
-  const sigLine = decl >= 0 ? decl : all.findIndex((l, k) => isCode(k));
-  const i0 = (start) => text.slice(0, start).split("\n").length - 1;
   for (let start = 0; start <= text.length; ) {
     let end = text.indexOf("\n", start);
     if (end < 0) end = text.length;
     let html = "";
-    const has = new Set();
     for (let i = start; i < end; ) {
       let j = i;
       while (j < end && beat[j] === beat[i] && comment[j] === comment[i]) j++;
       let s = esc(text.slice(i, j));
-      if (beat[i]) { s = `<mark data-b="${beat[i]}">${s}</mark>`; has.add(beat[i]); }
+      if (beat[i]) { s = `<mark data-b="${beat[i]}">${s}</mark>`; }
       if (comment[i]) s = `<span class="c">${s}</span>`;
       html += s;
       i = j;
     }
-    const sig = !sigDone && end > start && i0(start, end) === sigLine;
-    if (sig) sigDone = true;
-    lines.push(`<span class="ln"${sig ? " data-sig" : ""}${has.size ? ` data-has="${[...has].join(" ")}"` : ""}><span class="lc">${html || " "}</span></span>`);
+    lines.push(`<span class="ln"><span class="lc">${html || " "}</span></span>`);
     start = end + 1;
   }
-  return lines.join("");
+  return lines.join("\n");
 }
 
 function staff(lang, part, movement) {
-  const [file, from] = part.ranges[0];
-  const last = part.ranges.at(-1);
-  const sameFile = part.ranges.every((r) => r[0] === file);
-  const to = sameFile ? last[2] : part.ranges[0][2];
-  const href = `${REPO}/blob/${REF}/implementations/${file}#L${from}-L${to}`;
+  if (!part) throw new Error(`${movement.id}/${lang.id}: missing example`);
+  for (let n = 1; n <= movement.beats.length; n++) {
+    if (!part.marks.some(([beat]) => beat === n)) throw new Error(`${movement.id}/${lang.id}: missing step ${n}`);
+  }
+  const links = part.ranges.map(([file, from, to]) => {
+    const href = `${REPO}/blob/${REF}/implementations/${file}#L${from}-L${to}`;
+    return `<a class="where" href="${href}">${path.basename(file)}:${from}–${to}</a>`;
+  }).join("");
   const code = render(extract(part.ranges), part.marks, `${movement.id}/${lang.id}`, lang.id === "common-lisp");
   return `<div class="staff" data-lang="${lang.id}">
-        <div class="part"><span class="instrument">${lang.name}</span><a class="where" href="${href}">${path.basename(file)}:${from}</a></div>
+        <div class="part"><span class="instrument">${lang.name}</span>${links}</div>
         <div class="code"><span class="cue" aria-hidden="true"></span><pre tabindex="0" aria-label="${lang.name}: ${esc(movement.title)}"><code>${code}</code></pre></div>
       </div>`;
 }
@@ -301,7 +301,7 @@ function movementPanel(m, i) {
   return `<section class="movement" id="m-${m.id}" role="tabpanel" aria-labelledby="t-${m.id}" data-movement="${m.id}">
     <h2 class="m-title"><span class="numeral">${ROMAN[i]}</span> ${esc(m.title)}</h2>
     <p class="m-lede">${esc(m.lede)}</p>
-    <ol class="beats" aria-label="Beats">
+    <ol class="beats" aria-label="Algorithm steps">
       ${m.beats.map((b, k) => `<li><button type="button" data-beat="${k + 1}"><span class="n">${k + 1}</span> ${esc(b)}</button></li>`).join("\n      ")}
     </ol>
     <div class="system">
@@ -429,11 +429,12 @@ const html = `<!doctype html>
 <main>
   <div class="score" id="score">
     <div class="controls">
-      <div class="tabs" role="tablist" aria-label="Movements">
+      <div class="tabs" role="tablist" aria-label="Algorithms">
         ${tabs}
       </div>
-      <div class="toggles" role="group" aria-label="Parts shown">${toggles}</div>
+      <div class="toggles" role="group" aria-label="Languages shown">${toggles}</div>
     </div>
+    <p class="score-help">Choose an algorithm and the languages to compare. Select a numbered step to highlight the matching code in each example. These are source excerpts; ⋯ marks omitted code, and file links open the original lines on GitHub.<br><button type="button" id="play-steps">Play steps</button></p>
     ${MOVEMENTS.map(movementPanel).join("\n    ")}
   </div>
 
