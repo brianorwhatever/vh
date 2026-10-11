@@ -1,0 +1,7 @@
+.precomp/
+lib/.precomp/
+native/*.so
+native/*.dylib
+resolution-results.txt
+.deps/
+native/*release.tar.gz

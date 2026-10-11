@@ -16,9 +16,19 @@ build/
 zig-out/
 .zig-cache/
 
-# design working renders and the generated page
+# design working renders
 design/shots/
-site/index.html
 
-# Generated benchmark download (source: benchmarks/latest.json)
+# .NET intermediate outputs
+implementations/csharp/obj/
+
+# Dart, Scala, Lua and Haskell build outputs
+.dart_tool/
+.scala-build/
+.bsp/
+dist-newstyle/
+implementations/lua/vh_native.so
+
+# Generated website artifacts
+site/index.html
 site/benchmarks.json

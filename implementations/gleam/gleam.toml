@@ -1,0 +1,7 @@
+name = "vh_log"
+version = "0.1.0"
+target = "erlang"
+description = "VH-Log controller and resolver in Gleam"
+licences = ["MIT"]
+[dependencies]
+gleam_stdlib = ">= 0.60.0 and < 2.0.0"

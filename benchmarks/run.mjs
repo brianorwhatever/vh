@@ -29,6 +29,12 @@ const versions = {
   typescript: ['node', '--version'], rust: ['rustc', '--version'], python: ['uv', 'run', '--no-sync', 'python', '--version'],
   elixir: ['elixir', '--version'], go: ['go', 'version'], swift: ['swift', '--version'],
   kotlin: ['java', '-version'], zig: ['zig', 'version'], 'common-lisp': ['sbcl', '--version'], forth: ['gforth', '--version'],
+  c: ['cc', '--version'], cpp: ['c++', '--version'], csharp: ['dotnet', '--version'],
+  java: ['java', '-version'], ruby: ['ruby', '--version'], php: ['php', '--version'],
+  raku: ['raku', '--version'], ocaml: ['ocamlopt', '-version'],
+  ada: ['sh', '-c', 'if command -v gnatmake >/dev/null 2>&1; then exec gnatmake --version; fi; for compiler in "$HOME"/.local/share/alire/toolchains/gnat_native_*/bin/gnatmake; do if [ -x "$compiler" ]; then exec "$compiler" --version; fi; done; exit 1'],
+  dart: ['dart', '--version'], haskell: ['ghc', '--version'], lua: ['lua', '-v'],
+  gleam: ['gleam', '--version'], scala: ['scala-cli', 'version'],
 };
 function environment(impl) {
   const { PATH_PREPEND = [], ...vars } = impl.env ?? {};

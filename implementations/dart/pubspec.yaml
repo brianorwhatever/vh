@@ -1,0 +1,8 @@
+name: vh_log
+version: 0.1.0
+description: VH-Log controller and resolver for Dart.
+environment:
+  sdk: '>=3.6.0 <4.0.0'
+dependencies:
+  crypto: ^3.0.6
+  ed25519_edwards: ^0.3.1

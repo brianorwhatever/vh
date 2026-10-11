@@ -148,6 +148,185 @@
         "sh",
         "run.sh"
       ]
+    },
+    {
+      "name": "ruby",
+      "cwd": "implementations/ruby",
+      "command": [
+        "ruby",
+        "driver.rb"
+      ],
+      "env": {
+        "PATH_PREPEND": [
+          "/opt/homebrew/opt/ruby/bin"
+        ]
+      }
+    },
+    {
+      "name": "php",
+      "cwd": "implementations/php",
+      "command": [
+        "php",
+        "driver.php"
+      ]
+    },
+    {
+      "name": "java",
+      "cwd": "implementations/java",
+      "build": [
+        "sh",
+        "build.sh"
+      ],
+      "command": [
+        "java",
+        "-cp",
+        "build/classes",
+        "org.vhlog.Driver"
+      ],
+      "env": {
+        "PATH_PREPEND": [
+          "/opt/homebrew/opt/openjdk@21/bin"
+        ]
+      }
+    },
+    {
+      "name": "raku",
+      "cwd": "implementations/raku",
+      "build": [
+        "sh",
+        "scripts/build.sh"
+      ],
+      "command": [
+        "sh",
+        "scripts/run.sh"
+      ]
+    },
+    {
+      "name": "ocaml",
+      "cwd": "implementations/ocaml",
+      "build": [
+        "sh",
+        "scripts/build.sh"
+      ],
+      "command": [
+        "sh",
+        "scripts/run.sh"
+      ]
+    },
+    {
+      "name": "ada",
+      "cwd": "implementations/ada",
+      "build": [
+        "sh",
+        "scripts/build.sh"
+      ],
+      "command": [
+        "sh",
+        "scripts/run.sh"
+      ]
+    },
+    {
+      "name": "csharp",
+      "cwd": "implementations/csharp",
+      "build": [
+        "dotnet",
+        "build",
+        "-c",
+        "Release",
+        "--nologo",
+        "-v",
+        "quiet"
+      ],
+      "command": [
+        "dotnet",
+        "bin/Release/net10.0/VHLog.dll"
+      ]
+    },
+    {
+      "name": "cpp",
+      "cwd": "implementations/cpp",
+      "build": [
+        "sh",
+        "build.sh"
+      ],
+      "command": [
+        "bin/vh-log-driver"
+      ]
+    },
+    {
+      "name": "c",
+      "cwd": "implementations/c",
+      "build": [
+        "sh",
+        "build.sh"
+      ],
+      "command": [
+        "bin/vh-log-driver"
+      ]
+    },
+    {
+      "name": "dart",
+      "cwd": "implementations/dart",
+      "build": [
+        "sh",
+        "build.sh"
+      ],
+      "command": [
+        "bin/vh-log-driver"
+      ]
+    },
+    {
+      "name": "scala",
+      "cwd": "implementations/scala",
+      "build": [
+        "sh",
+        "build.sh"
+      ],
+      "command": [
+        "java",
+        "-jar",
+        "bin/vh-log-driver.jar"
+      ],
+      "env": {
+        "PATH_PREPEND": [
+          "/opt/homebrew/opt/openjdk@21/bin"
+        ]
+      }
+    },
+    {
+      "name": "lua",
+      "cwd": "implementations/lua",
+      "build": [
+        "sh",
+        "build.sh"
+      ],
+      "command": [
+        "lua",
+        "driver.lua"
+      ]
+    },
+    {
+      "name": "haskell",
+      "cwd": "implementations/haskell",
+      "build": [
+        "sh",
+        "build.sh"
+      ],
+      "command": [
+        "bin/vh-log-driver"
+      ]
+    },
+    {
+      "name": "gleam",
+      "cwd": "implementations/gleam",
+      "build": [
+        "sh",
+        "build.sh"
+      ],
+      "command": [
+        "sh",
+        "run.sh"
+      ]
     }
   ]
 }
