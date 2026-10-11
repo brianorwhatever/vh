@@ -263,6 +263,70 @@
       "command": [
         "bin/vh-log-driver"
       ]
+    },
+    {
+      "name": "dart",
+      "cwd": "implementations/dart",
+      "build": [
+        "sh",
+        "build.sh"
+      ],
+      "command": [
+        "bin/vh-log-driver"
+      ]
+    },
+    {
+      "name": "scala",
+      "cwd": "implementations/scala",
+      "build": [
+        "sh",
+        "build.sh"
+      ],
+      "command": [
+        "java",
+        "-jar",
+        "bin/vh-log-driver.jar"
+      ],
+      "env": {
+        "PATH_PREPEND": [
+          "/opt/homebrew/opt/openjdk@21/bin"
+        ]
+      }
+    },
+    {
+      "name": "lua",
+      "cwd": "implementations/lua",
+      "build": [
+        "sh",
+        "build.sh"
+      ],
+      "command": [
+        "lua",
+        "driver.lua"
+      ]
+    },
+    {
+      "name": "haskell",
+      "cwd": "implementations/haskell",
+      "build": [
+        "sh",
+        "build.sh"
+      ],
+      "command": [
+        "bin/vh-log-driver"
+      ]
+    },
+    {
+      "name": "gleam",
+      "cwd": "implementations/gleam",
+      "build": [
+        "sh",
+        "build.sh"
+      ],
+      "command": [
+        "sh",
+        "run.sh"
+      ]
     }
   ]
 }

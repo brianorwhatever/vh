@@ -1,0 +1,65 @@
+{
+  "roots": [
+    "vh_log"
+  ],
+  "packages": [
+    {
+      "name": "vh_log",
+      "version": "0.1.0",
+      "dependencies": [
+        "crypto",
+        "ed25519_edwards"
+      ],
+      "devDependencies": []
+    },
+    {
+      "name": "ed25519_edwards",
+      "version": "0.3.2",
+      "dependencies": [
+        "adaptive_number",
+        "collection",
+        "convert",
+        "crypto"
+      ]
+    },
+    {
+      "name": "crypto",
+      "version": "3.0.7",
+      "dependencies": [
+        "typed_data"
+      ]
+    },
+    {
+      "name": "adaptive_number",
+      "version": "1.0.0",
+      "dependencies": [
+        "fixnum"
+      ]
+    },
+    {
+      "name": "convert",
+      "version": "3.1.2",
+      "dependencies": [
+        "typed_data"
+      ]
+    },
+    {
+      "name": "collection",
+      "version": "1.19.1",
+      "dependencies": []
+    },
+    {
+      "name": "typed_data",
+      "version": "1.4.0",
+      "dependencies": [
+        "collection"
+      ]
+    },
+    {
+      "name": "fixnum",
+      "version": "1.1.1",
+      "dependencies": []
+    }
+  ],
+  "configVersion": 1
+}
