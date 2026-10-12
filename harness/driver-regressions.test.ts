@@ -53,6 +53,65 @@ for (const name of names) {
       assert.equal(r.result.output, canonicalize(JSON.parse(inputs[i])));
     });
   });
+  if (["c", "typescript", "python"].includes(name)) {
+    test(`${name}: NUL member names never collapse into prefix keys`, () => {
+      const inputs = [
+        '{"a\\u0000x":1,"a":2}', '{"a":2,"a\\u0000x":1}',
+        '{"\\u0000":1,"":2}', '{"a\\u0000x":1,"a\\u0000y":2}',
+        '[{"nested":{"a\\u0000x" \t:1}}]',
+        '{"a\\u0000x":1,"a\\u0000x":2}',
+      ];
+      const expected = [
+        '{"a":2,"a\\u0000x":1}', '{"a":2,"a\\u0000x":1}',
+        '{"":2,"\\u0000":1}', '{"a\\u0000x":1,"a\\u0000y":2}',
+        '[{"nested":{"a\\u0000x":1}}]', '{"a\\u0000x":2}',
+      ];
+      run(inputs.map((text, id) => JSON.stringify({ id, op: "jcs", input: { text } })))
+        .forEach((r: any, i: number) => {
+          if (name === "c") assert.deepEqual(r, { id: i, ok: false, error: "invalid-json" });
+          else assert.deepEqual(r, { id: i, ok: true, result: { output: expected[i] } });
+        });
+    });
+    test(`${name}: NUL values and literal backslash names survive round trips`, () => {
+      const text = '{"a\\\\u0000x":"a\\u0000x","nested":["\\u0000",{"value":"\\u0000:"}]}';
+      const request = (text: string) => JSON.stringify({ id: "roundtrip", op: "jcs", input: { text } });
+      const [first] = run([request(text)]);
+      assert.deepEqual(first, { id: "roundtrip", ok: true, result: { output: text } });
+      assert.deepEqual(run([request(first.result.output)])[0], first);
+    });
+    test(`${name}: creation and resolution enforce the member-name policy`, () => {
+      const versionTime = "2026-01-01T00:00:00Z";
+      const input = { state: { id: "test:{SCID}", "a\0x": 1, a: 2 },
+        parameters: { updateKeys: [key] }, versionTime, signers: [seed] };
+      const reference = createLog(input);
+      const requests = [
+        { id: "create", op: "create", input },
+        { id: "resolve", op: "resolve", input: { log: reference.log, now: versionTime } },
+        { id: "recovery", op: "jcs", input: { text: '{"a":2}' } },
+      ];
+      const [created, resolved, recovered] = run(requests.map(r => JSON.stringify(r)));
+      if (name === "c") {
+        assert.deepEqual(created, { id: null, ok: false, error: "invalid-request" });
+        assert.equal(resolved.ok, true);
+        assert.equal(resolved.result.valid, false);
+        assert.equal(resolved.result.error.code, "invalid-log");
+      } else {
+        assert.equal(created.ok, true, created.error);
+        assert.deepEqual(JSON.parse(created.result.log), JSON.parse(reference.log));
+        assert.equal(resolved.result.valid, true, JSON.stringify(resolved));
+        assert.deepEqual(resolved.result.state, JSON.parse(reference.log).state);
+      }
+      assert.deepEqual(recovered, { id: "recovery", ok: true, result: { output: '{"a":2}' } });
+      const valueInput = { ...input, state: { id: "test:{SCID}", value: "a\0x" } };
+      const [valueCreated] = run([JSON.stringify({ id: 1, op: "create", input: valueInput })]);
+      assert.equal(valueCreated.ok, true, valueCreated.error);
+      assert.deepEqual(JSON.parse(valueCreated.result.log), JSON.parse(createLog(valueInput).log));
+      const [valueResolved] = run([JSON.stringify({ id: 2, op: "resolve",
+        input: { log: valueCreated.result.log, now: versionTime } })]);
+      assert.equal(valueResolved.result.valid, true, JSON.stringify(valueResolved));
+      assert.equal(valueResolved.result.state.value, "a\0x");
+    });
+  }
   test(`${name}: recovers from malformed requests and respects LF framing`, () => {
     const responses = run(['{', JSON.stringify({ id: 2, op: "unknown", input: {} }),
       JSON.stringify({ id: "last", op: "jcs", input: { text: '"line\u2028paragraph\u2029"' } })]);

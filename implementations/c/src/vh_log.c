@@ -154,14 +154,25 @@ static int hex4(const char *p) {
     }
     return n;
 }
-/* json-c replaces lone surrogate escapes; reject them before parsing. */
+/* json-c replaces lone surrogates and truncates member names at NUL.
+ * Reject both before parsing loses information. NUL string values are valid. */
 static int unicode_escapes(const char *p) {
-    int quoted = 0;
+    int quoted = 0, contains_nul = 0;
     size_t n = strlen(p);
     for (size_t i = 0; i < n; i++) {
-        if (p[i] == '"')
+        if (p[i] == '"') {
+            if (quoted && contains_nul) {
+                size_t next = i + 1;
+                while (next < n && strchr(" \t\r\n", p[next]))
+                    next++;
+                /* In valid JSON only a member name is followed by a colon.
+                 * The tokener still validates the complete JSON grammar. */
+                if (next < n && p[next] == ':')
+                    return 0;
+            }
             quoted = !quoted;
-        else if (quoted && p[i] == '\\') {
+            contains_nul = 0;
+        } else if (quoted && p[i] == '\\') {
             if (++i >= n)
                 return 0;
             if (p[i] == 'u') {
@@ -170,6 +181,8 @@ static int unicode_escapes(const char *p) {
                 int cp = hex4(p + i + 1);
                 if (cp < 0)
                     return 0;
+                if (cp == 0)
+                    contains_nul = 1;
                 i += 4;
                 if (cp >= 0xd800 && cp <= 0xdbff) {
                     if (i + 6 >= n || p[i + 1] != '\\' || p[i + 2] != 'u')
