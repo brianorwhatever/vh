@@ -8,6 +8,8 @@
 typedef struct vh_context vh_context;
 vh_context *vh_context_new(void);
 void vh_context_free(vh_context *context);
-/* Returns an owned-by-context protocol response; never writes to stdout. */
+/* Returns an owned-by-context protocol response; never writes to stdout.
+ * JSON member names containing escaped U+0000 are rejected before parsing,
+ * including embedded JSON text/logs. See docs/profile.md for the C restriction. */
 json_object *vh_request(vh_context *context, const char *request);
 #endif

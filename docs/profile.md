@@ -22,6 +22,22 @@ Pinned spec: [`swcurran/VH-Log@f2f9fda`](https://github.com/swcurran/VH-Log/blob
 | Ed25519 multikey | `"z" + base58btc(0xed 0x01 ‖ pubkey32)` (starts `z6Mk`). |
 | Test keys | Ed25519 private keys are given as a 32-byte **seed**, hex encoded (RFC 8032 §5.1.5). |
 
+### C implementation restriction
+
+The json-c-backed C implementation supports a narrower JSON domain: object
+member names MUST NOT contain U+0000, even escaped as `\u0000`. It rejects
+these names before parsing, at every nesting level, rather than silently
+truncating or merging them. This restriction applies to the entire request
+(including creation inputs) and to separately parsed JSON text and log lines.
+Requests fail with `invalid-request`, `jcs` text with `invalid-json`, and log
+lines with `invalid-log` under the usual partial-validity rules.
+
+Escaped U+0000 in JSON string values is supported by canonicalization and
+document creation/resolution; a literal backslash followed by `u0000` in a
+member name is also supported. This is a C implementation limitation, not an
+RFC 8785 restriction or a change to the shared profile: TypeScript and Python
+preserve NUL-containing names. Such documents are outside C interoperability.
+
 ## 2. Entry proofs (`eddsa-jcs-2022`)
 
 Each element of `proof` is a Data Integrity proof per

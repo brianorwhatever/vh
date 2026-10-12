@@ -7,6 +7,11 @@ including deterministic creation and updates, pre-rotation, witnesses,
 version selection, partial validity, watcher copies, and fork detection.
 Protocol logic runs in C; it does not call another implementation.
 
+The C implementation has a [narrower JSON domain](../../docs/profile.md#c-implementation-restriction):
+object member names containing escaped U+0000 are rejected before json-c can
+truncate them. NUL string values remain supported in canonicalization and
+document state. This restriction applies to requests and embedded JSON/logs.
+
 ## Setup
 
 ```sh
