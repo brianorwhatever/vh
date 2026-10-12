@@ -1,0 +1,200 @@
+[
+  {
+    "command": [
+      "node",
+      "--version"
+    ],
+    "exit_code": 0,
+    "output": "v24.21.0"
+  },
+  {
+    "command": [
+      "rustc",
+      "--version"
+    ],
+    "exit_code": 0,
+    "output": "rustc 1.99.0 (b940084d7 2026-09-28)"
+  },
+  {
+    "command": [
+      "uv",
+      "--version"
+    ],
+    "exit_code": 0,
+    "output": "uv 0.12.24 (Homebrew 2026-10-08 aarch64-apple-darwin)"
+  },
+  {
+    "command": [
+      "elixir",
+      "--version"
+    ],
+    "exit_code": 0,
+    "output": "Erlang/OTP 29 [erts-17.1] [source] [64-bit] [smp:10:10] [ds:10:10:10] [async-threads:1] [jit] [dtrace]\n\nElixir 1.20.4 (compiled with Erlang/OTP 29)"
+  },
+  {
+    "command": [
+      "erl",
+      "-noshell",
+      "-eval",
+      "io:format(\"~p~n\", [crypto:info_lib()]), halt()."
+    ],
+    "exit_code": 0,
+    "output": "[{<<\"OpenSSL\">>,1073741856,<<\"OpenSSL 4.0.3 29 Sep 2026\">>}]"
+  },
+  {
+    "command": [
+      "go",
+      "version"
+    ],
+    "exit_code": 0,
+    "output": "go version go1.27.2 darwin/arm64"
+  },
+  {
+    "command": [
+      "swift",
+      "--version"
+    ],
+    "exit_code": 0,
+    "output": "Apple Swift version 6.4 (swiftlang-6.4.0.34.1 clang-2100.3.34.1)\nTarget: arm64-apple-macosx27.0.0\nswift-driver version: 1.168.6"
+  },
+  {
+    "command": [
+      "java",
+      "--version"
+    ],
+    "exit_code": 0,
+    "output": "openjdk 21.0.12.1 2026-08-18\nOpenJDK Runtime Environment Homebrew (build 21.0.12.1)\nOpenJDK 64-Bit Server VM Homebrew (build 21.0.12.1, mixed mode, sharing)"
+  },
+  {
+    "command": [
+      "zig",
+      "version"
+    ],
+    "exit_code": 0,
+    "output": "0.17.0"
+  },
+  {
+    "command": [
+      "sbcl",
+      "--version"
+    ],
+    "exit_code": 0,
+    "output": "SBCL 2.6.9"
+  },
+  {
+    "command": [
+      "gforth",
+      "--version"
+    ],
+    "exit_code": 0,
+    "output": "gforth 0.7.3"
+  },
+  {
+    "command": [
+      "ruby",
+      "-ropenssl",
+      "-e",
+      "puts RUBY_DESCRIPTION; puts OpenSSL::OPENSSL_LIBRARY_VERSION"
+    ],
+    "exit_code": 0,
+    "output": "ruby 4.0.7 (2026-09-15 revision 229531a6cf) +PRISM [arm64-darwin27]\nOpenSSL 4.0.3 29 Sep 2026"
+  },
+  {
+    "command": [
+      "php",
+      "-r",
+      "echo PHP_VERSION, \"\\n\", SODIUM_LIBRARY_VERSION, \"\\n\";"
+    ],
+    "exit_code": 0,
+    "output": "8.5.11\n1.0.22"
+  },
+  {
+    "command": [
+      "raku",
+      "-v"
+    ],
+    "exit_code": 0,
+    "output": "Welcome to Rakudo\u2122 v2026.09.\nImplementing the Raku\u00ae Programming Language v6.d.\nBuilt on MoarVM version 2026.09."
+  },
+  {
+    "command": [
+      "ocamlc",
+      "-version"
+    ],
+    "exit_code": 0,
+    "output": "5.5.1"
+  },
+  {
+    "command": [
+      "gnat",
+      "--version"
+    ],
+    "error": "[Errno 2] No such file or directory: 'gnat'"
+  },
+  {
+    "command": [
+      "dotnet",
+      "--version"
+    ],
+    "exit_code": 0,
+    "output": "10.0.401"
+  },
+  {
+    "command": [
+      "clang",
+      "--version"
+    ],
+    "exit_code": 0,
+    "output": "Apple clang version 21.0.0 (clang-2100.3.34.2)\nTarget: arm64-apple-darwin27.0.0\nThread model: posix\nInstalledDir: /Library/Developer/CommandLineTools/usr/bin"
+  },
+  {
+    "command": [
+      "dart",
+      "--version"
+    ],
+    "exit_code": 0,
+    "output": "Dart SDK version: 3.13.5 (stable) (Tue Sep 29 01:00:52 2026 -0700) on \"macos_arm64\""
+  },
+  {
+    "command": [
+      "scala-cli",
+      "version"
+    ],
+    "exit_code": 0,
+    "output": "Scala CLI version: 1.18.0\nScala version (default): 3.9.0"
+  },
+  {
+    "command": [
+      "lua",
+      "-v"
+    ],
+    "exit_code": 0,
+    "output": "Lua 5.5.1  Copyright (C) 1994-2026 Lua.org, PUC-Rio"
+  },
+  {
+    "command": [
+      "ghc",
+      "--version"
+    ],
+    "exit_code": 0,
+    "output": "The Glorious Glasgow Haskell Compilation System, version 9.14.1"
+  },
+  {
+    "command": [
+      "gleam",
+      "--version"
+    ],
+    "exit_code": 0,
+    "output": "gleam 1.19.1"
+  },
+  {
+    "command": [
+      "pkg-config",
+      "--modversion",
+      "libsodium",
+      "openssl"
+    ],
+    "exit_code": 0,
+    "output": "1.0.22\n4.0.3"
+  }
+]

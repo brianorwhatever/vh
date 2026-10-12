@@ -1,0 +1,31 @@
+Implementation commit: ab2c601d1eee0059fbf8f90412943d01f9ca51e6
+Platform: macOS arm64; versions in ed25519-runtime-versions.json
+
+
+implementation  primitives    resolution    generation    cross         external
+typescript      ✓ 35          ✓ 158         ✓ 18          ✓ 144         ✓ 40
+rust            ✓ 35          ✓ 158         ✓ 18          ✓ 144         ✓ 40
+python          ✓ 35          ✓ 158         ✓ 18          ✓ 144         ✓ 40
+elixir          ✓ 35          ✓ 158         ✓ 18          ✓ 144         ✓ 40
+go              ✓ 35          ✓ 158         ✓ 18          ✓ 144         ✓ 40
+swift           ✓ 35          ✓ 158         ✓ 18          ✓ 144         ✓ 40
+kotlin          ✓ 35          ✓ 158         ✓ 18          ✓ 144         ✓ 40
+zig             ✓ 35          ✓ 158         ✓ 18          ✓ 144         ✓ 40
+common-lisp     ✓ 35          ✓ 158         ✓ 18          ✓ 144         ✓ 40
+forth           ✓ 35          ✓ 158         ✓ 18          ✓ 144         ✓ 40
+ruby            ✓ 35          ✓ 158         ✓ 18          ✓ 144         ✓ 40
+php             ✓ 35          ✓ 158         ✓ 18          ✓ 144         ✓ 40
+java            ✓ 35          ✓ 158         ✓ 18          ✓ 144         ✓ 40
+raku            ✓ 35          ✓ 158         ✓ 18          ✓ 144         ✓ 40
+ocaml           ✓ 35          ✓ 158         ✓ 18          ✓ 144         ✓ 40
+ada             ✓ 35          ✓ 158         ✓ 18          ✓ 144         ✓ 40
+csharp          ✓ 35          ✓ 158         ✓ 18          ✓ 144         ✓ 40
+cpp             ✓ 35          ✓ 158         ✓ 18          ✓ 144         ✓ 40
+c               ✓ 35          ✓ 158         ✓ 18          ✓ 144         ✓ 40
+dart            ✓ 35          ✓ 158         ✓ 18          ✓ 144         ✓ 40
+scala           ✓ 35          ✓ 158         ✓ 18          ✓ 144         ✓ 40
+lua             ✓ 35          ✓ 158         ✓ 18          ✓ 144         ✓ 40
+haskell         ✓ 35          ✓ 158         ✓ 18          ✓ 144         ✓ 40
+gleam           ✓ 35          ✓ 158         ✓ 18          ✓ 144         ✓ 40
+
+all 9480 checks passed
