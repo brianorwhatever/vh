@@ -157,7 +157,13 @@ public static class Log
         if (mk is null || !IsString(value) || !Str(value).StartsWith('z')) return false;
         byte[]? signature = Decode(Str(value)[1..]); if (signature is not { Length: 64 }) return false;
         var config = (JsonObject)proof.DeepClone(); config.Remove("proofValue");
-        try { var signer = new Ed25519Signer(); signer.Init(false, new Ed25519PublicKeyParameters(PublicKey(mk)!, 0)); byte[] data = SigningInput(document, config); signer.BlockUpdate(data, 0, data.Length); return signer.VerifySignature(signature); }
+        try {
+            // NSec/libsodium enforces profile §2's uncofactored equation and
+            // canonical, non-small-order A/R. BC 2.6 verification is cofactored.
+            var algorithm = NSec.Cryptography.SignatureAlgorithm.Ed25519;
+            var key = NSec.Cryptography.PublicKey.Import(algorithm, PublicKey(mk)!, NSec.Cryptography.KeyBlobFormat.RawPublicKey);
+            return algorithm.Verify(key, SigningInput(document, config), signature);
+        }
         catch (ArgumentException) { return false; }
     }
     private static JsonObject WithoutProof(J e) { var d = (JsonObject)e.DeepClone(); d.Remove("proof"); return d; }

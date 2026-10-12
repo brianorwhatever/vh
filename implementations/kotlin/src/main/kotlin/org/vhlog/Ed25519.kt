@@ -49,6 +49,7 @@ class Ed25519Signer private constructor(private val privateKey: PrivateKey, publ
         @JvmStatic
         fun verify(publicKey: ByteArray, data: ByteArray, signature: ByteArray): Boolean {
             if (publicKey.size != 32 || signature.size != 64) return false
+            if (!admissiblePoint(publicKey) || !admissiblePoint(signature.copyOfRange(0, 32))) return false
             return try {
                 val key = KeyFactory.getInstance("Ed25519")
                     .generatePublic(EdECPublicKeySpec(NamedParameterSpec.ED25519, decodePoint(publicKey)))
@@ -60,6 +61,14 @@ class Ed25519Signer private constructor(private val privateKey: PrivateKey, publ
             } catch (e: Exception) {
                 false
             }
+        }
+
+        // Profile §2; JCA checks curve membership and the equation.
+        private fun admissiblePoint(encoded: ByteArray): Boolean {
+            val y = encoded.copyOf()
+            y[31] = (y[31].toInt() and 127).toByte()
+            val n = BigInteger(1, y.reversedArray())
+            return n < BigInteger("57896044618658097711785492504343953926634992332820282019728792003956564819949") && n !in setOf(BigInteger("0"), BigInteger("1"), BigInteger("2707385501144840649318225287225658788936804267575313519463743609750303402022"), BigInteger("55188659117513257062467267217118295137698188065244968500265048394206261417927"), BigInteger("57896044618658097711785492504343953926634992332820282019728792003956564819948"))
         }
 
         private fun encodePoint(point: EdECPoint): ByteArray {

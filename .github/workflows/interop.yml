@@ -440,6 +440,14 @@ jobs:
       - name: Interoperability tests
         run: node harness/run.ts --list --markdown "$GITHUB_STEP_SUMMARY"
 
+      - name: Independent Ed25519 boundary conformance (all implementations)
+        run: node --test harness/ed25519.test.ts
+
+      - name: Independent Ed25519 fixtures are reproducible
+        run: |
+          python3 tools/ed25519-fixtures.py
+          git diff --exit-code vectors/ed25519/boundaries.json
+
       - name: README matrix is up to date
         run: |
           node harness/run.ts --update-readme > /dev/null

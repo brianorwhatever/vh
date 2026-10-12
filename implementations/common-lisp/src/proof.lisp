@@ -58,6 +58,13 @@ included only when given."
          (signature (ironclad:sign-message (signer-private-key signer) (signing-input document config))))
     (jwith config "proofValue" (concatenate 'string "z" (base58-encode signature)))))
 
+(defun admissible-ed25519-point-p (encoded)
+  "Profile §2: canonical y and no point of order dividing 8."
+  (let ((y (logand (loop for b across encoded for i from 0 sum (ash b (* 8 i)))
+                   57896044618658097711785492504343953926634992332820282019728792003956564819967)))
+    (and (< y 57896044618658097711785492504343953926634992332820282019728792003956564819949)
+         (not (member y '(0 1 2707385501144840649318225287225658788936804267575313519463743609750303402022 55188659117513257062467267217118295137698188065244968500265048394206261417927 57896044618658097711785492504343953926634992332820282019728792003956564819948))))))
+
 (defun proof-signature-valid-p (document proof public-key)
   "Checks the eddsa-jcs-2022 signature of PROOF over DOCUMENT for PUBLIC-KEY,
 including its type, cryptosuite and proofValue form, but not proofPurpose."
@@ -70,6 +77,8 @@ including its type, cryptosuite and proofValue form, but not proofPurpose."
          (let ((signature (base58-decode (subseq value 1))))
            (and signature
                 (= (length signature) 64)
+                (admissible-ed25519-point-p public-key)
+                (admissible-ed25519-point-p (subseq signature 0 32))
                 (ignore-errors
                  (ironclad:verify-signature (ironclad:make-public-key :ed25519 :y public-key)
                                             (signing-input document (jwithout proof "proofValue"))
