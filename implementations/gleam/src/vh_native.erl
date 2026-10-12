@@ -74,7 +74,8 @@ seed(S) -> 64=byte_size(S), B=binary:decode_hex(S),32=byte_size(B),B.
 multikey(S) -> {Pk,_}=crypto:generate_key(eddsa,ed25519,seed(S)), <<"z",(encode(<<16#ed,1,Pk/binary>>))/binary>>.
 sign(S,Message) -> <<"z",(encode(crypto:sign(eddsa,none,Message,[seed(S),ed25519])))/binary>>.
 verify(K,{str,<<"z",S/binary>>},Message) -> try
-  Sig=decode(S),64=byte_size(Sig),crypto:verify(eddsa,none,Message,Sig,[key(K),ed25519])
+  Sig=decode(S),64=byte_size(Sig), <<R:32/binary,_:32/binary>>=Sig,
+  admissible_point(key(K)) andalso admissible_point(R) andalso crypto:verify(eddsa,none,Message,Sig,[key(K),ed25519])
   catch _:_ -> false end;
 verify(_,_,_) -> false.
 time({str,S}) -> try
@@ -110,3 +111,8 @@ loop() -> case io:get_line(standard_io,"") of
     catch _:_ -> json_value:object([{<<"id">>,Id},{<<"ok">>,{boolean,false}},{<<"error">>,{str,<<"invalid request or operation">>}}]) end,
     io:put_chars(standard_io,[json_value:jcs(Response),<<"\n">>]),loop()
   end.
+
+% Profile §2; OTP checks curve membership and the equation.
+admissible_point(<<N:256/little-unsigned-integer>>) ->
+  Y = N band 57896044618658097711785492504343953926634992332820282019728792003956564819967,
+  Y < 57896044618658097711785492504343953926634992332820282019728792003956564819949 andalso not lists:member(Y, [0, 1, 2707385501144840649318225287225658788936804267575313519463743609750303402022, 55188659117513257062467267217118295137698188065244968500265048394206261417927, 57896044618658097711785492504343953926634992332820282019728792003956564819948]).

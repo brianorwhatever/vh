@@ -69,6 +69,44 @@ Each element of `proof` is a Data Integrity proof per
 - Verifiers MUST reject a wrong or absent `type`, `cryptosuite` or `proofPurpose`,
   a malformed `proofValue`, or a bad signature.
 
+### Ed25519 acceptance (Profile)
+
+For both entry and witness proofs, verification MUST apply all of these rules
+at the signature-verification boundary, including standalone library APIs:
+
+1. The public key `A` is exactly 32 bytes; the signature is exactly 64 bytes,
+   split into `R` (32 bytes) and little-endian scalar `S` (32 bytes).
+2. `A` and `R` MUST decode as points on Edwards25519 using the canonical
+   encoding in [RFC 8032 §5.1.3](https://www.rfc-editor.org/rfc/rfc8032#section-5.1.3):
+   `y < p = 2^255 - 19`, with the high bit giving the parity of `x`; the
+   encoding with `x = 0` and sign bit 1 is forbidden.
+3. **Profile restriction:** neither point may have order dividing 8, including
+   the identity: `[8]A != O` and `[8]R != O`.
+4. `0 <= S < L`, where `L = 2^252 + 27742317777372353535851937790883648493`.
+5. Compute `k = littleEndian(SHA-512(R || A || message)) mod L`, using the
+   original canonical encoded bytes, and require the **uncofactored** equation
+   `[S]B = R + [k]A`. Here `message` is the 64-byte signing input specified above.
+   Multiplying the equation by 8 is insufficient.
+
+RFC 8032 §5.1.7 allows the uncofactored equation as a sufficient verification
+check. This profile additionally specifies reduction of `k` modulo `L` to
+pin mixed-order behavior (the RFC's cofactored equation is unchanged by that
+reduction). Selecting the reduced-scalar uncofactored equation exclusively and
+rejecting small-order points are explicit profile choices, not requirements
+attributed to RFC 8032 or the
+upstream VH-Log specification. This is not ZIP-215 acceptance. Mixed-order
+points with a nonzero prime-order component are admissible when the exact
+uncofactored equation holds; this profile does **not** require `[L]A = [L]R = O`.
+
+Multikey decoding and parameter validation remain syntactic (codec and byte
+length). An authorised but inadmissible proof key fails at the proof step with
+`invalid-proof`, preserving the verification order in §4. A witness proof that
+fails these rules contributes nothing to the witness threshold. Generators
+continue to accept inputs needed to construct negative conformance fixtures.
+
+See the [focused review and retained verification record](validation/ed25519.md)
+for sources, backend choices, independent fixtures, and checked implementations.
+
 ## 3. Witnesses
 
 - **Profile:** a witness `id` is `did:key:<ed25519 multikey>`. Its verification

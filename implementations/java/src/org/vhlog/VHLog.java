@@ -161,6 +161,18 @@ public final class VHLog {
             throw new IllegalStateException(e);
         }
     }
+    // Profile §2; the signature provider checks curve membership and the equation.
+    private static boolean admissiblePoint(byte[] encoded) {
+        byte[] y = encoded.clone();
+        y[31] &= 127;
+        String h = HexFormat.of().formatHex(y);
+        if (java.util.Set.of("0000000000000000000000000000000000000000000000000000000000000000", "0100000000000000000000000000000000000000000000000000000000000000", "26e8958fc2b227b045c3f489f2ef98f0d5dfac05d3c63339b13802886d53fc05", "c7176a703d4dd84fba3c0b760d10670f2a2053fa2c39ccc64ec7fd7792ac037a", "ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f").contains(h)) return false;
+        for (int i = 31; i >= 0; i--) {
+            int limit = i == 31 ? 127 : i == 0 ? 237 : 255;
+            if ((y[i] & 255) != limit) return (y[i] & 255) < limit;
+        }
+        return false;
+    }
     public static boolean verify(Object document, Object proof) {
         if(!(proof instanceof Map<?,?>) || !"DataIntegrityProof".equals(get(proof,"type")) || !"eddsa-jcs-2022".equals(get(proof,"cryptosuite")) || !"assertionMethod".equals(get(proof,"proofPurpose")))
             return false;
@@ -171,6 +183,7 @@ public final class VHLog {
         byte[] signature = decode(s.substring(1));
         if (signature == null || signature.length != 64)
             return false;
+        if (!admissiblePoint(publicKey(mk)) || !admissiblePoint(Arrays.copyOf(signature, 32))) return false;
         Map<String, Object> config = new LinkedHashMap<>(map(proof));
         config.remove("proofValue");
         try {

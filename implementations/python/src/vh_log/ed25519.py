@@ -33,8 +33,34 @@ def signer_from_seed(seed: str | bytes) -> Signer:
     return Signer(public_key, multikey_from_public_key(public_key), private_key)
 
 
+# Profile §2: canonical encodings and no points of order dividing 8.
+# The backend still checks curve membership and the uncofactored equation.
+_P = 57896044618658097711785492504343953926634992332820282019728792003956564819949
+_L = 7237005577332262213973186563042994240857116359379907606001950938285454250989
+_SMALL_Y = frozenset(
+    [
+        0,
+        1,
+        2707385501144840649318225287225658788936804267575313519463743609750303402022,
+        55188659117513257062467267217118295137698188065244968500265048394206261417927,
+        57896044618658097711785492504343953926634992332820282019728792003956564819948,
+    ]
+)
+
+
+def _admissible_point(encoded: bytes) -> bool:
+    y = int.from_bytes(encoded, "little") & ((1 << 255) - 1)
+    return y < _P and y not in _SMALL_Y
+
+
 def verify_signature(public_key: bytes, data: bytes, signature: bytes) -> bool:
     if len(public_key) != 32 or len(signature) != 64:
+        return False
+    if (
+        not _admissible_point(public_key)
+        or not _admissible_point(signature[:32])
+        or int.from_bytes(signature[32:], "little") >= _L
+    ):
         return False
     try:
         Ed25519PublicKey.from_public_bytes(public_key).verify(signature, data)

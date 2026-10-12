@@ -1,0 +1,59 @@
+Implementation commit: ab2c601d1eee0059fbf8f90412943d01f9ca51e6
+Platform: macOS arm64; versions in ed25519-runtime-versions.json
+
+typescript: 42 proof-library driver cases; 47 resolver cases passed
+rust: 42 proof-library driver cases; 47 resolver cases passed
+python: 42 proof-library driver cases; 47 resolver cases passed
+elixir: 42 proof-library driver cases; 47 resolver cases passed
+go: 42 proof-library driver cases; 47 resolver cases passed
+swift: 42 proof-library driver cases; 47 resolver cases passed
+kotlin: 42 proof-library driver cases; 47 resolver cases passed
+zig: 42 proof-library driver cases; 47 resolver cases passed
+common-lisp: 42 proof-library driver cases; 47 resolver cases passed
+forth: 42 proof-library driver cases; 47 resolver cases passed
+ruby: 42 proof-library driver cases; 47 resolver cases passed
+php: 42 proof-library driver cases; 47 resolver cases passed
+java: 42 proof-library driver cases; 47 resolver cases passed
+raku: 42 proof-library driver cases; 47 resolver cases passed
+ocaml: 42 proof-library driver cases; 47 resolver cases passed
+ada: 42 proof-library driver cases; 47 resolver cases passed
+csharp: 42 proof-library driver cases; 47 resolver cases passed
+cpp: 42 proof-library driver cases; 47 resolver cases passed
+c: 42 proof-library driver cases; 47 resolver cases passed
+dart: 42 proof-library driver cases; 47 resolver cases passed
+scala: 42 proof-library driver cases; 47 resolver cases passed
+lua: 42 proof-library driver cases; 47 resolver cases passed
+haskell: 42 proof-library driver cases; 47 resolver cases passed
+gleam: 42 proof-library driver cases; 47 resolver cases passed
+✔ typescript: independent Ed25519 proof and resolver boundaries (72.884375ms)
+✔ rust: independent Ed25519 proof and resolver boundaries (8.222958ms)
+✔ python: independent Ed25519 proof and resolver boundaries (227.096ms)
+✔ elixir: independent Ed25519 proof and resolver boundaries (367.444959ms)
+✔ go: independent Ed25519 proof and resolver boundaries (15.049542ms)
+✔ swift: independent Ed25519 proof and resolver boundaries (8.977958ms)
+✔ kotlin: independent Ed25519 proof and resolver boundaries (159.284791ms)
+✔ zig: independent Ed25519 proof and resolver boundaries (7.384959ms)
+✔ common-lisp: independent Ed25519 proof and resolver boundaries (131.348125ms)
+✔ forth: independent Ed25519 proof and resolver boundaries (69.639083ms)
+✔ ruby: independent Ed25519 proof and resolver boundaries (114.493792ms)
+✔ php: independent Ed25519 proof and resolver boundaries (133.273542ms)
+✔ java: independent Ed25519 proof and resolver boundaries (144.490292ms)
+✔ raku: independent Ed25519 proof and resolver boundaries (2328.370625ms)
+✔ ocaml: independent Ed25519 proof and resolver boundaries (35.18ms)
+✔ ada: independent Ed25519 proof and resolver boundaries (16.741625ms)
+✔ csharp: independent Ed25519 proof and resolver boundaries (81.585375ms)
+✔ cpp: independent Ed25519 proof and resolver boundaries (13.31925ms)
+✔ c: independent Ed25519 proof and resolver boundaries (6.491625ms)
+✔ dart: independent Ed25519 proof and resolver boundaries (60.233291ms)
+✔ scala: independent Ed25519 proof and resolver boundaries (249.867875ms)
+✔ lua: independent Ed25519 proof and resolver boundaries (36.631375ms)
+✔ haskell: independent Ed25519 proof and resolver boundaries (72.622167ms)
+✔ gleam: independent Ed25519 proof and resolver boundaries (117.677584ms)
+ℹ tests 24
+ℹ suites 0
+ℹ pass 24
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4544.053125

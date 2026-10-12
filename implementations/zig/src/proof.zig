@@ -78,6 +78,15 @@ pub fn didKeyMultikey(vm: []const u8) ?[]const u8 {
     return a;
 }
 
+// Profile §2; std.crypto checks curve membership, S and the equation.
+fn admissiblePoint(encoded: [32]u8) bool {
+    const y = std.mem.readInt(u256, &encoded, .little) & ((@as(u256, 1) << 255) - 1);
+    return y < ((@as(u256, 1) << 255) - 19) and y != 0 and y != 1 and
+        y != ((@as(u256, 1) << 255) - 20) and
+        y != 0x05fc536d880238b13933c6d305acdfd5f098eff289f4c345b027b2c28f95e826 and
+        y != 0x7a03ac9277fdc74ec6cc392cfa53202a0f67100d760b3cba4fd84d3d706a17c7;
+}
+
 /// Checks `type`, `cryptosuite`, `proofPurpose`, `proofValue` and the signature
 /// of `proof` over `document` with `public_key`. Key authorisation is the
 /// caller's job.
@@ -97,6 +106,7 @@ pub fn verifyWithKey(allocator: Allocator, document: Value, proof: Value, public
     };
     defer allocator.free(sig_bytes);
     if (sig_bytes.len != 64) return false;
+    if (!admissiblePoint(public_key) or !admissiblePoint(sig_bytes[0..32].*)) return false;
 
     const config = try json.without(allocator, proof, "proofValue");
     defer allocator.free(config.object);
@@ -106,7 +116,7 @@ pub fn verifyWithKey(allocator: Allocator, document: Value, proof: Value, public
     };
     const pk = Ed25519.PublicKey.fromBytes(public_key) catch return false;
     const sig = Ed25519.Signature.fromBytes(sig_bytes[0..64].*);
-    sig.verify(&input, pk) catch return false;
+    sig.verifyStrict(&input, pk) catch return false;
     return true;
 }
 

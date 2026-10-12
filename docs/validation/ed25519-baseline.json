@@ -1,0 +1,4632 @@
+{
+  "commit": "14edc43ac9b5e8acfd746c08393edd869c931882",
+  "platform": "Darwin 27.0.0 arm64",
+  "fixture_sha256": "f1a1273565a273043f7957d262dfc09a0e7fd67f56317d2affc1c175b1fac846",
+  "implementations": {
+    "typescript": {
+      "versions": {
+        "node": "24.21.0",
+        "acorn": "8.18.0",
+        "ada": "4.0.0",
+        "amaro": "1.1.11",
+        "ares": "1.34.8",
+        "brotli": "1.2.0",
+        "cldr": "48.0",
+        "icu": "78.3",
+        "llhttp": "9.4.3",
+        "merve": "1.2.2",
+        "modules": "137",
+        "napi": "10",
+        "nbytes": "0.1.4",
+        "ncrypto": "0.0.1",
+        "nghttp2": "1.70.0",
+        "nghttp3": "",
+        "ngtcp2": "",
+        "openssl": "3.5.8",
+        "simdjson": "4.6.7",
+        "simdutf": "6.4.0",
+        "sqlite": "3.53.4",
+        "tz": "2026c",
+        "undici": "7.29.1",
+        "unicode": "17.0",
+        "uv": "1.52.1",
+        "uvwasi": "0.0.23",
+        "v8": "13.6.233.17-node.53",
+        "zlib": "1.3.2.1-motley-8002e91",
+        "zstd": "1.5.7"
+      },
+      "raw_library": [
+        {
+          "expected": false,
+          "actual": false,
+          "count": 934,
+          "ids": [
+            "CCTV-0",
+            "CCTV-1",
+            "CCTV-2",
+            "CCTV-3",
+            "CCTV-4",
+            "CCTV-5",
+            "CCTV-6",
+            "CCTV-8",
+            "CCTV-9",
+            "CCTV-10",
+            "CCTV-11",
+            "CCTV-12",
+            "CCTV-13",
+            "CCTV-14",
+            "CCTV-15",
+            "CCTV-16",
+            "CCTV-17",
+            "CCTV-18",
+            "CCTV-19",
+            "CCTV-20",
+            "CCTV-21",
+            "CCTV-22",
+            "CCTV-23",
+            "CCTV-24",
+            "CCTV-25",
+            "CCTV-26",
+            "CCTV-27",
+            "CCTV-28",
+            "CCTV-30",
+            "CCTV-31",
+            "CCTV-32",
+            "CCTV-33",
+            "CCTV-34",
+            "CCTV-35",
+            "CCTV-36",
+            "CCTV-37",
+            "CCTV-38",
+            "CCTV-39",
+            "CCTV-40",
+            "CCTV-41",
+            "CCTV-42",
+            "CCTV-43",
+            "CCTV-44",
+            "CCTV-45",
+            "CCTV-46",
+            "CCTV-47",
+            "CCTV-48",
+            "CCTV-49",
+            "CCTV-51",
+            "CCTV-52",
+            "CCTV-53",
+            "CCTV-54",
+            "CCTV-55",
+            "CCTV-56",
+            "CCTV-57",
+            "CCTV-58",
+            "CCTV-59",
+            "CCTV-60",
+            "CCTV-61",
+            "CCTV-62",
+            "CCTV-63",
+            "CCTV-64",
+            "CCTV-65",
+            "CCTV-66",
+            "CCTV-67",
+            "CCTV-68",
+            "CCTV-69",
+            "CCTV-70",
+            "CCTV-71",
+            "CCTV-72",
+            "CCTV-73",
+            "CCTV-74",
+            "CCTV-75",
+            "CCTV-76",
+            "CCTV-77",
+            "CCTV-78",
+            "CCTV-79",
+            "CCTV-80",
+            "CCTV-81",
+            "CCTV-82",
+            "CCTV-83",
+            "CCTV-84",
+            "CCTV-85",
+            "CCTV-86",
+            "CCTV-87",
+            "CCTV-88",
+            "CCTV-89",
+            "CCTV-90",
+            "CCTV-91",
+            "CCTV-92",
+            "CCTV-93",
+            "CCTV-94",
+            "CCTV-95",
+            "CCTV-96",
+            "CCTV-97",
+            "CCTV-98",
+            "CCTV-99",
+            "CCTV-100",
+            "CCTV-101",
+            "CCTV-102",
+            "CCTV-103",
+            "CCTV-104",
+            "CCTV-105",
+            "CCTV-106",
+            "CCTV-107",
+            "CCTV-108",
+            "CCTV-109",
+            "CCTV-110",
+            "CCTV-111",
+            "CCTV-112",
+            "CCTV-113",
+            "CCTV-114",
+            "CCTV-115",
+            "CCTV-116",
+            "CCTV-118",
+            "CCTV-119",
+            "CCTV-120",
+            "CCTV-121",
+            "CCTV-122",
+            "CCTV-123",
+            "CCTV-124",
+            "CCTV-125",
+            "CCTV-126",
+            "CCTV-127",
+            "CCTV-128",
+            "CCTV-129",
+            "CCTV-130",
+            "CCTV-131",
+            "CCTV-132",
+            "CCTV-133",
+            "CCTV-134",
+            "CCTV-135",
+            "CCTV-136",
+            "CCTV-137",
+            "CCTV-138",
+            "CCTV-140",
+            "CCTV-141",
+            "CCTV-142",
+            "CCTV-143",
+            "CCTV-144",
+            "CCTV-145",
+            "CCTV-146",
+            "CCTV-147",
+            "CCTV-148",
+            "CCTV-149",
+            "CCTV-150",
+            "CCTV-151",
+            "CCTV-152",
+            "CCTV-153",
+            "CCTV-154",
+            "CCTV-155",
+            "CCTV-156",
+            "CCTV-157",
+            "CCTV-158",
+            "CCTV-159",
+            "CCTV-160",
+            "CCTV-162",
+            "CCTV-163",
+            "CCTV-164",
+            "CCTV-165",
+            "CCTV-166",
+            "CCTV-167",
+            "CCTV-168",
+            "CCTV-169",
+            "CCTV-170",
+            "CCTV-171",
+            "CCTV-172",
+            "CCTV-173",
+            "CCTV-174",
+            "CCTV-175",
+            "CCTV-176",
+            "CCTV-177",
+            "CCTV-178",
+            "CCTV-179",
+            "CCTV-180",
+            "CCTV-181",
+            "CCTV-183",
+            "CCTV-184",
+            "CCTV-185",
+            "CCTV-186",
+            "CCTV-187",
+            "CCTV-188",
+            "CCTV-189",
+            "CCTV-190",
+            "CCTV-191",
+            "CCTV-192",
+            "CCTV-193",
+            "CCTV-194",
+            "CCTV-195",
+            "CCTV-196",
+            "CCTV-197",
+            "CCTV-198",
+            "CCTV-199",
+            "CCTV-200",
+            "CCTV-201",
+            "CCTV-202",
+            "CCTV-203",
+            "CCTV-204",
+            "CCTV-205",
+            "CCTV-206",
+            "CCTV-207",
+            "CCTV-208",
+            "CCTV-209",
+            "CCTV-210",
+            "CCTV-211",
+            "CCTV-212",
+            "CCTV-213",
+            "CCTV-214",
+            "CCTV-215",
+            "CCTV-216",
+            "CCTV-217",
+            "CCTV-218",
+            "CCTV-219",
+            "CCTV-220",
+            "CCTV-221",
+            "CCTV-222",
+            "CCTV-223",
+            "CCTV-224",
+            "CCTV-225",
+            "CCTV-226",
+            "CCTV-227",
+            "CCTV-228",
+            "CCTV-229",
+            "CCTV-230",
+            "CCTV-231",
+            "CCTV-232",
+            "CCTV-233",
+            "CCTV-234",
+            "CCTV-235",
+            "CCTV-236",
+            "CCTV-237",
+            "CCTV-238",
+            "CCTV-239",
+            "CCTV-240",
+            "CCTV-241",
+            "CCTV-242",
+            "CCTV-243",
+            "CCTV-244",
+            "CCTV-245",
+            "CCTV-246",
+            "CCTV-247",
+            "CCTV-248",
+            "CCTV-250",
+            "CCTV-251",
+            "CCTV-252",
+            "CCTV-253",
+            "CCTV-254",
+            "CCTV-255",
+            "CCTV-256",
+            "CCTV-257",
+            "CCTV-258",
+            "CCTV-259",
+            "CCTV-260",
+            "CCTV-261",
+            "CCTV-262",
+            "CCTV-263",
+            "CCTV-264",
+            "CCTV-265",
+            "CCTV-266",
+            "CCTV-267",
+            "CCTV-268",
+            "CCTV-269",
+            "CCTV-270",
+            "CCTV-271",
+            "CCTV-272",
+            "CCTV-273",
+            "CCTV-274",
+            "CCTV-275",
+            "CCTV-276",
+            "CCTV-277",
+            "CCTV-278",
+            "CCTV-279",
+            "CCTV-280",
+            "CCTV-281",
+            "CCTV-282",
+            "CCTV-283",
+            "CCTV-284",
+            "CCTV-285",
+            "CCTV-286",
+            "CCTV-287",
+            "CCTV-288",
+            "CCTV-289",
+            "CCTV-290",
+            "CCTV-291",
+            "CCTV-292",
+            "CCTV-293",
+            "CCTV-294",
+            "CCTV-295",
+            "CCTV-296",
+            "CCTV-297",
+            "CCTV-298",
+            "CCTV-299",
+            "CCTV-300",
+            "CCTV-301",
+            "CCTV-302",
+            "CCTV-303",
+            "CCTV-304",
+            "CCTV-306",
+            "CCTV-307",
+            "CCTV-308",
+            "CCTV-309",
+            "CCTV-310",
+            "CCTV-311",
+            "CCTV-312",
+            "CCTV-313",
+            "CCTV-314",
+            "CCTV-315",
+            "CCTV-316",
+            "CCTV-317",
+            "CCTV-318",
+            "CCTV-319",
+            "CCTV-320",
+            "CCTV-321",
+            "CCTV-322",
+            "CCTV-323",
+            "CCTV-324",
+            "CCTV-325",
+            "CCTV-326",
+            "CCTV-327",
+            "CCTV-328",
+            "CCTV-329",
+            "CCTV-330",
+            "CCTV-331",
+            "CCTV-332",
+            "CCTV-333",
+            "CCTV-334",
+            "CCTV-335",
+            "CCTV-336",
+            "CCTV-337",
+            "CCTV-338",
+            "CCTV-339",
+            "CCTV-340",
+            "CCTV-341",
+            "CCTV-342",
+            "CCTV-343",
+            "CCTV-344",
+            "CCTV-345",
+            "CCTV-346",
+            "CCTV-347",
+            "CCTV-348",
+            "CCTV-349",
+            "CCTV-350",
+            "CCTV-351",
+            "CCTV-352",
+            "CCTV-353",
+            "CCTV-354",
+            "CCTV-355",
+            "CCTV-356",
+            "CCTV-357",
+            "CCTV-358",
+            "CCTV-359",
+            "CCTV-360",
+            "CCTV-361",
+            "CCTV-362",
+            "CCTV-363",
+            "CCTV-364",
+            "CCTV-365",
+            "CCTV-366",
+            "CCTV-367",
+            "CCTV-368",
+            "CCTV-369",
+            "CCTV-370",
+            "CCTV-371",
+            "CCTV-372",
+            "CCTV-373",
+            "CCTV-374",
+            "CCTV-375",
+            "CCTV-376",
+            "CCTV-377",
+            "CCTV-378",
+            "CCTV-379",
+            "CCTV-380",
+            "CCTV-381",
+            "CCTV-382",
+            "CCTV-383",
+            "CCTV-384",
+            "CCTV-385",
+            "CCTV-386",
+            "CCTV-387",
+            "CCTV-388",
+            "CCTV-389",
+            "CCTV-390",
+            "CCTV-391",
+            "CCTV-392",
+            "CCTV-393",
+            "CCTV-394",
+            "CCTV-395",
+            "CCTV-396",
+            "CCTV-397",
+            "CCTV-398",
+            "CCTV-399",
+            "CCTV-400",
+            "CCTV-401",
+            "CCTV-402",
+            "CCTV-403",
+            "CCTV-404",
+            "CCTV-405",
+            "CCTV-406",
+            "CCTV-407",
+            "CCTV-408",
+            "CCTV-409",
+            "CCTV-410",
+            "CCTV-412",
+            "CCTV-413",
+            "CCTV-414",
+            "CCTV-415",
+            "CCTV-416",
+            "CCTV-417",
+            "CCTV-418",
+            "CCTV-419",
+            "CCTV-420",
+            "CCTV-421",
+            "CCTV-422",
+            "CCTV-423",
+            "CCTV-424",
+            "CCTV-426",
+            "CCTV-427",
+            "CCTV-428",
+            "CCTV-429",
+            "CCTV-430",
+            "CCTV-431",
+            "CCTV-432",
+            "CCTV-433",
+            "CCTV-434",
+            "CCTV-435",
+            "CCTV-436",
+            "CCTV-437",
+            "CCTV-439",
+            "CCTV-440",
+            "CCTV-441",
+            "CCTV-442",
+            "CCTV-443",
+            "CCTV-444",
+            "CCTV-445",
+            "CCTV-446",
+            "CCTV-447",
+            "CCTV-448",
+            "CCTV-449",
+            "CCTV-450",
+            "CCTV-451",
+            "CCTV-452",
+            "CCTV-453",
+            "CCTV-454",
+            "CCTV-455",
+            "CCTV-456",
+            "CCTV-457",
+            "CCTV-458",
+            "CCTV-459",
+            "CCTV-460",
+            "CCTV-461",
+            "CCTV-462",
+            "CCTV-463",
+            "CCTV-464",
+            "CCTV-466",
+            "CCTV-467",
+            "CCTV-468",
+            "CCTV-469",
+            "CCTV-470",
+            "CCTV-471",
+            "CCTV-472",
+            "CCTV-474",
+            "CCTV-475",
+            "CCTV-476",
+            "CCTV-477",
+            "CCTV-478",
+            "CCTV-479",
+            "CCTV-480",
+            "CCTV-482",
+            "CCTV-483",
+            "CCTV-484",
+            "CCTV-485",
+            "CCTV-486",
+            "CCTV-487",
+            "CCTV-488",
+            "CCTV-490",
+            "CCTV-491",
+            "CCTV-492",
+            "CCTV-493",
+            "CCTV-494",
+            "CCTV-495",
+            "CCTV-496",
+            "CCTV-498",
+            "CCTV-499",
+            "CCTV-500",
+            "CCTV-501",
+            "CCTV-502",
+            "CCTV-503",
+            "CCTV-504",
+            "CCTV-505",
+            "CCTV-506",
+            "CCTV-507",
+            "CCTV-508",
+            "CCTV-509",
+            "CCTV-510",
+            "CCTV-512",
+            "CCTV-513",
+            "CCTV-514",
+            "CCTV-515",
+            "CCTV-516",
+            "CCTV-517",
+            "CCTV-518",
+            "CCTV-519",
+            "CCTV-520",
+            "CCTV-521",
+            "CCTV-522",
+            "CCTV-523",
+            "CCTV-524",
+            "CCTV-526",
+            "CCTV-527",
+            "CCTV-528",
+            "CCTV-529",
+            "CCTV-530",
+            "CCTV-531",
+            "CCTV-532",
+            "CCTV-533",
+            "CCTV-534",
+            "CCTV-535",
+            "CCTV-536",
+            "CCTV-537",
+            "CCTV-539",
+            "CCTV-540",
+            "CCTV-541",
+            "CCTV-542",
+            "CCTV-543",
+            "CCTV-544",
+            "CCTV-545",
+            "CCTV-546",
+            "CCTV-547",
+            "CCTV-548",
+            "CCTV-549",
+            "CCTV-550",
+            "CCTV-551",
+            "CCTV-552",
+            "CCTV-553",
+            "CCTV-554",
+            "CCTV-555",
+            "CCTV-556",
+            "CCTV-557",
+            "CCTV-558",
+            "CCTV-559",
+            "CCTV-560",
+            "CCTV-561",
+            "CCTV-562",
+            "CCTV-563",
+            "CCTV-564",
+            "CCTV-566",
+            "CCTV-567",
+            "CCTV-568",
+            "CCTV-569",
+            "CCTV-570",
+            "CCTV-571",
+            "CCTV-572",
+            "CCTV-574",
+            "CCTV-575",
+            "CCTV-576",
+            "CCTV-577",
+            "CCTV-578",
+            "CCTV-579",
+            "CCTV-580",
+            "CCTV-582",
+            "CCTV-583",
+            "CCTV-584",
+            "CCTV-585",
+            "CCTV-586",
+            "CCTV-587",
+            "CCTV-588",
+            "CCTV-590",
+            "CCTV-591",
+            "CCTV-592",
+            "CCTV-593",
+            "CCTV-594",
+            "CCTV-595",
+            "CCTV-596",
+            "CCTV-598",
+            "CCTV-599",
+            "CCTV-600",
+            "CCTV-601",
+            "CCTV-602",
+            "CCTV-603",
+            "CCTV-604",
+            "CCTV-605",
+            "CCTV-606",
+            "CCTV-607",
+            "CCTV-608",
+            "CCTV-609",
+            "CCTV-610",
+            "CCTV-612",
+            "CCTV-613",
+            "CCTV-614",
+            "CCTV-615",
+            "CCTV-616",
+            "CCTV-617",
+            "CCTV-618",
+            "CCTV-619",
+            "CCTV-620",
+            "CCTV-621",
+            "CCTV-622",
+            "CCTV-623",
+            "CCTV-624",
+            "CCTV-626",
+            "CCTV-627",
+            "CCTV-628",
+            "CCTV-629",
+            "CCTV-630",
+            "CCTV-631",
+            "CCTV-632",
+            "CCTV-633",
+            "CCTV-634",
+            "CCTV-635",
+            "CCTV-636",
+            "CCTV-637",
+            "CCTV-639",
+            "CCTV-640",
+            "CCTV-641",
+            "CCTV-642",
+            "CCTV-643",
+            "CCTV-644",
+            "CCTV-645",
+            "CCTV-646",
+            "CCTV-647",
+            "CCTV-648",
+            "CCTV-649",
+            "CCTV-650",
+            "CCTV-651",
+            "CCTV-652",
+            "CCTV-653",
+            "CCTV-654",
+            "CCTV-655",
+            "CCTV-656",
+            "CCTV-657",
+            "CCTV-658",
+            "CCTV-659",
+            "CCTV-660",
+            "CCTV-661",
+            "CCTV-662",
+            "CCTV-663",
+            "CCTV-664",
+            "CCTV-666",
+            "CCTV-667",
+            "CCTV-668",
+            "CCTV-669",
+            "CCTV-670",
+            "CCTV-671",
+            "CCTV-672",
+            "CCTV-674",
+            "CCTV-675",
+            "CCTV-676",
+            "CCTV-677",
+            "CCTV-678",
+            "CCTV-679",
+            "CCTV-680",
+            "CCTV-682",
+            "CCTV-683",
+            "CCTV-684",
+            "CCTV-685",
+            "CCTV-686",
+            "CCTV-687",
+            "CCTV-688",
+            "CCTV-690",
+            "CCTV-691",
+            "CCTV-692",
+            "CCTV-693",
+            "CCTV-694",
+            "CCTV-695",
+            "CCTV-696",
+            "CCTV-698",
+            "CCTV-699",
+            "CCTV-700",
+            "CCTV-701",
+            "CCTV-702",
+            "CCTV-703",
+            "CCTV-704",
+            "CCTV-705",
+            "CCTV-706",
+            "CCTV-707",
+            "CCTV-708",
+            "CCTV-709",
+            "CCTV-710",
+            "CCTV-712",
+            "CCTV-713",
+            "CCTV-714",
+            "CCTV-715",
+            "CCTV-716",
+            "CCTV-717",
+            "CCTV-718",
+            "CCTV-719",
+            "CCTV-720",
+            "CCTV-721",
+            "CCTV-722",
+            "CCTV-723",
+            "CCTV-724",
+            "CCTV-726",
+            "CCTV-727",
+            "CCTV-728",
+            "CCTV-729",
+            "CCTV-730",
+            "CCTV-731",
+            "CCTV-732",
+            "CCTV-733",
+            "CCTV-734",
+            "CCTV-735",
+            "CCTV-736",
+            "CCTV-737",
+            "CCTV-739",
+            "CCTV-740",
+            "CCTV-741",
+            "CCTV-742",
+            "CCTV-743",
+            "CCTV-744",
+            "CCTV-745",
+            "CCTV-746",
+            "CCTV-747",
+            "CCTV-748",
+            "CCTV-749",
+            "CCTV-750",
+            "CCTV-751",
+            "CCTV-752",
+            "CCTV-753",
+            "CCTV-754",
+            "CCTV-755",
+            "CCTV-756",
+            "CCTV-757",
+            "CCTV-758",
+            "CCTV-759",
+            "CCTV-760",
+            "CCTV-761",
+            "CCTV-762",
+            "CCTV-763",
+            "CCTV-764",
+            "CCTV-766",
+            "CCTV-767",
+            "CCTV-768",
+            "CCTV-769",
+            "CCTV-770",
+            "CCTV-771",
+            "CCTV-772",
+            "CCTV-774",
+            "CCTV-775",
+            "CCTV-776",
+            "CCTV-777",
+            "CCTV-778",
+            "CCTV-779",
+            "CCTV-780",
+            "CCTV-782",
+            "CCTV-783",
+            "CCTV-784",
+            "CCTV-785",
+            "CCTV-786",
+            "CCTV-787",
+            "CCTV-788",
+            "CCTV-790",
+            "CCTV-791",
+            "CCTV-792",
+            "CCTV-793",
+            "CCTV-794",
+            "CCTV-795",
+            "CCTV-796",
+            "CCTV-798",
+            "CCTV-799",
+            "CCTV-800",
+            "CCTV-801",
+            "CCTV-802",
+            "CCTV-803",
+            "CCTV-804",
+            "CCTV-805",
+            "CCTV-806",
+            "CCTV-807",
+            "CCTV-808",
+            "CCTV-809",
+            "CCTV-810",
+            "CCTV-811",
+            "CCTV-812",
+            "CCTV-813",
+            "CCTV-814",
+            "CCTV-815",
+            "CCTV-816",
+            "CCTV-817",
+            "CCTV-818",
+            "CCTV-819",
+            "CCTV-820",
+            "CCTV-821",
+            "CCTV-822",
+            "CCTV-823",
+            "CCTV-824",
+            "CCTV-825",
+            "CCTV-826",
+            "CCTV-827",
+            "CCTV-828",
+            "CCTV-829",
+            "CCTV-830",
+            "CCTV-831",
+            "CCTV-833",
+            "CCTV-834",
+            "CCTV-835",
+            "CCTV-836",
+            "CCTV-837",
+            "CCTV-838",
+            "CCTV-839",
+            "CCTV-840",
+            "CCTV-841",
+            "CCTV-842",
+            "CCTV-843",
+            "CCTV-844",
+            "CCTV-845",
+            "CCTV-846",
+            "CCTV-847",
+            "CCTV-848",
+            "CCTV-849",
+            "CCTV-850",
+            "CCTV-851",
+            "CCTV-852",
+            "CCTV-853",
+            "CCTV-854",
+            "CCTV-855",
+            "CCTV-856",
+            "CCTV-857",
+            "CCTV-858",
+            "CCTV-859",
+            "CCTV-860",
+            "CCTV-861",
+            "CCTV-862",
+            "CCTV-863",
+            "CCTV-864",
+            "CCTV-865",
+            "CCTV-866",
+            "CCTV-867",
+            "CCTV-868",
+            "CCTV-869",
+            "CCTV-870",
+            "CCTV-871",
+            "CCTV-872",
+            "CCTV-873",
+            "CCTV-874",
+            "CCTV-875",
+            "CCTV-876",
+            "CCTV-877",
+            "CCTV-878",
+            "CCTV-879",
+            "CCTV-880",
+            "CCTV-881",
+            "CCTV-882",
+            "CCTV-883",
+            "CCTV-884",
+            "CCTV-885",
+            "CCTV-886",
+            "CCTV-887",
+            "CCTV-888",
+            "CCTV-889",
+            "CCTV-890",
+            "CCTV-891",
+            "CCTV-892",
+            "CCTV-893",
+            "CCTV-894",
+            "CCTV-895",
+            "CCTV-896",
+            "CCTV-897",
+            "CCTV-898",
+            "CCTV-900",
+            "CCTV-901",
+            "CCTV-902",
+            "CCTV-903",
+            "CCTV-904",
+            "CCTV-905",
+            "CCTV-906",
+            "CCTV-907",
+            "CCTV-908",
+            "CCTV-909",
+            "CCTV-910",
+            "CCTV-911",
+            "CCTV-912",
+            "CCTV-913",
+            "Wycheproof-10",
+            "Wycheproof-11",
+            "Wycheproof-12",
+            "Wycheproof-13",
+            "Wycheproof-14",
+            "Wycheproof-15",
+            "Wycheproof-16",
+            "Wycheproof-17",
+            "Wycheproof-18",
+            "Wycheproof-19",
+            "Wycheproof-20",
+            "Wycheproof-21",
+            "Wycheproof-22",
+            "Wycheproof-23",
+            "Wycheproof-24",
+            "Wycheproof-25",
+            "Wycheproof-26",
+            "Wycheproof-27",
+            "Wycheproof-28",
+            "Wycheproof-29",
+            "Wycheproof-30",
+            "Wycheproof-31",
+            "Wycheproof-32",
+            "Wycheproof-33",
+            "Wycheproof-34",
+            "Wycheproof-35",
+            "Wycheproof-36",
+            "Wycheproof-37",
+            "Wycheproof-38",
+            "Wycheproof-39",
+            "Wycheproof-40",
+            "Wycheproof-41",
+            "Wycheproof-42",
+            "Wycheproof-43",
+            "Wycheproof-44",
+            "Wycheproof-45",
+            "Wycheproof-46",
+            "Wycheproof-47",
+            "Wycheproof-48",
+            "Wycheproof-49",
+            "Wycheproof-50",
+            "Wycheproof-51",
+            "Wycheproof-52",
+            "Wycheproof-53",
+            "Wycheproof-54",
+            "Wycheproof-55",
+            "Wycheproof-56",
+            "Wycheproof-57",
+            "Wycheproof-58",
+            "Wycheproof-59",
+            "Wycheproof-60",
+            "Wycheproof-61",
+            "Wycheproof-62",
+            "Wycheproof-63",
+            "Wycheproof-64",
+            "Wycheproof-65",
+            "Wycheproof-66",
+            "Wycheproof-67",
+            "Wycheproof-68",
+            "Wycheproof-69",
+            "Wycheproof-70",
+            "Wycheproof-85",
+            "Wycheproof-151"
+          ]
+        },
+        {
+          "expected": true,
+          "actual": true,
+          "count": 131,
+          "ids": [
+            "CCTV-7",
+            "CCTV-29",
+            "CCTV-50",
+            "CCTV-117",
+            "CCTV-139",
+            "CCTV-161",
+            "CCTV-182",
+            "CCTV-249",
+            "CCTV-305",
+            "CCTV-411",
+            "CCTV-425",
+            "CCTV-438",
+            "CCTV-465",
+            "CCTV-473",
+            "CCTV-481",
+            "CCTV-489",
+            "CCTV-497",
+            "CCTV-511",
+            "CCTV-525",
+            "CCTV-538",
+            "CCTV-565",
+            "CCTV-573",
+            "CCTV-581",
+            "CCTV-589",
+            "CCTV-597",
+            "CCTV-611",
+            "CCTV-625",
+            "CCTV-638",
+            "CCTV-665",
+            "CCTV-673",
+            "CCTV-681",
+            "CCTV-689",
+            "CCTV-697",
+            "CCTV-711",
+            "CCTV-725",
+            "CCTV-738",
+            "CCTV-765",
+            "CCTV-773",
+            "CCTV-781",
+            "CCTV-789",
+            "CCTV-797",
+            "CCTV-832",
+            "CCTV-899",
+            "Wycheproof-1",
+            "Wycheproof-2",
+            "Wycheproof-3",
+            "Wycheproof-4",
+            "Wycheproof-5",
+            "Wycheproof-6",
+            "Wycheproof-7",
+            "Wycheproof-8",
+            "Wycheproof-9",
+            "Wycheproof-71",
+            "Wycheproof-72",
+            "Wycheproof-73",
+            "Wycheproof-74",
+            "Wycheproof-75",
+            "Wycheproof-76",
+            "Wycheproof-77",
+            "Wycheproof-78",
+            "Wycheproof-79",
+            "Wycheproof-80",
+            "Wycheproof-81",
+            "Wycheproof-82",
+            "Wycheproof-83",
+            "Wycheproof-84",
+            "Wycheproof-86",
+            "Wycheproof-87",
+            "Wycheproof-88",
+            "Wycheproof-89",
+            "Wycheproof-90",
+            "Wycheproof-91",
+            "Wycheproof-92",
+            "Wycheproof-93",
+            "Wycheproof-94",
+            "Wycheproof-95",
+            "Wycheproof-96",
+            "Wycheproof-97",
+            "Wycheproof-98",
+            "Wycheproof-99",
+            "Wycheproof-100",
+            "Wycheproof-101",
+            "Wycheproof-102",
+            "Wycheproof-103",
+            "Wycheproof-104",
+            "Wycheproof-105",
+            "Wycheproof-106",
+            "Wycheproof-107",
+            "Wycheproof-108",
+            "Wycheproof-109",
+            "Wycheproof-110",
+            "Wycheproof-111",
+            "Wycheproof-112",
+            "Wycheproof-113",
+            "Wycheproof-114",
+            "Wycheproof-115",
+            "Wycheproof-116",
+            "Wycheproof-117",
+            "Wycheproof-118",
+            "Wycheproof-119",
+            "Wycheproof-120",
+            "Wycheproof-121",
+            "Wycheproof-122",
+            "Wycheproof-123",
+            "Wycheproof-124",
+            "Wycheproof-125",
+            "Wycheproof-126",
+            "Wycheproof-127",
+            "Wycheproof-128",
+            "Wycheproof-129",
+            "Wycheproof-130",
+            "Wycheproof-131",
+            "Wycheproof-132",
+            "Wycheproof-133",
+            "Wycheproof-134",
+            "Wycheproof-135",
+            "Wycheproof-136",
+            "Wycheproof-137",
+            "Wycheproof-138",
+            "Wycheproof-139",
+            "Wycheproof-140",
+            "Wycheproof-141",
+            "Wycheproof-142",
+            "Wycheproof-143",
+            "Wycheproof-144",
+            "Wycheproof-145",
+            "Wycheproof-146",
+            "Wycheproof-147",
+            "Wycheproof-148",
+            "Wycheproof-149",
+            "Wycheproof-150"
+          ]
+        }
+      ],
+      "boundaries": [
+        {
+          "name": "ordinary-known-scalar-control",
+          "op": "verify",
+          "expected": {
+            "valid": true
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": true,
+            "error": null
+          }
+        },
+        {
+          "name": "ordinary-known-scalar-control",
+          "op": "resolve",
+          "expected": {
+            "valid": true,
+            "error": null
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": true,
+            "error": null
+          }
+        },
+        {
+          "name": "ordinary-RFC8032-seed-control",
+          "op": "verify",
+          "expected": {
+            "valid": true
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": true,
+            "error": null
+          }
+        },
+        {
+          "name": "ordinary-RFC8032-seed-control",
+          "op": "resolve",
+          "expected": {
+            "valid": true,
+            "error": null
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": true,
+            "error": null
+          }
+        },
+        {
+          "name": "tampered-ordinary-signature",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "tampered-ordinary-signature",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "low-order-A-0000000000000000000000000000000000000000000000000000000000000000",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-A-0000000000000000000000000000000000000000000000000000000000000000",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "low-order-R-0000000000000000000000000000000000000000000000000000000000000000",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-R-0000000000000000000000000000000000000000000000000000000000000000",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "low-order-A-0000000000000000000000000000000000000000000000000000000000000080",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-A-0000000000000000000000000000000000000000000000000000000000000080",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "low-order-R-0000000000000000000000000000000000000000000000000000000000000080",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-R-0000000000000000000000000000000000000000000000000000000000000080",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "low-order-A-0100000000000000000000000000000000000000000000000000000000000000",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-A-0100000000000000000000000000000000000000000000000000000000000000",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "low-order-R-0100000000000000000000000000000000000000000000000000000000000000",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-R-0100000000000000000000000000000000000000000000000000000000000000",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "low-order-A-0100000000000000000000000000000000000000000000000000000000000080",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-A-0100000000000000000000000000000000000000000000000000000000000080",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "low-order-R-0100000000000000000000000000000000000000000000000000000000000080",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-R-0100000000000000000000000000000000000000000000000000000000000080",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "low-order-A-26e8958fc2b227b045c3f489f2ef98f0d5dfac05d3c63339b13802886d53fc05",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-A-26e8958fc2b227b045c3f489f2ef98f0d5dfac05d3c63339b13802886d53fc05",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "low-order-R-26e8958fc2b227b045c3f489f2ef98f0d5dfac05d3c63339b13802886d53fc05",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-R-26e8958fc2b227b045c3f489f2ef98f0d5dfac05d3c63339b13802886d53fc05",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "low-order-A-26e8958fc2b227b045c3f489f2ef98f0d5dfac05d3c63339b13802886d53fc85",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-A-26e8958fc2b227b045c3f489f2ef98f0d5dfac05d3c63339b13802886d53fc85",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "low-order-R-26e8958fc2b227b045c3f489f2ef98f0d5dfac05d3c63339b13802886d53fc85",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-R-26e8958fc2b227b045c3f489f2ef98f0d5dfac05d3c63339b13802886d53fc85",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "low-order-A-c7176a703d4dd84fba3c0b760d10670f2a2053fa2c39ccc64ec7fd7792ac037a",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-A-c7176a703d4dd84fba3c0b760d10670f2a2053fa2c39ccc64ec7fd7792ac037a",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "low-order-R-c7176a703d4dd84fba3c0b760d10670f2a2053fa2c39ccc64ec7fd7792ac037a",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-R-c7176a703d4dd84fba3c0b760d10670f2a2053fa2c39ccc64ec7fd7792ac037a",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "low-order-A-c7176a703d4dd84fba3c0b760d10670f2a2053fa2c39ccc64ec7fd7792ac03fa",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-A-c7176a703d4dd84fba3c0b760d10670f2a2053fa2c39ccc64ec7fd7792ac03fa",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "low-order-R-c7176a703d4dd84fba3c0b760d10670f2a2053fa2c39ccc64ec7fd7792ac03fa",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-R-c7176a703d4dd84fba3c0b760d10670f2a2053fa2c39ccc64ec7fd7792ac03fa",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "low-order-A-ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-A-ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "low-order-R-ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-R-ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "low-order-A-ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-A-ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "low-order-R-ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-R-ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "low-order-A-edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-A-edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "low-order-R-edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-R-edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "low-order-A-edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-A-edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "low-order-R-edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-R-edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "low-order-A-eeffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-A-eeffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "low-order-R-eeffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-R-eeffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "low-order-A-eeffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-A-eeffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "low-order-R-eeffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-R-eeffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "S-equals-L",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "S-equals-L",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "S-plus-L",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "S-plus-L",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "off-curve-A",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "off-curve-A",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "off-curve-R",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "off-curve-R",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "y-equals-p-A",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "y-equals-p-A",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "y-equals-p-R",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "y-equals-p-R",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "mixed-A-True-R-False-valid-True",
+          "op": "verify",
+          "expected": {
+            "valid": true
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": true,
+            "error": null
+          }
+        },
+        {
+          "name": "mixed-A-True-R-False-valid-True",
+          "op": "resolve",
+          "expected": {
+            "valid": true,
+            "error": null
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": true,
+            "error": null
+          }
+        },
+        {
+          "name": "mixed-A-True-R-False-valid-False",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "mixed-A-True-R-False-valid-False",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "mixed-A-True-R-True-valid-True",
+          "op": "verify",
+          "expected": {
+            "valid": true
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": true,
+            "error": null
+          }
+        },
+        {
+          "name": "mixed-A-True-R-True-valid-True",
+          "op": "resolve",
+          "expected": {
+            "valid": true,
+            "error": null
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": true,
+            "error": null
+          }
+        },
+        {
+          "name": "mixed-A-True-R-True-valid-False",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "mixed-A-True-R-True-valid-False",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "mixed-A-False-R-True-valid-False",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "mixed-A-False-R-True-valid-False",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "valid-witness",
+          "op": "resolve",
+          "expected": {
+            "valid": true,
+            "error": null
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": true,
+            "error": null
+          }
+        },
+        {
+          "name": "identity-witness",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "witness-threshold-not-met"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "witness-threshold-not-met"
+          }
+        },
+        {
+          "name": "partial-validity-target-None",
+          "op": "resolve",
+          "expected": {
+            "valid": true,
+            "error": "invalid-proof",
+            "firstInvalidVersion": 2
+          },
+          "actual": {
+            "firstInvalidVersion": 2,
+            "ok": true,
+            "valid": true,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "partial-validity-target-1",
+          "op": "resolve",
+          "expected": {
+            "valid": true,
+            "error": "invalid-proof",
+            "firstInvalidVersion": 2
+          },
+          "actual": {
+            "firstInvalidVersion": 2,
+            "ok": true,
+            "valid": true,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "partial-validity-target-2",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        }
+      ]
+    },
+    "python": {
+      "versions": {
+        "python": "3.12.15 (main, Oct  3 2026, 00:54:33) [Clang 22.1.3 ]",
+        "cryptography": "50.0.2",
+        "openssl": "OpenSSL 4.0.3 29 Sep 2026"
+      },
+      "raw_library": [
+        {
+          "expected": false,
+          "actual": false,
+          "count": 769,
+          "ids": [
+            "CCTV-0",
+            "CCTV-2",
+            "CCTV-4",
+            "CCTV-6",
+            "CCTV-8",
+            "CCTV-10",
+            "CCTV-12",
+            "CCTV-13",
+            "CCTV-14",
+            "CCTV-15",
+            "CCTV-16",
+            "CCTV-17",
+            "CCTV-18",
+            "CCTV-19",
+            "CCTV-20",
+            "CCTV-21",
+            "CCTV-22",
+            "CCTV-24",
+            "CCTV-26",
+            "CCTV-28",
+            "CCTV-30",
+            "CCTV-32",
+            "CCTV-34",
+            "CCTV-36",
+            "CCTV-37",
+            "CCTV-38",
+            "CCTV-39",
+            "CCTV-40",
+            "CCTV-41",
+            "CCTV-42",
+            "CCTV-43",
+            "CCTV-45",
+            "CCTV-47",
+            "CCTV-49",
+            "CCTV-51",
+            "CCTV-53",
+            "CCTV-55",
+            "CCTV-56",
+            "CCTV-57",
+            "CCTV-58",
+            "CCTV-59",
+            "CCTV-60",
+            "CCTV-61",
+            "CCTV-62",
+            "CCTV-63",
+            "CCTV-64",
+            "CCTV-65",
+            "CCTV-66",
+            "CCTV-67",
+            "CCTV-68",
+            "CCTV-69",
+            "CCTV-70",
+            "CCTV-71",
+            "CCTV-72",
+            "CCTV-73",
+            "CCTV-74",
+            "CCTV-75",
+            "CCTV-76",
+            "CCTV-77",
+            "CCTV-78",
+            "CCTV-79",
+            "CCTV-80",
+            "CCTV-81",
+            "CCTV-82",
+            "CCTV-83",
+            "CCTV-84",
+            "CCTV-85",
+            "CCTV-86",
+            "CCTV-87",
+            "CCTV-88",
+            "CCTV-89",
+            "CCTV-90",
+            "CCTV-91",
+            "CCTV-92",
+            "CCTV-93",
+            "CCTV-94",
+            "CCTV-95",
+            "CCTV-96",
+            "CCTV-97",
+            "CCTV-98",
+            "CCTV-99",
+            "CCTV-100",
+            "CCTV-101",
+            "CCTV-102",
+            "CCTV-103",
+            "CCTV-104",
+            "CCTV-105",
+            "CCTV-106",
+            "CCTV-107",
+            "CCTV-108",
+            "CCTV-109",
+            "CCTV-110",
+            "CCTV-112",
+            "CCTV-114",
+            "CCTV-116",
+            "CCTV-118",
+            "CCTV-120",
+            "CCTV-122",
+            "CCTV-123",
+            "CCTV-124",
+            "CCTV-125",
+            "CCTV-126",
+            "CCTV-127",
+            "CCTV-128",
+            "CCTV-129",
+            "CCTV-130",
+            "CCTV-131",
+            "CCTV-132",
+            "CCTV-134",
+            "CCTV-136",
+            "CCTV-138",
+            "CCTV-140",
+            "CCTV-142",
+            "CCTV-144",
+            "CCTV-145",
+            "CCTV-146",
+            "CCTV-147",
+            "CCTV-148",
+            "CCTV-149",
+            "CCTV-150",
+            "CCTV-151",
+            "CCTV-152",
+            "CCTV-153",
+            "CCTV-154",
+            "CCTV-156",
+            "CCTV-158",
+            "CCTV-160",
+            "CCTV-162",
+            "CCTV-164",
+            "CCTV-168",
+            "CCTV-169",
+            "CCTV-170",
+            "CCTV-171",
+            "CCTV-172",
+            "CCTV-173",
+            "CCTV-174",
+            "CCTV-175",
+            "CCTV-177",
+            "CCTV-179",
+            "CCTV-181",
+            "CCTV-183",
+            "CCTV-185",
+            "CCTV-187",
+            "CCTV-189",
+            "CCTV-190",
+            "CCTV-191",
+            "CCTV-192",
+            "CCTV-193",
+            "CCTV-194",
+            "CCTV-195",
+            "CCTV-196",
+            "CCTV-197",
+            "CCTV-198",
+            "CCTV-199",
+            "CCTV-200",
+            "CCTV-201",
+            "CCTV-202",
+            "CCTV-203",
+            "CCTV-204",
+            "CCTV-205",
+            "CCTV-206",
+            "CCTV-207",
+            "CCTV-208",
+            "CCTV-209",
+            "CCTV-210",
+            "CCTV-211",
+            "CCTV-212",
+            "CCTV-213",
+            "CCTV-214",
+            "CCTV-215",
+            "CCTV-216",
+            "CCTV-217",
+            "CCTV-218",
+            "CCTV-219",
+            "CCTV-220",
+            "CCTV-221",
+            "CCTV-222",
+            "CCTV-223",
+            "CCTV-224",
+            "CCTV-225",
+            "CCTV-226",
+            "CCTV-227",
+            "CCTV-228",
+            "CCTV-229",
+            "CCTV-230",
+            "CCTV-231",
+            "CCTV-232",
+            "CCTV-233",
+            "CCTV-234",
+            "CCTV-235",
+            "CCTV-236",
+            "CCTV-237",
+            "CCTV-238",
+            "CCTV-239",
+            "CCTV-240",
+            "CCTV-241",
+            "CCTV-242",
+            "CCTV-244",
+            "CCTV-246",
+            "CCTV-248",
+            "CCTV-250",
+            "CCTV-252",
+            "CCTV-254",
+            "CCTV-256",
+            "CCTV-257",
+            "CCTV-258",
+            "CCTV-259",
+            "CCTV-260",
+            "CCTV-261",
+            "CCTV-262",
+            "CCTV-263",
+            "CCTV-264",
+            "CCTV-265",
+            "CCTV-266",
+            "CCTV-267",
+            "CCTV-268",
+            "CCTV-269",
+            "CCTV-270",
+            "CCTV-271",
+            "CCTV-272",
+            "CCTV-273",
+            "CCTV-274",
+            "CCTV-275",
+            "CCTV-276",
+            "CCTV-277",
+            "CCTV-278",
+            "CCTV-279",
+            "CCTV-280",
+            "CCTV-281",
+            "CCTV-282",
+            "CCTV-283",
+            "CCTV-284",
+            "CCTV-285",
+            "CCTV-286",
+            "CCTV-287",
+            "CCTV-288",
+            "CCTV-289",
+            "CCTV-290",
+            "CCTV-291",
+            "CCTV-292",
+            "CCTV-293",
+            "CCTV-294",
+            "CCTV-295",
+            "CCTV-296",
+            "CCTV-297",
+            "CCTV-298",
+            "CCTV-299",
+            "CCTV-300",
+            "CCTV-301",
+            "CCTV-315",
+            "CCTV-316",
+            "CCTV-317",
+            "CCTV-318",
+            "CCTV-319",
+            "CCTV-320",
+            "CCTV-321",
+            "CCTV-322",
+            "CCTV-323",
+            "CCTV-324",
+            "CCTV-325",
+            "CCTV-326",
+            "CCTV-327",
+            "CCTV-328",
+            "CCTV-329",
+            "CCTV-330",
+            "CCTV-331",
+            "CCTV-332",
+            "CCTV-333",
+            "CCTV-334",
+            "CCTV-335",
+            "CCTV-336",
+            "CCTV-337",
+            "CCTV-338",
+            "CCTV-339",
+            "CCTV-340",
+            "CCTV-341",
+            "CCTV-342",
+            "CCTV-343",
+            "CCTV-344",
+            "CCTV-345",
+            "CCTV-346",
+            "CCTV-347",
+            "CCTV-348",
+            "CCTV-349",
+            "CCTV-350",
+            "CCTV-351",
+            "CCTV-352",
+            "CCTV-353",
+            "CCTV-354",
+            "CCTV-355",
+            "CCTV-356",
+            "CCTV-357",
+            "CCTV-358",
+            "CCTV-359",
+            "CCTV-360",
+            "CCTV-361",
+            "CCTV-362",
+            "CCTV-363",
+            "CCTV-364",
+            "CCTV-365",
+            "CCTV-366",
+            "CCTV-367",
+            "CCTV-368",
+            "CCTV-369",
+            "CCTV-370",
+            "CCTV-371",
+            "CCTV-372",
+            "CCTV-373",
+            "CCTV-374",
+            "CCTV-375",
+            "CCTV-376",
+            "CCTV-377",
+            "CCTV-378",
+            "CCTV-379",
+            "CCTV-380",
+            "CCTV-381",
+            "CCTV-382",
+            "CCTV-383",
+            "CCTV-384",
+            "CCTV-385",
+            "CCTV-386",
+            "CCTV-387",
+            "CCTV-388",
+            "CCTV-389",
+            "CCTV-390",
+            "CCTV-391",
+            "CCTV-392",
+            "CCTV-393",
+            "CCTV-394",
+            "CCTV-395",
+            "CCTV-396",
+            "CCTV-397",
+            "CCTV-398",
+            "CCTV-399",
+            "CCTV-400",
+            "CCTV-401",
+            "CCTV-402",
+            "CCTV-403",
+            "CCTV-404",
+            "CCTV-406",
+            "CCTV-408",
+            "CCTV-410",
+            "CCTV-412",
+            "CCTV-413",
+            "CCTV-414",
+            "CCTV-415",
+            "CCTV-416",
+            "CCTV-417",
+            "CCTV-418",
+            "CCTV-420",
+            "CCTV-422",
+            "CCTV-424",
+            "CCTV-426",
+            "CCTV-427",
+            "CCTV-428",
+            "CCTV-429",
+            "CCTV-430",
+            "CCTV-431",
+            "CCTV-433",
+            "CCTV-435",
+            "CCTV-437",
+            "CCTV-439",
+            "CCTV-440",
+            "CCTV-441",
+            "CCTV-442",
+            "CCTV-443",
+            "CCTV-444",
+            "CCTV-445",
+            "CCTV-446",
+            "CCTV-447",
+            "CCTV-448",
+            "CCTV-449",
+            "CCTV-450",
+            "CCTV-451",
+            "CCTV-452",
+            "CCTV-453",
+            "CCTV-454",
+            "CCTV-455",
+            "CCTV-456",
+            "CCTV-457",
+            "CCTV-458",
+            "CCTV-460",
+            "CCTV-462",
+            "CCTV-464",
+            "CCTV-466",
+            "CCTV-468",
+            "CCTV-470",
+            "CCTV-472",
+            "CCTV-474",
+            "CCTV-476",
+            "CCTV-478",
+            "CCTV-480",
+            "CCTV-482",
+            "CCTV-484",
+            "CCTV-486",
+            "CCTV-488",
+            "CCTV-490",
+            "CCTV-492",
+            "CCTV-494",
+            "CCTV-496",
+            "CCTV-498",
+            "CCTV-499",
+            "CCTV-500",
+            "CCTV-501",
+            "CCTV-502",
+            "CCTV-503",
+            "CCTV-504",
+            "CCTV-506",
+            "CCTV-508",
+            "CCTV-510",
+            "CCTV-512",
+            "CCTV-513",
+            "CCTV-514",
+            "CCTV-515",
+            "CCTV-516",
+            "CCTV-517",
+            "CCTV-518",
+            "CCTV-520",
+            "CCTV-522",
+            "CCTV-524",
+            "CCTV-526",
+            "CCTV-527",
+            "CCTV-528",
+            "CCTV-529",
+            "CCTV-530",
+            "CCTV-531",
+            "CCTV-533",
+            "CCTV-535",
+            "CCTV-537",
+            "CCTV-539",
+            "CCTV-540",
+            "CCTV-541",
+            "CCTV-542",
+            "CCTV-543",
+            "CCTV-544",
+            "CCTV-545",
+            "CCTV-546",
+            "CCTV-547",
+            "CCTV-548",
+            "CCTV-549",
+            "CCTV-550",
+            "CCTV-551",
+            "CCTV-552",
+            "CCTV-553",
+            "CCTV-554",
+            "CCTV-555",
+            "CCTV-556",
+            "CCTV-557",
+            "CCTV-558",
+            "CCTV-560",
+            "CCTV-562",
+            "CCTV-564",
+            "CCTV-566",
+            "CCTV-568",
+            "CCTV-570",
+            "CCTV-572",
+            "CCTV-574",
+            "CCTV-576",
+            "CCTV-578",
+            "CCTV-580",
+            "CCTV-582",
+            "CCTV-584",
+            "CCTV-586",
+            "CCTV-588",
+            "CCTV-590",
+            "CCTV-592",
+            "CCTV-594",
+            "CCTV-596",
+            "CCTV-598",
+            "CCTV-599",
+            "CCTV-600",
+            "CCTV-601",
+            "CCTV-602",
+            "CCTV-603",
+            "CCTV-604",
+            "CCTV-606",
+            "CCTV-608",
+            "CCTV-610",
+            "CCTV-612",
+            "CCTV-613",
+            "CCTV-614",
+            "CCTV-615",
+            "CCTV-616",
+            "CCTV-617",
+            "CCTV-618",
+            "CCTV-620",
+            "CCTV-622",
+            "CCTV-624",
+            "CCTV-626",
+            "CCTV-627",
+            "CCTV-628",
+            "CCTV-629",
+            "CCTV-630",
+            "CCTV-631",
+            "CCTV-633",
+            "CCTV-635",
+            "CCTV-637",
+            "CCTV-639",
+            "CCTV-640",
+            "CCTV-641",
+            "CCTV-642",
+            "CCTV-643",
+            "CCTV-644",
+            "CCTV-645",
+            "CCTV-646",
+            "CCTV-647",
+            "CCTV-648",
+            "CCTV-649",
+            "CCTV-650",
+            "CCTV-651",
+            "CCTV-652",
+            "CCTV-653",
+            "CCTV-654",
+            "CCTV-655",
+            "CCTV-656",
+            "CCTV-657",
+            "CCTV-658",
+            "CCTV-660",
+            "CCTV-662",
+            "CCTV-664",
+            "CCTV-666",
+            "CCTV-668",
+            "CCTV-670",
+            "CCTV-672",
+            "CCTV-674",
+            "CCTV-676",
+            "CCTV-678",
+            "CCTV-680",
+            "CCTV-682",
+            "CCTV-684",
+            "CCTV-686",
+            "CCTV-688",
+            "CCTV-690",
+            "CCTV-692",
+            "CCTV-694",
+            "CCTV-696",
+            "CCTV-698",
+            "CCTV-699",
+            "CCTV-700",
+            "CCTV-701",
+            "CCTV-702",
+            "CCTV-703",
+            "CCTV-704",
+            "CCTV-706",
+            "CCTV-708",
+            "CCTV-710",
+            "CCTV-712",
+            "CCTV-713",
+            "CCTV-714",
+            "CCTV-715",
+            "CCTV-716",
+            "CCTV-717",
+            "CCTV-718",
+            "CCTV-720",
+            "CCTV-722",
+            "CCTV-724",
+            "CCTV-726",
+            "CCTV-727",
+            "CCTV-728",
+            "CCTV-729",
+            "CCTV-730",
+            "CCTV-731",
+            "CCTV-733",
+            "CCTV-735",
+            "CCTV-737",
+            "CCTV-739",
+            "CCTV-740",
+            "CCTV-741",
+            "CCTV-742",
+            "CCTV-743",
+            "CCTV-744",
+            "CCTV-745",
+            "CCTV-746",
+            "CCTV-747",
+            "CCTV-748",
+            "CCTV-749",
+            "CCTV-750",
+            "CCTV-751",
+            "CCTV-752",
+            "CCTV-753",
+            "CCTV-754",
+            "CCTV-755",
+            "CCTV-756",
+            "CCTV-757",
+            "CCTV-758",
+            "CCTV-760",
+            "CCTV-762",
+            "CCTV-764",
+            "CCTV-766",
+            "CCTV-768",
+            "CCTV-770",
+            "CCTV-772",
+            "CCTV-774",
+            "CCTV-776",
+            "CCTV-778",
+            "CCTV-780",
+            "CCTV-782",
+            "CCTV-784",
+            "CCTV-786",
+            "CCTV-788",
+            "CCTV-790",
+            "CCTV-792",
+            "CCTV-794",
+            "CCTV-796",
+            "CCTV-798",
+            "CCTV-799",
+            "CCTV-800",
+            "CCTV-801",
+            "CCTV-802",
+            "CCTV-803",
+            "CCTV-804",
+            "CCTV-805",
+            "CCTV-806",
+            "CCTV-807",
+            "CCTV-808",
+            "CCTV-809",
+            "CCTV-810",
+            "CCTV-811",
+            "CCTV-812",
+            "CCTV-813",
+            "CCTV-814",
+            "CCTV-815",
+            "CCTV-816",
+            "CCTV-817",
+            "CCTV-818",
+            "CCTV-819",
+            "CCTV-820",
+            "CCTV-821",
+            "CCTV-822",
+            "CCTV-823",
+            "CCTV-824",
+            "CCTV-825",
+            "CCTV-827",
+            "CCTV-829",
+            "CCTV-831",
+            "CCTV-833",
+            "CCTV-835",
+            "CCTV-837",
+            "CCTV-839",
+            "CCTV-840",
+            "CCTV-841",
+            "CCTV-842",
+            "CCTV-843",
+            "CCTV-844",
+            "CCTV-845",
+            "CCTV-846",
+            "CCTV-847",
+            "CCTV-848",
+            "CCTV-849",
+            "CCTV-850",
+            "CCTV-851",
+            "CCTV-852",
+            "CCTV-853",
+            "CCTV-854",
+            "CCTV-855",
+            "CCTV-856",
+            "CCTV-857",
+            "CCTV-858",
+            "CCTV-859",
+            "CCTV-860",
+            "CCTV-861",
+            "CCTV-862",
+            "CCTV-863",
+            "CCTV-864",
+            "CCTV-865",
+            "CCTV-866",
+            "CCTV-867",
+            "CCTV-868",
+            "CCTV-869",
+            "CCTV-870",
+            "CCTV-871",
+            "CCTV-872",
+            "CCTV-873",
+            "CCTV-874",
+            "CCTV-875",
+            "CCTV-876",
+            "CCTV-877",
+            "CCTV-878",
+            "CCTV-879",
+            "CCTV-880",
+            "CCTV-881",
+            "CCTV-882",
+            "CCTV-883",
+            "CCTV-884",
+            "CCTV-885",
+            "CCTV-886",
+            "CCTV-887",
+            "CCTV-888",
+            "CCTV-889",
+            "CCTV-890",
+            "CCTV-891",
+            "CCTV-892",
+            "CCTV-894",
+            "CCTV-896",
+            "CCTV-898",
+            "CCTV-900",
+            "CCTV-902",
+            "CCTV-905",
+            "CCTV-906",
+            "CCTV-907",
+            "CCTV-908",
+            "CCTV-909",
+            "CCTV-910",
+            "CCTV-911",
+            "CCTV-912",
+            "CCTV-913",
+            "Wycheproof-10",
+            "Wycheproof-11",
+            "Wycheproof-12",
+            "Wycheproof-13",
+            "Wycheproof-14",
+            "Wycheproof-15",
+            "Wycheproof-16",
+            "Wycheproof-17",
+            "Wycheproof-18",
+            "Wycheproof-19",
+            "Wycheproof-20",
+            "Wycheproof-21",
+            "Wycheproof-22",
+            "Wycheproof-23",
+            "Wycheproof-24",
+            "Wycheproof-25",
+            "Wycheproof-26",
+            "Wycheproof-27",
+            "Wycheproof-28",
+            "Wycheproof-29",
+            "Wycheproof-30",
+            "Wycheproof-31",
+            "Wycheproof-32",
+            "Wycheproof-33",
+            "Wycheproof-34",
+            "Wycheproof-35",
+            "Wycheproof-36",
+            "Wycheproof-37",
+            "Wycheproof-38",
+            "Wycheproof-39",
+            "Wycheproof-40",
+            "Wycheproof-41",
+            "Wycheproof-42",
+            "Wycheproof-43",
+            "Wycheproof-44",
+            "Wycheproof-45",
+            "Wycheproof-46",
+            "Wycheproof-47",
+            "Wycheproof-48",
+            "Wycheproof-49",
+            "Wycheproof-50",
+            "Wycheproof-51",
+            "Wycheproof-52",
+            "Wycheproof-53",
+            "Wycheproof-54",
+            "Wycheproof-55",
+            "Wycheproof-56",
+            "Wycheproof-57",
+            "Wycheproof-58",
+            "Wycheproof-59",
+            "Wycheproof-60",
+            "Wycheproof-61",
+            "Wycheproof-62",
+            "Wycheproof-63",
+            "Wycheproof-64",
+            "Wycheproof-65",
+            "Wycheproof-66",
+            "Wycheproof-67",
+            "Wycheproof-68",
+            "Wycheproof-69",
+            "Wycheproof-70",
+            "Wycheproof-85",
+            "Wycheproof-151"
+          ]
+        },
+        {
+          "expected": false,
+          "actual": true,
+          "count": 165,
+          "ids": [
+            "CCTV-1",
+            "CCTV-3",
+            "CCTV-5",
+            "CCTV-9",
+            "CCTV-11",
+            "CCTV-23",
+            "CCTV-25",
+            "CCTV-27",
+            "CCTV-31",
+            "CCTV-33",
+            "CCTV-35",
+            "CCTV-44",
+            "CCTV-46",
+            "CCTV-48",
+            "CCTV-52",
+            "CCTV-54",
+            "CCTV-111",
+            "CCTV-113",
+            "CCTV-115",
+            "CCTV-119",
+            "CCTV-121",
+            "CCTV-133",
+            "CCTV-135",
+            "CCTV-137",
+            "CCTV-141",
+            "CCTV-143",
+            "CCTV-155",
+            "CCTV-157",
+            "CCTV-159",
+            "CCTV-163",
+            "CCTV-165",
+            "CCTV-166",
+            "CCTV-167",
+            "CCTV-176",
+            "CCTV-178",
+            "CCTV-180",
+            "CCTV-184",
+            "CCTV-186",
+            "CCTV-188",
+            "CCTV-243",
+            "CCTV-245",
+            "CCTV-247",
+            "CCTV-251",
+            "CCTV-253",
+            "CCTV-255",
+            "CCTV-302",
+            "CCTV-303",
+            "CCTV-304",
+            "CCTV-306",
+            "CCTV-307",
+            "CCTV-308",
+            "CCTV-309",
+            "CCTV-310",
+            "CCTV-311",
+            "CCTV-312",
+            "CCTV-313",
+            "CCTV-314",
+            "CCTV-405",
+            "CCTV-407",
+            "CCTV-409",
+            "CCTV-419",
+            "CCTV-421",
+            "CCTV-423",
+            "CCTV-432",
+            "CCTV-434",
+            "CCTV-436",
+            "CCTV-459",
+            "CCTV-461",
+            "CCTV-463",
+            "CCTV-467",
+            "CCTV-469",
+            "CCTV-471",
+            "CCTV-475",
+            "CCTV-477",
+            "CCTV-479",
+            "CCTV-483",
+            "CCTV-485",
+            "CCTV-487",
+            "CCTV-491",
+            "CCTV-493",
+            "CCTV-495",
+            "CCTV-505",
+            "CCTV-507",
+            "CCTV-509",
+            "CCTV-519",
+            "CCTV-521",
+            "CCTV-523",
+            "CCTV-532",
+            "CCTV-534",
+            "CCTV-536",
+            "CCTV-559",
+            "CCTV-561",
+            "CCTV-563",
+            "CCTV-567",
+            "CCTV-569",
+            "CCTV-571",
+            "CCTV-575",
+            "CCTV-577",
+            "CCTV-579",
+            "CCTV-583",
+            "CCTV-585",
+            "CCTV-587",
+            "CCTV-591",
+            "CCTV-593",
+            "CCTV-595",
+            "CCTV-605",
+            "CCTV-607",
+            "CCTV-609",
+            "CCTV-619",
+            "CCTV-621",
+            "CCTV-623",
+            "CCTV-632",
+            "CCTV-634",
+            "CCTV-636",
+            "CCTV-659",
+            "CCTV-661",
+            "CCTV-663",
+            "CCTV-667",
+            "CCTV-669",
+            "CCTV-671",
+            "CCTV-675",
+            "CCTV-677",
+            "CCTV-679",
+            "CCTV-683",
+            "CCTV-685",
+            "CCTV-687",
+            "CCTV-691",
+            "CCTV-693",
+            "CCTV-695",
+            "CCTV-705",
+            "CCTV-707",
+            "CCTV-709",
+            "CCTV-719",
+            "CCTV-721",
+            "CCTV-723",
+            "CCTV-732",
+            "CCTV-734",
+            "CCTV-736",
+            "CCTV-759",
+            "CCTV-761",
+            "CCTV-763",
+            "CCTV-767",
+            "CCTV-769",
+            "CCTV-771",
+            "CCTV-775",
+            "CCTV-777",
+            "CCTV-779",
+            "CCTV-783",
+            "CCTV-785",
+            "CCTV-787",
+            "CCTV-791",
+            "CCTV-793",
+            "CCTV-795",
+            "CCTV-826",
+            "CCTV-828",
+            "CCTV-830",
+            "CCTV-834",
+            "CCTV-836",
+            "CCTV-838",
+            "CCTV-893",
+            "CCTV-895",
+            "CCTV-897",
+            "CCTV-901",
+            "CCTV-903",
+            "CCTV-904"
+          ]
+        },
+        {
+          "expected": true,
+          "actual": true,
+          "count": 131,
+          "ids": [
+            "CCTV-7",
+            "CCTV-29",
+            "CCTV-50",
+            "CCTV-117",
+            "CCTV-139",
+            "CCTV-161",
+            "CCTV-182",
+            "CCTV-249",
+            "CCTV-305",
+            "CCTV-411",
+            "CCTV-425",
+            "CCTV-438",
+            "CCTV-465",
+            "CCTV-473",
+            "CCTV-481",
+            "CCTV-489",
+            "CCTV-497",
+            "CCTV-511",
+            "CCTV-525",
+            "CCTV-538",
+            "CCTV-565",
+            "CCTV-573",
+            "CCTV-581",
+            "CCTV-589",
+            "CCTV-597",
+            "CCTV-611",
+            "CCTV-625",
+            "CCTV-638",
+            "CCTV-665",
+            "CCTV-673",
+            "CCTV-681",
+            "CCTV-689",
+            "CCTV-697",
+            "CCTV-711",
+            "CCTV-725",
+            "CCTV-738",
+            "CCTV-765",
+            "CCTV-773",
+            "CCTV-781",
+            "CCTV-789",
+            "CCTV-797",
+            "CCTV-832",
+            "CCTV-899",
+            "Wycheproof-1",
+            "Wycheproof-2",
+            "Wycheproof-3",
+            "Wycheproof-4",
+            "Wycheproof-5",
+            "Wycheproof-6",
+            "Wycheproof-7",
+            "Wycheproof-8",
+            "Wycheproof-9",
+            "Wycheproof-71",
+            "Wycheproof-72",
+            "Wycheproof-73",
+            "Wycheproof-74",
+            "Wycheproof-75",
+            "Wycheproof-76",
+            "Wycheproof-77",
+            "Wycheproof-78",
+            "Wycheproof-79",
+            "Wycheproof-80",
+            "Wycheproof-81",
+            "Wycheproof-82",
+            "Wycheproof-83",
+            "Wycheproof-84",
+            "Wycheproof-86",
+            "Wycheproof-87",
+            "Wycheproof-88",
+            "Wycheproof-89",
+            "Wycheproof-90",
+            "Wycheproof-91",
+            "Wycheproof-92",
+            "Wycheproof-93",
+            "Wycheproof-94",
+            "Wycheproof-95",
+            "Wycheproof-96",
+            "Wycheproof-97",
+            "Wycheproof-98",
+            "Wycheproof-99",
+            "Wycheproof-100",
+            "Wycheproof-101",
+            "Wycheproof-102",
+            "Wycheproof-103",
+            "Wycheproof-104",
+            "Wycheproof-105",
+            "Wycheproof-106",
+            "Wycheproof-107",
+            "Wycheproof-108",
+            "Wycheproof-109",
+            "Wycheproof-110",
+            "Wycheproof-111",
+            "Wycheproof-112",
+            "Wycheproof-113",
+            "Wycheproof-114",
+            "Wycheproof-115",
+            "Wycheproof-116",
+            "Wycheproof-117",
+            "Wycheproof-118",
+            "Wycheproof-119",
+            "Wycheproof-120",
+            "Wycheproof-121",
+            "Wycheproof-122",
+            "Wycheproof-123",
+            "Wycheproof-124",
+            "Wycheproof-125",
+            "Wycheproof-126",
+            "Wycheproof-127",
+            "Wycheproof-128",
+            "Wycheproof-129",
+            "Wycheproof-130",
+            "Wycheproof-131",
+            "Wycheproof-132",
+            "Wycheproof-133",
+            "Wycheproof-134",
+            "Wycheproof-135",
+            "Wycheproof-136",
+            "Wycheproof-137",
+            "Wycheproof-138",
+            "Wycheproof-139",
+            "Wycheproof-140",
+            "Wycheproof-141",
+            "Wycheproof-142",
+            "Wycheproof-143",
+            "Wycheproof-144",
+            "Wycheproof-145",
+            "Wycheproof-146",
+            "Wycheproof-147",
+            "Wycheproof-148",
+            "Wycheproof-149",
+            "Wycheproof-150"
+          ]
+        }
+      ],
+      "boundaries": [
+        {
+          "name": "ordinary-known-scalar-control",
+          "op": "verify",
+          "expected": {
+            "valid": true
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": true,
+            "error": null
+          }
+        },
+        {
+          "name": "ordinary-known-scalar-control",
+          "op": "resolve",
+          "expected": {
+            "valid": true,
+            "error": null
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": true,
+            "error": null
+          }
+        },
+        {
+          "name": "ordinary-RFC8032-seed-control",
+          "op": "verify",
+          "expected": {
+            "valid": true
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": true,
+            "error": null
+          }
+        },
+        {
+          "name": "ordinary-RFC8032-seed-control",
+          "op": "resolve",
+          "expected": {
+            "valid": true,
+            "error": null
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": true,
+            "error": null
+          }
+        },
+        {
+          "name": "tampered-ordinary-signature",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "tampered-ordinary-signature",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "low-order-A-0000000000000000000000000000000000000000000000000000000000000000",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": true,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-A-0000000000000000000000000000000000000000000000000000000000000000",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": true,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-R-0000000000000000000000000000000000000000000000000000000000000000",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-R-0000000000000000000000000000000000000000000000000000000000000000",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "low-order-A-0000000000000000000000000000000000000000000000000000000000000080",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": true,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-A-0000000000000000000000000000000000000000000000000000000000000080",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": true,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-R-0000000000000000000000000000000000000000000000000000000000000080",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-R-0000000000000000000000000000000000000000000000000000000000000080",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "low-order-A-0100000000000000000000000000000000000000000000000000000000000000",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": true,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-A-0100000000000000000000000000000000000000000000000000000000000000",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": true,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-R-0100000000000000000000000000000000000000000000000000000000000000",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": true,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-R-0100000000000000000000000000000000000000000000000000000000000000",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": true,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-A-0100000000000000000000000000000000000000000000000000000000000080",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": true,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-A-0100000000000000000000000000000000000000000000000000000000000080",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": true,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-R-0100000000000000000000000000000000000000000000000000000000000080",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-R-0100000000000000000000000000000000000000000000000000000000000080",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "low-order-A-26e8958fc2b227b045c3f489f2ef98f0d5dfac05d3c63339b13802886d53fc05",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-A-26e8958fc2b227b045c3f489f2ef98f0d5dfac05d3c63339b13802886d53fc05",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "low-order-R-26e8958fc2b227b045c3f489f2ef98f0d5dfac05d3c63339b13802886d53fc05",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-R-26e8958fc2b227b045c3f489f2ef98f0d5dfac05d3c63339b13802886d53fc05",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "low-order-A-26e8958fc2b227b045c3f489f2ef98f0d5dfac05d3c63339b13802886d53fc85",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-A-26e8958fc2b227b045c3f489f2ef98f0d5dfac05d3c63339b13802886d53fc85",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "low-order-R-26e8958fc2b227b045c3f489f2ef98f0d5dfac05d3c63339b13802886d53fc85",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-R-26e8958fc2b227b045c3f489f2ef98f0d5dfac05d3c63339b13802886d53fc85",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "low-order-A-c7176a703d4dd84fba3c0b760d10670f2a2053fa2c39ccc64ec7fd7792ac037a",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": true,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-A-c7176a703d4dd84fba3c0b760d10670f2a2053fa2c39ccc64ec7fd7792ac037a",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": true,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-R-c7176a703d4dd84fba3c0b760d10670f2a2053fa2c39ccc64ec7fd7792ac037a",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-R-c7176a703d4dd84fba3c0b760d10670f2a2053fa2c39ccc64ec7fd7792ac037a",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "low-order-A-c7176a703d4dd84fba3c0b760d10670f2a2053fa2c39ccc64ec7fd7792ac03fa",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-A-c7176a703d4dd84fba3c0b760d10670f2a2053fa2c39ccc64ec7fd7792ac03fa",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "low-order-R-c7176a703d4dd84fba3c0b760d10670f2a2053fa2c39ccc64ec7fd7792ac03fa",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-R-c7176a703d4dd84fba3c0b760d10670f2a2053fa2c39ccc64ec7fd7792ac03fa",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "low-order-A-ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": true,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-A-ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": true,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-R-ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-R-ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "low-order-A-ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-A-ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "low-order-R-ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-R-ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "low-order-A-edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-A-edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "low-order-R-edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-R-edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "low-order-A-edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-A-edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "low-order-R-edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-R-edffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "low-order-A-eeffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": true,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-A-eeffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": true,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-R-eeffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-R-eeffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "low-order-A-eeffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": true,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-A-eeffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": true,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-R-eeffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "low-order-R-eeffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "S-equals-L",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "S-equals-L",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "S-plus-L",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "S-plus-L",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "off-curve-A",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "off-curve-A",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "off-curve-R",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "off-curve-R",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "y-equals-p-A",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "y-equals-p-A",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "y-equals-p-R",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "y-equals-p-R",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "mixed-A-True-R-False-valid-True",
+          "op": "verify",
+          "expected": {
+            "valid": true
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": true,
+            "error": null
+          }
+        },
+        {
+          "name": "mixed-A-True-R-False-valid-True",
+          "op": "resolve",
+          "expected": {
+            "valid": true,
+            "error": null
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": true,
+            "error": null
+          }
+        },
+        {
+          "name": "mixed-A-True-R-False-valid-False",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "mixed-A-True-R-False-valid-False",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "mixed-A-True-R-True-valid-True",
+          "op": "verify",
+          "expected": {
+            "valid": true
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": true,
+            "error": null
+          }
+        },
+        {
+          "name": "mixed-A-True-R-True-valid-True",
+          "op": "resolve",
+          "expected": {
+            "valid": true,
+            "error": null
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": true,
+            "error": null
+          }
+        },
+        {
+          "name": "mixed-A-True-R-True-valid-False",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "mixed-A-True-R-True-valid-False",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "mixed-A-False-R-True-valid-False",
+          "op": "verify",
+          "expected": {
+            "valid": false
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": null
+          }
+        },
+        {
+          "name": "mixed-A-False-R-True-valid-False",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": false,
+            "error": "invalid-proof"
+          }
+        },
+        {
+          "name": "valid-witness",
+          "op": "resolve",
+          "expected": {
+            "valid": true,
+            "error": null
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": true,
+            "error": null
+          }
+        },
+        {
+          "name": "identity-witness",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "witness-threshold-not-met"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": true,
+            "error": null
+          }
+        },
+        {
+          "name": "partial-validity-target-None",
+          "op": "resolve",
+          "expected": {
+            "valid": true,
+            "error": "invalid-proof",
+            "firstInvalidVersion": 2
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": true,
+            "error": null
+          }
+        },
+        {
+          "name": "partial-validity-target-1",
+          "op": "resolve",
+          "expected": {
+            "valid": true,
+            "error": "invalid-proof",
+            "firstInvalidVersion": 2
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": true,
+            "error": null
+          }
+        },
+        {
+          "name": "partial-validity-target-2",
+          "op": "resolve",
+          "expected": {
+            "valid": false,
+            "error": "invalid-proof"
+          },
+          "actual": {
+            "firstInvalidVersion": null,
+            "ok": true,
+            "valid": true,
+            "error": null
+          }
+        }
+      ]
+    }
+  }
+}
