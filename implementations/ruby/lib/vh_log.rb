@@ -130,6 +130,11 @@ module VHLog
     config['proofPurpose'] = 'assertionMethod'
     config.merge('proofValue'=>'z' + encode(signer(seed).sign(nil, signing_input(document, config))))
   end
+  # Profile §2; OpenSSL checks the curve and uncofactored equation.
+  def admissible_point(encoded)
+    y = encoded.reverse.unpack1('H*').to_i(16) & ((1 << 255) - 1)
+    y < 57896044618658097711785492504343953926634992332820282019728792003956564819949 && ![0, 1, 2707385501144840649318225287225658788936804267575313519463743609750303402022, 55188659117513257062467267217118295137698188065244968500265048394206261417927, 57896044618658097711785492504343953926634992332820282019728792003956564819948].include?(y)
+  end
   def verify(document, proof)
     return false unless proof.is_a?(Hash) && proof['type'] == 'DataIntegrityProof' && proof['cryptosuite'] == 'eddsa-jcs-2022' && proof['proofPurpose'] == 'assertionMethod'
     mk = method_key(proof['verificationMethod'])
@@ -137,6 +142,7 @@ module VHLog
     return false unless mk && value.is_a?(String) && value.start_with?('z')
     signature = decode(value[1..])
     return false unless signature && signature.bytesize == 64
+    return false unless admissible_point(public_key(mk)) && admissible_point(signature[0,32])
     key = OpenSSL::PKey.read(['302a300506032b6570032100'].pack('H*') + public_key(mk))
     key.verify(nil, signature, signing_input(document, proof.reject { |k,_| k == 'proofValue' }))
   rescue OpenSSL::PKey::PKeyError, ArgumentError

@@ -7,7 +7,7 @@ use crate::encoding::{
 use crate::error::GenerateError;
 use crate::hash::sha256;
 use crate::jcs::canonicalize;
-use ed25519_dalek::{Signature, Signer as _, SigningKey, Verifier as _, VerifyingKey};
+use ed25519_dalek::{Signature, Signer as _, SigningKey, VerifyingKey};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::fmt;
@@ -68,7 +68,14 @@ pub fn verify_signature(public_key: &[u8], data: &[u8], signature: &[u8]) -> boo
     let Ok(key) = VerifyingKey::from_bytes(pk) else {
         return false;
     };
-    key.verify(data, &Signature::from_bytes(sig)).is_ok()
+    // verify_strict rejects small-order points; require canonical A as well.
+    let mut y = *pk;
+    y[31] &= 127;
+    let mut p = [255u8; 32];
+    p[0] = 237;
+    p[31] = 127;
+    y.iter().rev().cmp(p.iter().rev()).is_lt()
+        && key.verify_strict(data, &Signature::from_bytes(sig)).is_ok()
 }
 
 /// A Data Integrity proof as produced by [`create_proof`].

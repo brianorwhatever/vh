@@ -179,6 +179,27 @@ Json sign(dynamic document, String seed, [Json options = const {}]) {
   };
 }
 
+// Profile §2; ed25519_edwards checks the curve and equation.
+bool _admissiblePoint(List<int> encoded) {
+  var n = BigInt.zero;
+  for (var i = 31; i >= 0; i--) {
+    n = (n << 8) | BigInt.from(encoded[i] & (i == 31 ? 127 : 255));
+  }
+  return n <
+          BigInt.parse(
+              '57896044618658097711785492504343953926634992332820282019728792003956564819949') &&
+      !{
+        BigInt.parse('0'),
+        BigInt.parse('1'),
+        BigInt.parse(
+            '2707385501144840649318225287225658788936804267575313519463743609750303402022'),
+        BigInt.parse(
+            '55188659117513257062467267217118295137698188065244968500265048394206261417927'),
+        BigInt.parse(
+            '57896044618658097711785492504343953926634992332820282019728792003956564819948')
+      }.contains(n);
+}
+
 bool verify(dynamic document, dynamic proof) {
   try {
     if (proof is! Map ||
@@ -190,6 +211,8 @@ bool verify(dynamic document, dynamic proof) {
     if (mk == null || value is! String || !value.startsWith('z')) return false;
     final sig = decode(value.substring(1));
     if (sig == null || sig.length != 64) return false;
+    if (!_admissiblePoint(publicKey(mk)!) ||
+        !_admissiblePoint(sig.sublist(0, 32))) return false;
     final config = Map<String, dynamic>.from(proof)..remove('proofValue');
     return ed.verify(ed.PublicKey(Uint8List.fromList(publicKey(mk)!)),
         signingInput(document, config), Uint8List.fromList(sig));

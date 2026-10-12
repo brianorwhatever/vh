@@ -46,9 +46,19 @@ public struct Ed25519Signer: VHLogSigner {
     /// A 64-byte Ed25519 signature (randomised on Apple platforms).
     public func sign(_ message: [UInt8]) throws -> [UInt8] { Array(try key.signature(for: message)) }
 
+    // Profile §2; Crypto checks curve membership and the equation.
+    private static func admissiblePoint(_ encoded: [UInt8]) -> Bool {
+        var y = encoded; y[31] &= 127
+        let small = ["0000000000000000000000000000000000000000000000000000000000000000", "0100000000000000000000000000000000000000000000000000000000000000", "26e8958fc2b227b045c3f489f2ef98f0d5dfac05d3c63339b13802886d53fc05", "c7176a703d4dd84fba3c0b760d10670f2a2053fa2c39ccc64ec7fd7792ac037a", "ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"]
+        if small.contains(where: { Hex.decode($0) == y }) { return false }
+        var p = [UInt8](repeating: 255, count: 32); p[0] = 237; p[31] = 127
+        return y.reversed().lexicographicallyPrecedes(p.reversed())
+    }
+
     /// Verifies an Ed25519 signature with swift-crypto.
     public static func verify(publicKey: [UInt8], message: [UInt8], signature: [UInt8]) -> Bool {
         guard publicKey.count == 32, signature.count == 64,
+            admissiblePoint(publicKey), admissiblePoint(Array(signature.prefix(32))),
             let key = try? Curve25519.Signing.PublicKey(rawRepresentation: publicKey)
         else { return false }
         return key.isValidSignature(signature, for: message)

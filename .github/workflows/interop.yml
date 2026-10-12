@@ -353,7 +353,8 @@ jobs:
           java-version: 21
       - uses: VirtusLab/scala-cli-setup@v1
         with:
-          version: '1.18.0'
+          scala-cli-version: '1.18.0'
+          jvm: temurin:21
       - name: Conformance and cross-resolution
         run: node harness/run.ts --impl scala --impl typescript --list
       - name: Driver boundary tests
@@ -428,7 +429,8 @@ jobs:
           ghc-version: '9.12.2'
       - uses: VirtusLab/scala-cli-setup@v1
         with:
-          version: '1.18.0'
+          scala-cli-version: '1.18.0'
+          jvm: temurin:21
       - name: Install remaining language toolchains
         run: sudo apt-get update && sudo apt-get install -y lua5.4 liblua5.4-dev pkg-config rakudo ocaml gnat libssl-dev
 
@@ -439,6 +441,14 @@ jobs:
 
       - name: Interoperability tests
         run: node harness/run.ts --list --markdown "$GITHUB_STEP_SUMMARY"
+
+      - name: Independent Ed25519 boundary conformance (all implementations)
+        run: node --test harness/ed25519.test.ts
+
+      - name: Independent Ed25519 fixtures are reproducible
+        run: |
+          python3 tools/ed25519-fixtures.py
+          git diff --exit-code vectors/ed25519/boundaries.json
 
       - name: README matrix is up to date
         run: |

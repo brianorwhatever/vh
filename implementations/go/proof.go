@@ -1,8 +1,10 @@
 package vhlog
 
 import (
+	"bytes"
 	"crypto/ed25519"
 	"crypto/sha256"
+	"encoding/hex"
 	"strings"
 )
 
@@ -124,7 +126,36 @@ func VerifyProof(document any, proof any) bool {
 		return false
 	}
 	pub, _ := PublicKeyFromMultikey(multikey)
-	return ed25519.Verify(pub, input, signature)
+	return admissiblePoint(pub) && admissiblePoint(signature[:32]) && ed25519.Verify(pub, input, signature)
+}
+
+// admissiblePoint enforces profile §2; ed25519.Verify checks the equation.
+func admissiblePoint(encoded []byte) bool {
+	if len(encoded) != 32 {
+		return false
+	}
+	var y [32]byte
+	copy(y[:], encoded)
+	y[31] &= 127
+	for _, h := range []string{"0000000000000000000000000000000000000000000000000000000000000000", "0100000000000000000000000000000000000000000000000000000000000000", "26e8958fc2b227b045c3f489f2ef98f0d5dfac05d3c63339b13802886d53fc05", "c7176a703d4dd84fba3c0b760d10670f2a2053fa2c39ccc64ec7fd7792ac037a", "ecffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff7f"} {
+		b, _ := hex.DecodeString(h)
+		if bytes.Equal(y[:], b) {
+			return false
+		}
+	}
+	for i := 31; i >= 0; i-- {
+		limit := byte(255)
+		if i == 31 {
+			limit = 127
+		}
+		if i == 0 {
+			limit = 237
+		}
+		if y[i] != limit {
+			return y[i] < limit
+		}
+	}
+	return false
 }
 
 func memberEquals(o *Object, key, want string) bool {

@@ -182,6 +182,12 @@ object VHLog {
     s.update(signingInput(document, config))
     config("proofValue") = Str("z" + encode(s.sign())); config
   }
+  // Profile §2; JCA checks curve membership and the equation.
+  private def admissiblePoint(encoded: Array[Byte]): Boolean = {
+    val y = encoded.clone(); y(31) = (y(31) & 127).toByte
+    val n = BigInt(1, y.reverse)
+    n < BigInt("57896044618658097711785492504343953926634992332820282019728792003956564819949") && !Set(BigInt("0"), BigInt("1"), BigInt("2707385501144840649318225287225658788936804267575313519463743609750303402022"), BigInt("55188659117513257062467267217118295137698188065244968500265048394206261417927"), BigInt("57896044618658097711785492504343953926634992332820282019728792003956564819948")).contains(n)
+  }
   def verify(document: Value, proof: Value): Boolean = {
     try {
       if (
@@ -198,6 +204,7 @@ object VHLog {
         .flatMap(s => decode(Str(s.drop(1))))
         .filter(_.length == 64)
       if (mk.isEmpty || sig.isEmpty) return false
+      if (!admissiblePoint(publicKey(Str(mk.get)).get) || !admissiblePoint(sig.get.take(32))) return false
       val der = java.util.HexFormat.of
         .parseHex("302a300506032b6570032100") ++ publicKey(Str(mk.get)).get
       val key = KeyFactory

@@ -1,6 +1,23 @@
 #include <charconv>
 #include <openssl/evp.h>
 #include <string>
+// Profile §2; OpenSSL checks curve membership and the equation.
+static bool admissible_point(const unsigned char *encoded) {
+  unsigned char y[32];
+  for (int i = 0; i < 32; i++) y[i] = encoded[i];
+  y[31] &= 127;
+  static const unsigned char small[][32] = {{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}, {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}, {38,232,149,143,194,178,39,176,69,195,244,137,242,239,152,240,213,223,172,5,211,198,51,57,177,56,2,136,109,83,252,5}, {199,23,106,112,61,77,216,79,186,60,11,118,13,16,103,15,42,32,83,250,44,57,204,198,78,199,253,119,146,172,3,122}, {236,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,255,127}};
+  for (const auto &point : small) {
+    bool equal = true;
+    for (int i = 0; i < 32; i++) equal &= y[i] == point[i];
+    if (equal) return false;
+  }
+  for (int i = 31; i >= 0; i--) {
+    unsigned limit = i == 31 ? 127 : i == 0 ? 237 : 255;
+    if (y[i] != limit) return y[i] < limit;
+  }
+  return false;
+}
 extern "C" {
 #include <caml/alloc.h>
 #include <caml/fail.h>
@@ -94,6 +111,8 @@ CAMLprim value vh_verify(value key, value data, value sig) {
   CAMLparam3(key, data, sig);
   if (caml_string_length(key) != 32 || caml_string_length(sig) != 64)
     CAMLreturn(Val_false);
+  if (!admissible_point((const unsigned char *)String_val(key)) ||
+      !admissible_point((const unsigned char *)String_val(sig))) CAMLreturn(Val_false);
   EVP_PKEY *p = EVP_PKEY_new_raw_public_key(
       EVP_PKEY_ED25519, NULL, (const unsigned char *)String_val(key), 32);
   EVP_MD_CTX *c = EVP_MD_CTX_new();

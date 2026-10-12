@@ -1,6 +1,6 @@
 # VH-Log (C#)
 
-.NET 10 library; System.Text.Json and Bouncy Castle Ed25519.
+.NET 10 library; System.Text.Json, Bouncy Castle signing and NSec/libsodium verification.
 
 Implements this repository’s [interop profile](../../docs/profile.md),
 including deterministic creation and updates, pre-rotation, witnesses,
@@ -9,7 +9,7 @@ Protocol logic runs in C#; it does not call another implementation.
 
 ## Setup
 
-Install the .NET 10 SDK. BouncyCastle.Cryptography is pinned in the project
+Install the .NET 10 SDK. Cryptographic dependencies are pinned in the project
 and `packages.lock.json`.
 
 ```sh
@@ -58,3 +58,7 @@ dotnet bin/Release/net10.0/VHLog.dll
 See the [driver protocol](../../docs/interop-protocol.md) for request and
 response shapes. Logs and witness files are supplied by the caller; the
 resolver does not fetch network resources.
+
+Ed25519 signing uses Bouncy Castle; verification uses NSec/libsodium to enforce
+the uncofactored acceptance rule in [profile §2](../../docs/profile.md#2-entry-proofs-eddsa-jcs-2022).
+The NuGet lockfile pins NSec and its native libsodium runtime package.

@@ -8,5 +8,6 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="BouncyCastle.Cryptography" Version="2.6.2" />
+    <PackageReference Include="NSec.Cryptography" Version="26.4.0" />
   </ItemGroup>
 </Project>
