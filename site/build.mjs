@@ -21,6 +21,9 @@ const assetVersion = createHash("sha256")
   .update(fs.readFileSync(path.join(SITE, "main.js")))
   .update(fs.readFileSync(path.join(SITE, "benchmarks.js")))
   .digest("hex").slice(0, 16);
+const socialImageVersion = createHash("sha256")
+  .update(fs.readFileSync(path.join(SITE, "og.png")))
+  .digest("hex").slice(0, 16);
 const assetURL = (file) => `${file}?v=${assetVersion}`;
 
 const LANGS = [
@@ -415,7 +418,7 @@ const html = `<!doctype html>
 <meta name="color-scheme" content="light dark">
 <meta property="og:title" content="vh: VH-Log in ${N} languages, side by side">
 <meta property="og:description" content="${Ncap} implementations that produce the same bytes, checked against each other on every push.">
-<meta property="og:image" content="https://brianorwhatever.github.io/vh/og.png">
+<meta property="og:image" content="https://brianorwhatever.github.io/vh/og.png?v=${socialImageVersion}">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
