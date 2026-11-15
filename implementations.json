@@ -171,7 +171,8 @@
       "command": [
         "php",
         "driver.php"
-      ]
+      ],
+      "didvh": true
     },
     {
       "name": "java",
