@@ -423,17 +423,6 @@ fn integer(v: Value, min: f64) ?u64 {
     return @intFromFloat(x);
 }
 
-/// True if some entry among `values` sets a non-empty witness list.
-fn needsWitnessing(values: []const ?Value) bool {
-    for (values) |line| {
-        const v = line orelse continue;
-        const params = v.get("parameters") orelse continue;
-        const w = params.get("witness") orelse continue;
-        if (w == .object and w.object.len > 0) return true;
-    }
-    return false;
-}
-
 fn extraWatcher(v: Value) bool {
     return v == .string and std.mem.startsWith(u8, v.string, "https://") and resolver.validWatcherUrl(v.string);
 }
@@ -506,10 +495,12 @@ pub fn resolve(a: Allocator, did_value: Value, options: Value, ctx: ResolveConte
     if (options.get("extraWatchers")) |v| if (v.array.len > 0)
         return failure(a, unsupported, "this resolver does not query watchers", null);
 
-    // 4. A srcWitness matters only if the log needs witnessing.
+    // 4. A srcWitness matters only if the log needs witnessing: some entry
+    // that passes the per-entry checks has a witness list that applies.
     const text = options.get("didLog").?.string;
     const lines = try resolver.splitLines(a, text);
-    if (has(options, "srcWitness") and needsWitnessing(lines.values))
+    const needs = try resolver.needsWitnessing(a, text, ctx.now, specialisation(scid_slot));
+    if (has(options, "srcWitness") and needs)
         return failure(a, unsupported, "this resolver does not retrieve srcWitness", null);
 
     // 5. VH-Log resolution with the did:vh specialisation.
@@ -529,7 +520,6 @@ pub fn resolve(a: Allocator, did_value: Value, options: Value, ctx: ResolveConte
 
     const md = rv.get("metadata").?;
     const valid: usize = if (res.first_invalid_version) |f| @intCast(f - 1) else lines.text.len;
-    const needs = needsWitnessing(lines.values[0..valid]);
 
     var meta: std.ArrayList(Member) = .empty;
     try meta.append(a, .{ .key = "contentType", .value = .{ .string = "application/did+json" } });

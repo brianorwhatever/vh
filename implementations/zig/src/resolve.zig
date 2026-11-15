@@ -515,6 +515,29 @@ pub fn verifyWith(a: Allocator, log_text: []const u8, witness: WitnessInput, now
     for (lines.values, line_times) |lv, *t| {
         t.* = if (lv) |val| (if (val.getString("versionTime")) |s| time.parse(s) else null) else null;
     }
+    const checked = try checkEntries(a, lines, now, spec);
+    var failure = checked.failure;
+
+    // Witnesses (spec: only after all other checks).
+    var valid = checked.entries;
+    if (try checkWitnesses(a, valid, witness)) |wf| {
+        failure = wf;
+        valid = valid[0 .. wf.version.? - 1];
+    }
+    return .{ .lines = lines, .entries = valid, .failure = failure, .line_times = line_times, .scid = checked.scid };
+}
+
+const Checked = struct {
+    /// The entries before the first one that fails a per-entry check.
+    entries: []Entry,
+    failure: ?Failure,
+    scid: []const u8,
+};
+
+/// Runs the per-entry checks (profile §4 checks 1-7, plus any the
+/// specialisation adds) in order, stopping at the first failing entry.
+/// Witnesses are not checked.
+fn checkEntries(a: Allocator, lines: Lines, now: i64, spec: Specialisation) Allocator.Error!Checked {
     var entries: std.ArrayList(Entry) = .empty;
     var failure: ?Failure = null;
     if (lines.text.len == 0) {
@@ -538,14 +561,16 @@ pub fn verifyWith(a: Allocator, log_text: []const u8, witness: WitnessInput, now
             },
         }
     }
+    return .{ .entries = entries.items, .failure = failure, .scid = verifier.scid };
+}
 
-    // Witnesses (spec: only after all other checks).
-    var valid = entries.items;
-    if (try checkWitnesses(a, valid, witness)) |wf| {
-        failure = wf;
-        valid = valid[0 .. wf.version.? - 1];
-    }
-    return .{ .lines = lines, .entries = valid, .failure = failure, .line_times = line_times, .scid = verifier.scid };
+/// True if the log needs witnessing: the witness list that applies (profile
+/// §3) to some entry before the first one failing a per-entry check is not
+/// `{}`. No witness file is involved (did:vh profile §5 step 4).
+pub fn needsWitnessing(a: Allocator, log_text: []const u8, now: i64, spec: Specialisation) Allocator.Error!bool {
+    const checked = try checkEntries(a, try splitLines(a, log_text), now, spec);
+    for (checked.entries) |e| if (e.witness_applies.object.len > 0) return true;
+    return false;
 }
 
 pub const OwnedVerification = struct {
