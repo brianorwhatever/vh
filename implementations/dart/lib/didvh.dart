@@ -498,9 +498,6 @@ Json resolveDid(dynamic did,
       throw _fromVhLog(error);
     }
     final m = result['metadata'] as Json;
-    // A deactivated DID's document is not returned; earlier versions still
-    // are (profile §5).
-    final isLast = m['versionTime'] == m['updated'];
     final warnings = m['warnings'] as List;
     Json? didLog;
     if (o['includeDidLog'] == true) {
@@ -519,8 +516,10 @@ Json resolveDid(dynamic did,
         if (warnings.isNotEmpty) 'warnings': warnings,
         ...?didLog,
       },
+      // A deactivated DID's document is returned only for an explicit
+      // version selector (profile §5).
       'didDocument':
-          m['deactivated'] == true && isLast ? null : result['state'],
+          m['deactivated'] == true && !selected ? null : result['state'],
       'didDocumentMetadata': {
         'versionId': m['versionId'],
         'versionTime': m['versionTime'],

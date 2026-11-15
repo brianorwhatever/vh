@@ -370,7 +370,6 @@ object DidVh {
       if (!selected && result("error") != Null && result("error")("code") == Str("unsupported-log-version"))
         throw fromVhLog(result("error"))
       val m = result("metadata")
-      val isLast = m("versionTime") == m("updated")
       val docMeta = Obj(
         "versionId" -> m("versionId"),
         "versionTime" -> m("versionTime"),
@@ -392,7 +391,7 @@ object DidVh {
       }
       Obj(
         "didResolutionMetadata" -> meta,
-        "didDocument" -> (if (m("deactivated") == Bool(true) && isLast) Null else result("state")),
+        "didDocument" -> (if (m("deactivated") == Bool(true) && !selected) Null else result("state")),
         "didDocumentMetadata" -> docMeta
       )
     } catch { case e: DidVhError => failure(e) }

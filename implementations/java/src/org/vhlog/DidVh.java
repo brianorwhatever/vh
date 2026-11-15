@@ -465,7 +465,6 @@ public final class DidVh {
             if (!selected && error != null && "unsupported-log-version".equals(error.get("code")))
                 throw fromVhLog(error);
             Map<String, Object> m = (Map<String, Object>)result.get("metadata");
-            boolean isLast = m.get("versionTime").equals(m.get("updated"));
             Map<String, Object> docMeta = obj(
                 "versionId", m.get("versionId"), "versionTime", m.get("versionTime"), "created",
                 m.get("created"), "updated", m.get("updated"), "scid", m.get("scid"), "deactivated",
@@ -490,7 +489,7 @@ public final class DidVh {
             }
             boolean deactivated = Boolean.TRUE.equals(m.get("deactivated"));
             return obj("didResolutionMetadata", meta, "didDocument",
-                       deactivated && isLast ? null : result.get("state"), "didDocumentMetadata", docMeta);
+                       deactivated && !selected ? null : result.get("state"), "didDocumentMetadata", docMeta);
         } catch (DidVhError e) {
             return failure(e);
         }

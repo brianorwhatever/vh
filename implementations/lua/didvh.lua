@@ -345,9 +345,8 @@ local function resolve(did,options,context)
     meta.didLog=table.concat(kept)
     if witnessed then meta.didWitness=options.didWitness or A{} end
   end
-  -- A deactivated DID's document is not returned; earlier versions still are (profile §5).
-  local is_last=m.versionTime==m.updated
-  return O{didResolutionMetadata=meta,didDocument=(m.deactivated and is_last) and N or result.state,didDocumentMetadata=metadata}
+  -- A deactivated DID's document is returned only for an explicit version selector (profile §5).
+  return O{didResolutionMetadata=meta,didDocument=(m.deactivated and not selected) and N or result.state,didDocumentMetadata=metadata}
 end
 
 -- did:vh resolve(did, resolutionOptions) (profile §5), with a resolver context

@@ -512,8 +512,6 @@ def resolve_did(
             # Entries after the last valid one may change the document or its keys (profile section 5).
             raise DidVhError("featureNotSupported", result["error"]["message"], result["error"])
         m = result["metadata"]
-        # A deactivated DID's document is not returned; earlier versions still are (profile section 5).
-        is_last = m["versionTime"] == m["updated"]
         did_document_metadata: dict[str, Any] = {
             "versionId": m["versionId"],
             "versionTime": m["versionTime"],
@@ -538,7 +536,8 @@ def resolve_did(
                 meta["didWitness"] = options.get("didWitness", [])
         return {
             "didResolutionMetadata": meta,
-            "didDocument": None if m["deactivated"] and is_last else result["state"],
+            # A deactivated DID's document is returned only for a version selector (profile section 5).
+            "didDocument": None if m["deactivated"] and not selected else result["state"],
             "didDocumentMetadata": did_document_metadata,
         }
     except DidVhError as e:

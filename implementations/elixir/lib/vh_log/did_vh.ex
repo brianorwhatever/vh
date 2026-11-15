@@ -662,8 +662,9 @@ defmodule VHLog.DidVh do
 
   defp success(resolution, log, options, witnessed) do
     m = resolution.metadata
-    # A deactivated DID's document is not returned; earlier versions still are (profile §5).
-    last? = m["versionTime"] == m["updated"]
+
+    # A deactivated DID's document is returned only for an explicit version selector (profile §5).
+    selected = Enum.any?(@selectors, &Map.has_key?(options, &1))
 
     document_metadata =
       m
@@ -697,7 +698,7 @@ defmodule VHLog.DidVh do
 
     %{
       "didResolutionMetadata" => meta,
-      "didDocument" => if(m["deactivated"] and last?, do: nil, else: resolution.state),
+      "didDocument" => if(m["deactivated"] and not selected, do: nil, else: resolution.state),
       "didDocumentMetadata" => document_metadata
     }
   end

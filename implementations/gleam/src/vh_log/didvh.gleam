@@ -835,9 +835,9 @@ fn success(result: Json, log: String, options: Json, witnessed: Bool) -> Json {
     }
     _ -> meta
   }
-  // A deactivated DID's document is not returned; earlier versions still are (profile §5).
-  let last = j.get(m, "versionTime") == j.get(m, "updated")
-  let document = case j.get(m, "deactivated") == Boolean(True) && last {
+  // A deactivated DID's document is returned only for an explicit version selector (profile §5).
+  let selected = list.any(selectors, j.has(options, _))
+  let document = case j.get(m, "deactivated") == Boolean(True) && !selected {
     True -> Null
     False -> j.get(result, "state")
   }
