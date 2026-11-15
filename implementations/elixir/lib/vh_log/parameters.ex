@@ -4,13 +4,14 @@ defmodule VHLog.Parameters do
   `parameters` to them (spec *Read* step 1, plus the pre-rotation rule of step
   7, which only concerns parameters).
 
-  Unknown parameters are ignored. `deactivated` is not inherited: it is
-  `false` unless the entry sets it.
+  Unknown parameters are ignored, unless a `VHLog.Specialisation` closes the
+  set. `deactivated` is not inherited: it is `false` unless the entry sets it.
+  `log_version` holds the value of the specialisation's version parameter
+  (`logVersion` in plain VH-Log).
   """
 
-  alias VHLog.{Error, Hash, Log, Multikey, URL}
+  alias VHLog.{Error, Hash, Multikey, Specialisation, URL}
 
-  @supported_log_versions [Log.log_version()]
   @max_ttl 2_147_483_648
 
   @typedoc "A witness configuration: `threshold` and the original `witnesses` objects."
@@ -41,12 +42,14 @@ defmodule VHLog.Parameters do
 
   @doc """
   Applies an entry's raw `parameters` object to the previously active set
-  (`nil` for the first entry).
+  (`nil` for the first entry), as plain VH-Log or as `spec`.
   """
-  @spec apply(map(), t() | nil, pos_integer()) :: {:ok, t()} | {:error, Error.t()}
-  def apply(raw, previous, version) do
+  @spec apply(map(), t() | nil, pos_integer(), Specialisation.t()) ::
+          {:ok, t()} | {:error, Error.t()}
+  def apply(raw, previous, version, spec \\ Specialisation.vh_log()) do
     with :ok <- check_no_nulls(raw, version),
-         :ok <- check_log_version(raw, previous, version),
+         :ok <- check_closed_set(raw, spec, version),
+         :ok <- check_log_version(raw, previous, version, spec),
          :ok <- check_scid_and_required(raw, previous, version),
          :ok <-
            check(
@@ -69,13 +72,13 @@ defmodule VHLog.Parameters do
          :ok <- check(raw, "deactivated", &is_boolean/1, version, "deactivated must be a boolean"),
          :ok <- check(raw, "ttl", &ttl?/1, version, "ttl must be an integer between 0 and 2^31"),
          :ok <- check_prerotation(raw, previous, version) do
-      {:ok, merge(raw, previous, witness)}
+      {:ok, merge(raw, previous, witness, spec.version_parameter)}
     end
   end
 
-  defp merge(raw, nil, witness) do
+  defp merge(raw, nil, witness, vp) do
     %__MODULE__{
-      log_version: raw["logVersion"],
+      log_version: raw[vp],
       scid: raw["scid"],
       update_keys: raw["updateKeys"],
       next_key_hashes: Map.get(raw, "nextKeyHashes", []),
@@ -86,9 +89,9 @@ defmodule VHLog.Parameters do
     }
   end
 
-  defp merge(raw, %__MODULE__{} = prev, witness) do
+  defp merge(raw, %__MODULE__{} = prev, witness, vp) do
     %__MODULE__{
-      log_version: Map.get(raw, "logVersion", prev.log_version),
+      log_version: Map.get(raw, vp, prev.log_version),
       scid: prev.scid,
       update_keys: Map.get(raw, "updateKeys", prev.update_keys),
       next_key_hashes: Map.get(raw, "nextKeyHashes", prev.next_key_hashes),
@@ -108,23 +111,49 @@ defmodule VHLog.Parameters do
     end
   end
 
-  defp check_log_version(raw, previous, version) do
-    case {raw, previous} do
-      {%{"logVersion" => lv}, _} when lv in @supported_log_versions ->
-        # With a single supported version, it can never be lowered.
-        :ok
+  defp check_closed_set(_raw, %Specialisation{extra_parameters: nil}, _version), do: :ok
 
-      {%{"logVersion" => lv}, _} ->
-        {:error,
-         Error.new(:unsupported_log_version, "unsupported logVersion #{inspect(lv)}", version)}
+  defp check_closed_set(raw, %Specialisation{} = spec, version) do
+    known = [spec.version_parameter | Specialisation.vh_log_parameters() ++ spec.extra_parameters]
+
+    case Enum.find(Map.keys(raw), &(&1 not in known)) do
+      nil -> :ok
+      key -> invalid("#{key} is not a parameter of this log type", version)
+    end
+  end
+
+  defp check_log_version(raw, previous, version, %Specialisation{} = spec) do
+    vp = spec.version_parameter
+    syntax = spec.version_syntax
+
+    case {raw, previous} do
+      {%{^vp => value}, _} ->
+        cond do
+          syntax != nil and not (is_binary(value) and Regex.match?(syntax, value)) ->
+            invalid("malformed #{vp} #{inspect(value)}", version)
+
+          value not in spec.versions ->
+            {:error,
+             Error.new(:unsupported_log_version, "unsupported #{vp} #{inspect(value)}", version)}
+
+          previous != nil and
+              index_of(spec.versions, value) < index_of(spec.versions, previous.log_version) ->
+            {:error, Error.new(:unsupported_log_version, "#{vp} may not be lowered", version)}
+
+          true ->
+            :ok
+        end
 
       {_, nil} ->
-        {:error, Error.new(:unsupported_log_version, "logVersion missing from first entry", 1)}
+        code = if syntax, do: :invalid_parameter, else: :unsupported_log_version
+        {:error, Error.new(code, "#{vp} missing from first entry", 1)}
 
       _ ->
         :ok
     end
   end
+
+  defp index_of(list, value), do: Enum.find_index(list, &(&1 == value))
 
   defp check_scid_and_required(raw, nil, version) do
     cond do

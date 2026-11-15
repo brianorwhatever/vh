@@ -67,7 +67,8 @@
       ],
       "env": {
         "MIX_ENV": "prod"
-      }
+      },
+      "didvh": true
     },
     {
       "name": "go",

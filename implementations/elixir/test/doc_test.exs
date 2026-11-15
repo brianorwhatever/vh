@@ -3,6 +3,7 @@ defmodule VHLog.DocTest do
 
   doctest VHLog
   doctest VHLog.Base58
+  doctest VHLog.DidVh
   doctest VHLog.Error
   doctest VHLog.Hash
   doctest VHLog.JCS
