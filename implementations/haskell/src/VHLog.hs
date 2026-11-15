@@ -1,6 +1,6 @@
-module VHLog (dispatch, resolve, create, update, sign, verify, scid, entryHash, signingInput) where
+module VHLog (dispatch, resolve, resolveWith, create, createWith, update, sign, verify, scid, entryHash, signingInput, Specialisation (..), vhLog, needsWitnessing, time, logLines) where
 
-import Control.Monad (foldM, unless, when)
+import Control.Monad (foldM, forM_, unless, when)
 import qualified Crypto as C
 import qualified Data.ByteString as B
 import Data.List (find, findIndex, intercalate, isPrefixOf)
@@ -12,6 +12,26 @@ import Json
 import Text.Read (readMaybe)
 
 type Result a = Either J a
+
+-- | What a specialisation of VH-Log (such as did:vh) changes in verification.
+-- Hashing, proofs, witnesses and pre-rotation are shared.
+data Specialisation = Specialisation
+  { -- | Name of the parameter that carries the log version (@logVersion@ in plain VH-Log).
+    versionParameter :: String,
+    -- | The accepted value of the version parameter.
+    acceptedVersion :: String,
+    -- | When set, a missing or malformed version is @invalid-parameter@, and only a
+    -- well-formed value other than 'acceptedVersion' is @unsupported-log-version@.
+    versionSyntax :: Maybe (String -> Bool),
+    -- | A closed parameter set: an unknown parameter is @invalid-parameter@.
+    closedParameters :: Bool,
+    -- | Checks an entry's state once the SCID is known; False is @invalid-state@.
+    checkState :: Maybe (J -> String -> Bool)
+  }
+
+-- | Plain VH-Log (@vh-log:1.0@), as specified by profile vh-log-interop-0.
+vhLog :: Specialisation
+vhLog = Specialisation "logVersion" "vh-log:1.0" Nothing False Nothing
 
 err :: String -> Int -> J
 err code n = object [("code", str code), ("version", if n == 0 then Null else num n), ("message", str code)]
@@ -79,9 +99,13 @@ logLines s = let (a, b) = break (== '\n') s in a : if null b then [] else logLin
 parseUnsafe s = either error id (parse s)
 
 create :: J -> J
-create input = object [("log", str (jcs signed ++ "\n")), ("scid", str identifier), ("versionId", get entry "versionId")]
+create = createWith vhLog
+
+-- | Creates a log; a specialisation adds its own version parameter if absent.
+createWith :: Specialisation -> J -> J
+createWith spec input = object [("log", str (jcs signed ++ "\n")), ("scid", str identifier), ("versionId", get entry "versionId")]
   where
-    p = foldl (\a (k, v) -> set a k v) (object [("logVersion", str "vh-log:1.0"), ("scid", str "{SCID}")]) (fields (get input "parameters"))
+    p = foldl (\a (k, v) -> set a k v) (object [(versionParameter spec, str (acceptedVersion spec)), ("scid", str "{SCID}")]) (fields (get input "parameters"))
     preliminary = object [("versionId", str "{SCID}"), ("versionTime", get input "versionTime"), ("parameters", p), ("state", get input "state")]
     identifier = scid preliminary
     restored = parseUnsafe (replace "{SCID}" identifier (jcs preliminary))
@@ -114,14 +138,21 @@ time v = do
               if h > 23 || mi > 59 || se > 59 then Nothing else Just (toModifiedJulianDay day * 86400 + h * 3600 + mi * 60 + se)
             _ -> Nothing
 
-parameters raw previous n = do
+parameters spec raw previous n = do
+  let vp = versionParameter spec
+      keys = [vp, "scid", "updateKeys", "nextKeyHashes", "witness", "watchers", "ttl"]
+      value = get raw vp
   ensure (all ((/= Null) . snd) (fields raw)) "invalid-parameter" n
-  ensure ((isJust previous || has raw "logVersion") && (not (has raw "logVersion") || get raw "logVersion" == str "vh-log:1.0")) "unsupported-log-version" n
+  when (closedParameters spec) $ ensure (all ((`elem` ("deactivated" : keys)) . fst) (fields raw)) "invalid-parameter" n
+  ensure (isJust previous || has raw vp) (maybe "unsupported-log-version" (const "invalid-parameter") (versionSyntax spec)) n
+  when (has raw vp) $ do
+    forM_ (versionSyntax spec) $ \wellFormed -> ensure (isString value && wellFormed (text value)) "invalid-parameter" n
+    ensure (value == str (acceptedVersion spec)) "unsupported-log-version" n
   ensure (case previous of Just _ -> not (has raw "scid"); Nothing -> isString (get raw "scid") && has raw "updateKeys") "invalid-parameter" n
   when (has raw "updateKeys") $ ensure (strings (get raw "updateKeys") && all validKey (items (get raw "updateKeys"))) "invalid-parameter" n
   when (has raw "nextKeyHashes") $ ensure (strings (get raw "nextKeyHashes") && all ((== "ok") . checkHash) (items (get raw "nextKeyHashes"))) "invalid-parameter" n
   let initial = fromMaybe (object [("nextKeyHashes", array []), ("witness", Null), ("watchers", array []), ("ttl", num 3600)]) previous
-      merged = foldl (\p k -> if has raw k then set p k (get raw k) else p) initial ["logVersion", "scid", "updateKeys", "nextKeyHashes", "witness", "watchers", "ttl"]
+      merged = foldl (\p k -> if has raw k then set p k (get raw k) else p) initial keys
       p = set merged "deactivated" (defaulted raw "deactivated" (Boolean False))
   p' <-
     if not (has raw "witness")
@@ -156,11 +187,11 @@ data Entry = Entry {entry :: J, params :: J, version :: Int, instant :: Integer,
 
 data Log = Log {entries :: [Entry], rawLines :: [String], failure :: Maybe J} deriving (Show)
 
-verifyEntry e previous now = do
+verifyEntry spec e previous now = do
   let n = maybe 1 ((+ 1) . version) previous
   ensure (maybe True ((/= Boolean True) . (`get` "deactivated") . params) previous) "entry-after-deactivation" n
   ensure (map fst (fields e) == ["parameters", "proof", "state", "versionId", "versionTime"] && isString (get e "versionId") && isString (get e "versionTime") && isObject (get e "parameters") && isObject (get e "state") && isArray (get e "proof")) "invalid-entry" n
-  p <- parameters (get e "parameters") (params <$> previous) n
+  p <- parameters spec (get e "parameters") (params <$> previous) n
   let keys = case previous of Just old | null (items (get (params old) "nextKeyHashes")) -> get (params old) "updateKeys"; _ -> get p "updateKeys"
       witnessRule = case previous of Just old | not (has (get e "parameters") "witness" && get (params old) "witness" == Null) -> get (params old) "witness"; _ -> get p "witness"
   ensure (not (null (items (get e "proof")))) "invalid-proof" n
@@ -186,9 +217,10 @@ verifyEntry e previous now = do
     ensure (status == "ok") "scid-mismatch" n
     let restored = parseUnsafe (replace (text id) "{SCID}" (jcs (set (remove e "proof") "versionId" (str "{SCID}"))))
     ensure (scid restored == text id) "scid-mismatch" n
+  forM_ (checkState spec) $ \valid -> ensure (valid (get e "state") (text (get p "scid"))) "invalid-state" n
   pure (Entry e p n t witnessRule)
 
-verifyLog log witness now
+verifyLog spec log witness now
   | null ls = Log [] ls (Just (err "invalid-log" 0))
   | otherwise = witnessing checked
   where
@@ -198,7 +230,7 @@ verifyLog log witness now
     walk es ((i, line) : rest) = case do
       e <- either (const (failAt "invalid-log" i)) Right (parse line)
       ensure (isObject e) "invalid-log" i
-      verifyEntry e (listToMaybe (reverse es)) now of
+      verifyEntry spec e (listToMaybe (reverse es)) now of
       Left error -> Log es ls (Just error)
       Right e -> walk (es ++ [e]) rest
     witnessing v = case find (isJust . snd) [(i, witnessError v i e) | (i, e) <- zip [0 ..] (entries v)] of
@@ -279,10 +311,10 @@ result v options warnings copies = do
   where
     es = entries v; ls = rawLines v
 
-resolveCopies input now options = do
+resolveCopies spec input now options = do
   let primary = object $ [("source", str "primary"), ("log", get input "log")] ++ [("witness", get input "witness") | has input "witness"]
       allCopies = primary : items (get input "copies")
-      logs = map (\c -> verifyLog (text (get c "log")) (if has c "witness" then Just (get c "witness") else Nothing) now) allCopies
+      logs = map (\c -> verifyLog spec (text (get c "log")) (if has c "witness" then Just (get c "witness") else Nothing) now) allCopies
       unavailable = [i | (i, c) <- zip [0 ..] allCopies, has c "unavailable"]
       initialStatus = M.fromList [(i, "unavailable") | i <- unavailable]
       warning code i message = object [("code", str code), ("source", get (allCopies !! i) "source"), ("message", message)]
@@ -325,8 +357,19 @@ resolveCopies input now options = do
       ensure (fromIntegral count >= number (defaulted options "minCopies" (num 1))) "min-copies-not-met" 0
       result r options (ws ++ retainedWarnings ++ behind) (Just reports)
 
+-- | Whether some entry of the log has an active witness list. Without a witness
+-- file, the first entry that needs witnessing fails, which cuts it from the entries.
+needsWitnessing :: Specialisation -> String -> Integer -> Bool
+needsWitnessing spec log now = maybe False ((== str "witness-threshold-not-met") . (`get` "code")) (failure v) || any ((/= Null) . rule) (entries v)
+  where
+    v = verifyLog spec log Nothing now
+
 resolve :: J -> J
-resolve input = either (\e -> object [("valid", Boolean False), ("error", e)]) id $ do
+resolve = resolveWith vhLog
+
+-- | Resolves a log as plain VH-Log, or as the given specialisation.
+resolveWith :: Specialisation -> J -> J
+resolveWith spec input = either (\e -> object [("valid", Boolean False), ("error", e)]) id $ do
   now <- maybe (failAt "invalid-option" 0) Right (time (get input "now"))
   let options = if get input "options" == Null then object [] else get input "options"
   ensure (isObject options && all ((`elem` ["versionId", "versionTime", "versionNumber", "minCopies"]) . fst) (fields options)) "invalid-option" 0
@@ -335,9 +378,9 @@ resolve input = either (\e -> object [("valid", Boolean False), ("error", e)]) i
   ensure (not (has options "versionTime") || isJust (time (get options "versionTime"))) "invalid-option" 0
   mapM_ (\k -> when (has options k) (ensure (integer (get options k) && number (get options k) >= 1) "invalid-option" 0)) ["versionNumber", "minCopies"]
   if has input "copies" || number (defaulted options "minCopies" (num 1)) > 1
-    then resolveCopies input now options
+    then resolveCopies spec input now options
     else do
-      let v = verifyLog (text (get input "log")) (if has input "witness" then Just (get input "witness") else Nothing) now
+      let v = verifyLog spec (text (get input "log")) (if has input "witness" then Just (get input "witness") else Nothing) now
       when (null (entries v)) (Left (fromMaybe Null (failure v)))
       warnings <- if has input "retainedVersionId" then retained v "primary" (get input "retainedVersionId") else pure []
       result v options warnings Nothing

@@ -72,7 +72,7 @@ const MOVEMENTS = [
     parts: {
       "perl": {"ranges": [["perl/lib/VH/Log.pm", 125, 125]], "marks": [[1, "_sha256(jcs($config))"], [2, "_sha256(jcs($document))"], [3, " . "]]},
       "dart": {"ranges": [["dart/lib/vh_log.dart", 160, 162]], "marks": [[1, "sha(jcs(config))"], [2, "sha(jcs(document))"], [3, "..."]]},
-      "haskell": {"ranges": [["haskell/src/VHLog.hs", 44, 44]], "marks": [[1, "C.sha (jcs config)"], [2, "C.sha (jcs document)"], [3, "<>"]]},
+      "haskell": {"ranges": [["haskell/src/VHLog.hs", 64, 64]], "marks": [[1, "C.sha (jcs config)"], [2, "C.sha (jcs document)"], [3, "<>"]]},
       "lua": {"ranges": [["lua/vh_log.lua", 59, 60]], "marks": [[1, "native.sha(J.encode(config))"], [2, "native.sha(J.encode(document))"], [3, " .. "]]},
       "gleam": {"ranges": [["gleam/src/vh_log.gleam", 49, 50]], "marks": [[1, "p.sha(j.jcs(config))"], [2, "p.sha(j.jcs(document))"], [3, ":bits"]]},
       "scala": {"ranges": [["scala/src/VHLog.scala", 165, 166]], "marks": [[1, "sha(jcs(config))"], [2, "sha(jcs(document))"], [3, "++"]]},
@@ -105,7 +105,7 @@ const MOVEMENTS = [
     parts: {
       "perl": {"ranges": [["perl/lib/VH/Log.pm", 212, 212]], "marks": [[1, "_without($entry, 'proof')"], [2, "versionId => $previous"], [3, "jcs("], [4, "hash_b58("]]},
       "dart": {"ranges": [["dart/lib/vh_log.dart", 226, 227]], "marks": [[1, "withoutProof(e)"], [2, "'versionId': previous"], [3, "jcs("], [4, "hash("]]},
-      "haskell": {"ranges": [["haskell/src/VHLog.hs", 68, 68]], "marks": [[1, "remove e \"proof\""], [2, "\"versionId\" (str previous)"], [3, "jcs"], [4, "C.hash"]]},
+      "haskell": {"ranges": [["haskell/src/VHLog.hs", 88, 88]], "marks": [[1, "remove e \"proof\""], [2, "\"versionId\" (str previous)"], [3, "jcs"], [4, "C.hash"]]},
       "lua": {"ranges": [["lua/vh_log.lua", 79, 80]], "marks": [[1, "without(e,'proof')"], [2, "d.versionId=previous"], [3, "J.encode(d)"], [4, "V.hash("]]},
       "gleam": {"ranges": [["gleam/src/vh_log.gleam", 104, 105]], "marks": [[1, "j.remove(\"proof\")"], [2, "j.set(\"versionId\", Str(previous))"], [3, "j.jcs"], [4, "p.hash"]]},
       "scala": {"ranges": [["scala/src/VHLog.scala", 219, 220]], "marks": [[1, "without(e, \"proof\")"], [2, "d(\"versionId\") = Str(previous)"], [3, "jcs(d)"], [4, "hash("]]},
@@ -138,7 +138,7 @@ const MOVEMENTS = [
     parts: {
       "perl": {"ranges": [["perl/lib/VH/Log.pm", 380, 385]], "marks": [[1, "_check_hash($id)"], [2, "_without($e, 'proof')"], [2, "versionId => '{SCID}'"], [3, "s/\\Q$id\\E/{SCID}/g"], [4, "scid(parse($text)) eq $id"]]},
       "dart": {"ranges": [["dart/lib/vh_log.dart", 415, 420]], "marks": [[1, "checkHash(p['scid'])"], [2, "withoutProof(e)"], [2, "'versionId': '{SCID}'"], [3, ".replaceAll(p['scid'], '{SCID}')"], [4, "scid(restored) != p['scid']"]]},
-      "haskell": {"ranges": [["haskell/src/VHLog.hs", 184, 188]], "marks": [[1, "checkHash id"], [2, "remove e \"proof\""], [2, "\"versionId\" (str \"{SCID}\")"], [3, "replace (text id) \"{SCID}\""], [4, "scid restored == text id"]]},
+      "haskell": {"ranges": [["haskell/src/VHLog.hs", 215, 219]], "marks": [[1, "checkHash id"], [2, "remove e \"proof\""], [2, "\"versionId\" (str \"{SCID}\")"], [3, "replace (text id) \"{SCID}\""], [4, "scid restored == text id"]]},
       "lua": {"ranges": [["lua/vh_log.lua", 163, 167]], "marks": [[1, "check_hash(p.scid)"], [2, "without(e,'proof')"], [2, "rest.versionId='{SCID}'"], [3, "gsub(p.scid,'{SCID}')"], [4, "V.scid(restored)~=p.scid"]]},
       "gleam": {"ranges": [["gleam/src/vh_log.gleam", 453, 465]], "marks": [[1, "p.check_hash(id)"], [2, "j.remove(\"proof\")"], [2, "j.set(\"versionId\", Str(\"{SCID}\"))"], [3, "string.replace(j.jcs(preliminary), j.text(id), \"{SCID}\")"], [4, "scid(restored) == j.text(id)"]]},
       "scala": {"ranges": [["scala/src/VHLog.scala", 427, 432]], "marks": [[1, "checkHash(p(\"scid\"))"], [2, "without(e, \"proof\")"], [2, "rest(\"versionId\") = Str(\"{SCID}\")"], [3, ".replace(p(\"scid\").str, \"{SCID}\")"], [4, "scid(restored) != p(\"scid\").str"]]},
@@ -171,7 +171,7 @@ const MOVEMENTS = [
     parts: {
       "perl": {"ranges": [["perl/lib/VH/Log.pm", 340, 343]], "marks": [[1, "@{ $previous->{nextKeyHashes} }"], [2, "exists $raw->{updateKeys}"], [2, "exists $raw->{nextKeyHashes}"], [3, "hash_b58($_)"], [4, "$committed{"]]},
       "dart": {"ranges": [["dart/lib/vh_log.dart", 363, 369]], "marks": [[1, "(previous['nextKeyHashes'] as List).isNotEmpty"], [2, "!raw.containsKey('updateKeys')"], [2, "!raw.containsKey('nextKeyHashes')"], [3, "hash(key)"], [4, "previous['nextKeyHashes'].contains("]]},
-      "haskell": {"ranges": [["haskell/src/VHLog.hs", 149, 151]], "marks": [[1, "not (null (items (get old \"nextKeyHashes\")))"], [2, "has raw \"updateKeys\""], [2, "has raw \"nextKeyHashes\""], [3, "C.hash (text k)"], [4, "`elem` items (get old \"nextKeyHashes\")"]]},
+      "haskell": {"ranges": [["haskell/src/VHLog.hs", 180, 182]], "marks": [[1, "not (null (items (get old \"nextKeyHashes\")))"], [2, "has raw \"updateKeys\""], [2, "has raw \"nextKeyHashes\""], [3, "C.hash (text k)"], [4, "`elem` items (get old \"nextKeyHashes\")"]]},
       "lua": {"ranges": [["lua/vh_log.lua", 135, 137]], "marks": [[1, "#previous.nextKeyHashes>0"], [2, "has(raw,'updateKeys')"], [2, "has(raw,'nextKeyHashes')"], [3, "V.hash(key)"], [4, "contains(previous.nextKeyHashes,"]]},
       "gleam": {"ranges": [["gleam/src/vh_log.gleam", 323, 336]], "marks": [[1, "!empty(j.get(previous, \"nextKeyHashes\"))"], [2, "present(raw, \"updateKeys\")"], [2, "present(raw, \"nextKeyHashes\")"], [3, "p.hash(j.text(k))"], [4, "list.contains("]]},
       "scala": {"ranges": [["scala/src/VHLog.scala", 354, 358]], "marks": [[1, "_(\"nextKeyHashes\").arr.nonEmpty"], [2, "has(raw, \"updateKeys\")"], [2, "has(raw, \"nextKeyHashes\")"], [3, "hash(k.str)"], [4, "old(\"nextKeyHashes\").arr.contains"]]},
