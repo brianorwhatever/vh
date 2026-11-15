@@ -8,5 +8,18 @@
   "rendered": "https://swcurran.github.io/VH-Log/next/",
   "version": "vh-log:1.0 (spec status: Pre-Draft — Editors Draft v0.1)",
   "retrieved": "2026-10-08",
-  "profile": "docs/profile.md (vh-log-interop-0)"
+  "profile": "docs/profile.md (vh-log-interop-0)",
+  "didvh": {
+    "spec": "did:vh DID Method (DID + Verifiable History)",
+    "editor": "Stephen Curran",
+    "repository": "https://github.com/swcurran/didvh-old",
+    "commit": "6c2e753",
+    "commitDate": "2026-10-09",
+    "commitMessage": "Update the READ section to remove text that is repeated from VH Log",
+    "rendered": "https://swcurran.github.io/didvh/next/",
+    "version": "did:vh:1.0 (spec status: Pre-Draft — do not implement until Draft)",
+    "retrieved": "2026-11-14",
+    "profile": "docs/didvh-profile.md (didvh-interop-0)",
+    "note": "swcurran/didvh currently holds only a Spec-Up template; the spec text is in swcurran/didvh-old."
+  }
 }

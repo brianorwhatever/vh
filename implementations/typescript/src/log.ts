@@ -89,9 +89,17 @@ export interface CreateInput {
   signers: string[];
 }
 
-export function createLog(input: CreateInput): { log: string; scid: string; versionId: string } {
-  const parameters = { ...input.parameters };
-  if (!("logVersion" in parameters)) parameters.logVersion = LOG_VERSION;
+/**
+ * Creates a log. A specialisation passes its own version parameter and value
+ * (did:vh uses `method` / `did:vh:1.0`); either way it is added only if absent.
+ */
+export function createLog(
+  input: CreateInput,
+  versionParameter = "logVersion",
+  version = LOG_VERSION,
+): { log: string; scid: string; versionId: string } {
+  const parameters: Record<string, unknown> = { ...input.parameters };
+  if (!(versionParameter in parameters)) parameters[versionParameter] = version;
   if (!("scid" in parameters)) parameters.scid = SCID_PLACEHOLDER;
   const { entry, scid } = sealGenesis(
     { versionId: SCID_PLACEHOLDER, versionTime: input.versionTime, parameters, state: input.state },

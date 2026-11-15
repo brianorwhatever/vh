@@ -6,8 +6,36 @@ import { multikeyFromVerificationMethod, verifyProof } from "./proof.ts";
 
 /** Seconds a `versionTime` may be ahead of the resolver's clock (profile §4). */
 export const FUTURE_TOLERANCE_SECONDS = 300;
-const SUPPORTED_LOG_VERSIONS = [LOG_VERSION];
 const ENTRY_KEYS = ["versionId", "versionTime", "parameters", "state", "proof"];
+
+/**
+ * What a specialisation of VH-Log (such as did:vh) changes in verification.
+ * Everything else (hashing, proofs, witnesses, pre-rotation) is shared.
+ */
+export interface Specialisation {
+  /** Name of the parameter that carries the log version (`logVersion` in plain VH-Log). */
+  versionParameter: string;
+  /** Accepted values of the version parameter, oldest first. */
+  versions: string[];
+  /**
+   * Parameters the specialisation adds to the VH-Log set. With `null`, any
+   * unknown parameter is ignored (plain VH-Log); otherwise the set is closed
+   * and an unknown parameter fails with `invalid-parameter`.
+   */
+  extraParameters: string[] | null;
+  /** Checks an entry's `state` once the SCID is known; throws a VHLogError. */
+  checkState?: (state: Record<string, unknown>, scid: string, version: number) => void;
+}
+
+/** Plain VH-Log (`vh-log:1.0`), as specified by profile vh-log-interop-0. */
+export const VH_LOG: Specialisation = {
+  versionParameter: "logVersion",
+  versions: [LOG_VERSION],
+  extraParameters: null,
+};
+
+/** The VH-Log parameters, excluding the version parameter. */
+const VH_LOG_PARAMETERS = ["scid", "updateKeys", "nextKeyHashes", "witness", "watchers", "deactivated", "ttl"];
 
 export interface WitnessConfig {
   threshold: number;
@@ -15,6 +43,7 @@ export interface WitnessConfig {
 }
 
 export interface Parameters {
+  /** Value of the specialisation's version parameter (`logVersion` for plain VH-Log). */
   logVersion: string;
   scid: string;
   updateKeys: string[];
@@ -108,20 +137,33 @@ function validateWitness(value: unknown, version: number): WitnessConfig | null 
 }
 
 /** Applies an entry's `parameters` to the previously active set (Read step 1 and the pre-rotation rule of step 7). */
-function applyParameters(raw: Record<string, unknown>, previous: Parameters | null, version: number): Parameters {
+function applyParameters(
+  raw: Record<string, unknown>,
+  previous: Parameters | null,
+  version: number,
+  spec: Specialisation,
+): Parameters {
   const invalid = (msg: string) => new VHLogError("invalid-parameter", msg, version);
   for (const [key, value] of Object.entries(raw)) {
     if (value === null) throw invalid(`${key} must not be null`);
   }
-  if (previous === null) {
-    if (!("logVersion" in raw)) throw new VHLogError("unsupported-log-version", "logVersion missing from first entry", 1);
-  }
-  if ("logVersion" in raw) {
-    if (typeof raw.logVersion !== "string" || !SUPPORTED_LOG_VERSIONS.includes(raw.logVersion)) {
-      throw new VHLogError("unsupported-log-version", `unsupported logVersion ${JSON.stringify(raw.logVersion)}`, version);
+  if (spec.extraParameters !== null) {
+    const known = [spec.versionParameter, ...VH_LOG_PARAMETERS, ...spec.extraParameters];
+    for (const key of Object.keys(raw)) {
+      if (!known.includes(key)) throw invalid(`${key} is not a parameter of this log type`);
     }
-    if (previous && SUPPORTED_LOG_VERSIONS.indexOf(raw.logVersion) < SUPPORTED_LOG_VERSIONS.indexOf(previous.logVersion)) {
-      throw new VHLogError("unsupported-log-version", "logVersion may not be lowered", version);
+  }
+  const vp = spec.versionParameter;
+  if (previous === null) {
+    if (!(vp in raw)) throw new VHLogError("unsupported-log-version", `${vp} missing from first entry`, 1);
+  }
+  if (vp in raw) {
+    const value = raw[vp];
+    if (typeof value !== "string" || !spec.versions.includes(value)) {
+      throw new VHLogError("unsupported-log-version", `unsupported ${vp} ${JSON.stringify(value)}`, version);
+    }
+    if (previous && spec.versions.indexOf(value) < spec.versions.indexOf(previous.logVersion)) {
+      throw new VHLogError("unsupported-log-version", `${vp} may not be lowered`, version);
     }
   }
   if (previous === null) {
@@ -164,7 +206,7 @@ function applyParameters(raw: Record<string, unknown>, previous: Parameters | nu
   }
 
   return {
-    logVersion: (raw.logVersion as string | undefined) ?? previous!.logVersion,
+    logVersion: (raw[vp] as string | undefined) ?? previous!.logVersion,
     scid: (raw.scid as string | undefined) ?? previous!.scid,
     updateKeys: (raw.updateKeys as string[] | undefined) ?? previous!.updateKeys,
     nextKeyHashes: (raw.nextKeyHashes as string[] | undefined) ?? previous?.nextKeyHashes ?? [],
@@ -215,7 +257,7 @@ function verifyScid(entry: Record<string, unknown>, scid: string): void {
 }
 
 /** Runs the per-entry checks (profile §4, steps 1–7) on one parsed line. */
-function verifyEntry(raw: unknown, previous: VerifiedEntry | null, now: number): VerifiedEntry {
+function verifyEntry(raw: unknown, previous: VerifiedEntry | null, now: number, spec: Specialisation): VerifiedEntry {
   const version = previous ? previous.versionNumber + 1 : 1;
   if (previous?.parameters.deactivated) {
     throw new VHLogError("entry-after-deactivation", "entry follows a deactivating entry", version);
@@ -227,7 +269,7 @@ function verifyEntry(raw: unknown, previous: VerifiedEntry | null, now: number):
   ) {
     throw new VHLogError("invalid-entry", "entry does not have the required properties and types", version);
   }
-  const parameters = applyParameters(raw.parameters, previous?.parameters ?? null, version);
+  const parameters = applyParameters(raw.parameters, previous?.parameters ?? null, version, spec);
 
   let activeKeys: string[];
   let witnessRule: WitnessConfig | null;
@@ -251,6 +293,7 @@ function verifyEntry(raw: unknown, previous: VerifiedEntry | null, now: number):
     throw new VHLogError("future-version-time", "versionTime is in the future", version);
   }
   if (!previous) verifyScid(raw, parameters.scid);
+  spec.checkState?.(raw.state, parameters.scid, version);
 
   return { entry: raw as unknown as LogEntry, versionNumber: version, time, parameters, witnessRule };
 }
@@ -308,7 +351,7 @@ function checkWitnesses(entries: VerifiedEntry[], witness: unknown): { index: nu
 }
 
 /** Verifies a whole log file, returning its valid, witnessed prefix and the first failure. */
-export function verifyLog(log: string, witness: unknown, now: number): VerifiedLog {
+export function verifyLog(log: string, witness: unknown, now: number, spec: Specialisation = VH_LOG): VerifiedLog {
   const lines = parseLogLines(log);
   const entries: VerifiedEntry[] = [];
   let failure: ErrorReport | null = null;
@@ -327,7 +370,7 @@ export function verifyLog(log: string, witness: unknown, now: number): VerifiedL
       if (!isSafeJson(raw)) {
         throw new VHLogError("invalid-log", `line ${i + 1} has a non-finite number or a lone surrogate`, i + 1);
       }
-      entries.push(verifyEntry(raw, entries.at(-1) ?? null, now));
+      entries.push(verifyEntry(raw, entries.at(-1) ?? null, now, spec));
     } catch (e) {
       if (!(e instanceof VHLogError)) throw e;
       failure = e.toReport();

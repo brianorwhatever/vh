@@ -133,10 +133,62 @@ On failure:
 - `metadata.updateKeys`/`nextKeyHashes` are extensions for testing. Hash
   inputs are never computed from them.
 
+## did:vh operations
+
+Drivers with `"didvh": true` in `implementations.json` also implement these
+([did:vh profile](didvh-profile.md)). The `witness` operation above is reused
+for witness proofs.
+
+```jsonc
+// create a did:vh DID ({SCID} placeholders in the document; method/scid added if absent)
+{"op": "didvh-create", "input": {
+  "document": {"id": "did:vh:{SCID}", …},
+  "parameters": {"updateKeys": ["z6Mk…"]},
+  "versionTime": "2026-01-01T00:00:00Z",
+  "signers": ["<seed hex>"]
+}}
+→ {"log": "<jsonl text>", "did": "did:vh:Qm…", "scid": "Qm…", "versionId": "1-Qm…"}
+
+// update (and deactivate, with parameters {"deactivated": true})
+{"op": "didvh-update", "input": {"log": "…", "document": {…}, "parameters": {}, "versionTime": "…", "signers": ["…"]}}
+→ {"log": "<jsonl text>", "versionId": "2-Qm…"}
+
+// resolve (offline: the log is passed in options.didLog)
+{"op": "didvh-resolve", "input": {
+  "did": "did:vh:Qm…",
+  "options": {"didLog": "…", "didWitness"?: […], "versionNumber"?: 2, …},
+  "now": "2026-06-01T00:00:00Z",
+  "remote"?: false
+}}
+→ {"didResolutionMetadata": {"contentType": "application/did+json", "warnings"?: […]},
+   "didDocument": {…} | null,
+   "didDocumentMetadata": {"versionId", "versionTime", "created", "updated", "scid",
+                           "deactivated", "ttl": "3600", "witness"?: {…}, "watchers": […]}}
+→ {"didResolutionMetadata": {"error": "invalidDid",
+                             "problemDetails": {"title": "invalidDid", "detail": "…",
+                                                "vhLog"?: {"code": "invalid-proof", "version": 3, "message": "…"}}},
+   "didDocument": null, "didDocumentMetadata": {}}
+
+// validate a src reference
+{"op": "didvh-src", "input": {"src": "https://example.com/dids/issuer"}}
+→ {"valid": true, "kind": "web", "didLog": "https://example.com/dids/issuer/did.jsonl",
+   "didWitness": "https://example.com/dids/issuer/did-witness.json"}
+→ {"valid": false, "error": "invalidOptions"}
+
+// parse a DID URL as a dereferencer
+{"op": "didvh-did-url", "input": {"didUrl": "did:vh:Qm…?versionNumber=2#key-1"}}
+→ {"valid": true, "did": "did:vh:Qm…", "options": {"versionNumber": 2}, "fragment": "key-1"}
+→ {"valid": false, "error": "invalidDidUrl"}
+```
+
+- `kind` is `web`, `loopback`, `file` or `other`.
+- `fragment` is omitted when the DID URL has no `#`.
+- A did:vh resolution failure is still `ok: true` at the protocol level.
+
 ## Driver discovery
 
 ```json
-{ "name": "typescript", "cwd": "implementations/typescript", "command": ["node", "src/driver.ts"] }
+{ "name": "typescript", "cwd": "implementations/typescript", "command": ["node", "src/driver.ts"], "didvh": true }
 ```
 
 The harness runs `command` in `cwd`, with `PATH` extended by `env.PATH_PREPEND`

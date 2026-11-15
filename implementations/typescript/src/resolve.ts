@@ -1,6 +1,14 @@
 import { VHLogError, type ErrorReport } from "./errors.ts";
 import type { LogEntry } from "./log.ts";
-import { parseVersionTime, verifyLog, type VerifiedEntry, type VerifiedLog, type WitnessConfig } from "./verify.ts";
+import {
+  parseVersionTime,
+  verifyLog,
+  VH_LOG,
+  type Specialisation,
+  type VerifiedEntry,
+  type VerifiedLog,
+  type WitnessConfig,
+} from "./verify.ts";
 
 export interface ResolveOptions {
   versionId?: string;
@@ -199,7 +207,7 @@ function divergence(a: string[], b: string[]): number {
 }
 
 /** Comparing Copies of a Log, with copies supplied in the request instead of fetched. */
-function resolveCopies(input: ResolveInput, now: number, options: ResolveOptions): ResolveResult {
+function resolveCopies(input: ResolveInput, now: number, options: ResolveOptions, spec: Specialisation): ResolveResult {
   const all: CopyInput[] = [{ source: PRIMARY, log: input.log, witness: input.witness }, ...(input.copies ?? [])];
   const warnings: Warning[] = [];
   const status = new Map<number, CopyStatus>();
@@ -207,7 +215,7 @@ function resolveCopies(input: ResolveInput, now: number, options: ResolveOptions
   const verify = (i: number) => {
     if (!verified.has(i)) {
       const c = all[i] as { log: string; witness?: unknown };
-      verified.set(i, verifyLog(c.log, c.witness, now));
+      verified.set(i, verifyLog(c.log, c.witness, now, spec));
     }
     return verified.get(i)!;
   };
@@ -304,16 +312,17 @@ function resolveCopies(input: ResolveInput, now: number, options: ResolveOptions
   return buildResult(reference, options, warnings, copies);
 }
 
-export function resolve(input: ResolveInput): ResolveResult {
+/** Resolves a log as plain VH-Log, or as the given specialisation. */
+export function resolve(input: ResolveInput, spec: Specialisation = VH_LOG): ResolveResult {
   try {
     const now = parseVersionTime(input.now);
     if (now === null) throw new VHLogError("invalid-option", "now must be a whole-second UTC ISO 8601 time");
     const options = input.options ?? {};
     validateOptions(options);
     if (input.copies !== undefined || (options.minCopies ?? 1) > 1) {
-      return resolveCopies(input, now, options);
+      return resolveCopies(input, now, options, spec);
     }
-    const verified = verifyLog(input.log, input.witness, now);
+    const verified = verifyLog(input.log, input.witness, now, spec);
     if (verified.entries.length === 0) return { valid: false, error: verified.failure! };
     const warnings: Warning[] = [];
     if (input.retainedVersionId !== undefined) checkRetained(verified, PRIMARY, input.retainedVersionId, warnings);

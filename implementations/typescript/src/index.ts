@@ -21,4 +21,25 @@ export {
 } from "./log.ts";
 export { createProof, didKeyVerificationMethod, verifyProof, type Proof } from "./proof.ts";
 export { resolve, type ResolveInput, type ResolveResult } from "./resolve.ts";
-export { verifyLog, type Parameters, type VerifiedLog } from "./verify.ts";
+export { verifyLog, VH_LOG, type Parameters, type Specialisation, type VerifiedLog } from "./verify.ts";
+export {
+  createDid,
+  DID_VH,
+  DID_VH_METHOD,
+  DidVhError,
+  didVhSpecialisation,
+  locateSrc,
+  parseDid,
+  parseDidUrl,
+  resolveDid,
+  updateDid,
+  type CreateDidInput,
+  type DidDocumentMetadata,
+  type DidResolutionOptions,
+  type DidResolutionResult,
+  type DidUrl,
+  type DidVhErrorCode,
+  type ResolverContext,
+  type SrcLocation,
+  type UpdateDidInput,
+} from "./didvh.ts";

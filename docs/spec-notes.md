@@ -107,3 +107,43 @@ Section links point at the pinned
     `readline`, Python's `str.splitlines`) also split on U+2028/U+2029, which JSON
     allows unescaped inside strings. The spec should say a log is split on `\n`
     only.
+
+## did:vh
+
+Issues found in did:vh
+[`didvh-old@6c2e753`](https://github.com/swcurran/didvh-old/blob/6c2e753/spec/specification.md)
+while writing [`didvh-profile.md`](didvh-profile.md). Section links point at
+that file.
+
+22. **IDNA conversion in every resolver.** *Web Locations* requires converting
+    an internationalised host to A-labels (IDNA2008), and treating a host that
+    can't be converted as `invalidOptions`. Validation alone would then need an
+    IDNA2008 library in every language. **Profile:** `src` must be printable
+    ASCII, so internationalised hosts must already be punycode (§3), the same
+    way `profile.md` treats `watchers` URLs.
+23. **"Any trailing `/`".** It isn't clear whether one trailing slash or all
+    of them are removed. With "all", `https://example.com/dids//` is valid;
+    with "one", it has an empty segment and is invalid. **Profile:** one.
+24. **Selecting the deactivating entry.** *Deactivate* forbids returning the
+    document of a deactivated DID but says "prior versions MAY be resolved".
+    It doesn't say whether the deactivating entry's own document is returned
+    when a version selector names it. **Profile:** it is not.
+25. **`watchers` with none active.** The metadata MUST list the active
+    watchers, but it isn't said whether the field is omitted or `[]` when there
+    are none. **Profile:** always present.
+26. **Unknown resolution options and DID URL query parameters.** Neither is
+    covered. DID Resolution defines `accept`, and DID URLs commonly carry
+    `service`/`relativeRef`. **Profile:** both are ignored.
+27. **User information in `src`.** `https://user@example.com/` is not
+    addressed. **Profile:** rejected.
+28. **Order of the state check.** *Resolution Algorithm* step 6 (state) maps
+    to VH-Log Read step 6, but the order relative to the other per-entry
+    checks (and so which error is reported when several fail) isn't fixed.
+    **Profile:** it runs last, after the SCID check (§1).
+29. **`versionTime` precision now comes from the specialisation.** VH-Log
+    (since `3770b57`) lets a specialisation set `versionTime` precision. did:vh
+    still says it inherits VH-Log's whole-second requirement, so it should now
+    state that requirement itself.
+30. **DID URL paths.** `did:vh:<SCID>/path` is legal DID URL syntax, but did:vh
+    defines no path handling and no implicit services. **Profile:**
+    `invalidDidUrl`.

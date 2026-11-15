@@ -3,7 +3,7 @@
 //
 //   node harness/run.ts                      # all implementations, all suites
 //   node harness/run.ts --impl python        # only these implementations (repeatable)
-//   node harness/run.ts --suite resolution   # primitives | resolution | generation | cross | external (repeatable)
+//   node harness/run.ts --suite resolution   # primitives | resolution | generation | cross | external | didvh (repeatable)
 //   node harness/run.ts --list               # print every test result, not just failures
 //   node harness/run.ts --verbose            # print every failure in full
 //   node harness/run.ts --markdown out.md    # also write the results as Markdown (CI job summary)
@@ -28,6 +28,8 @@ interface ImplConfig {
   /** Run once before the driver starts; a failure is reported and the driver skipped. */
   build?: string[];
   command: string[];
+  /** True if the driver implements the did:vh operations (docs/interop-protocol.md). */
+  didvh?: boolean;
   /** Extra environment variables; `PATH_PREPEND` entries are prepended to PATH. */
   env?: { PATH_PREPEND?: string[]; [name: string]: string | string[] | undefined };
 }
@@ -286,6 +288,131 @@ async function cross(d: Driver, generated: Generated[]) {
   }
 }
 
+// ---------------------------------------------------------------- did:vh
+
+const DIDVH = join(VECTORS, "didvh");
+
+/** Compares a didvh-resolve result to a vector's `expect`. */
+function compareDidResolution(expect: Json, got: Json): string | null {
+  const problems: string[] = [];
+  const meta = got?.didResolutionMetadata ?? {};
+  if (expect.error) {
+    if (meta.error !== expect.error) problems.push(`error: expected ${expect.error}, got ${meta.error ?? "success"}`);
+    const vhLog = meta.problemDetails?.vhLog?.code;
+    if (expect.vhLogError && vhLog !== expect.vhLogError) {
+      problems.push(`problemDetails.vhLog.code: expected ${expect.vhLogError}, got ${vhLog}`);
+    }
+    if (got?.didDocument != null) problems.push("didDocument must be null on error");
+  } else {
+    if (meta.error) problems.push(`unexpected error ${meta.error}: ${meta.problemDetails?.detail ?? ""}`);
+    if (meta.contentType !== "application/did+json") problems.push(`contentType: ${meta.contentType}`);
+    if (!same(expect.didDocument, got?.didDocument ?? null)) {
+      problems.push(`didDocument: expected ${show(expect.didDocument)}, got ${show(got?.didDocument)}`);
+    }
+    if (!same(expect.didDocumentMetadata, got?.didDocumentMetadata)) {
+      problems.push(`didDocumentMetadata: expected ${show(expect.didDocumentMetadata)}, got ${show(got?.didDocumentMetadata)}`);
+    }
+    const warnings = (meta.warnings ?? []).map((w: Json) => w.code).sort();
+    if (!same(warnings, expect.warnings ?? [])) problems.push(`warnings: expected ${show(expect.warnings)}, got ${show(warnings)}`);
+  }
+  return problems.length ? problems.join("\n     ") : null;
+}
+
+interface DidGenerated {
+  producer: string;
+  scenario: Json;
+  log: string;
+  witnessFile: Json[] | undefined;
+}
+
+/** did:vh conformance: src references, DID URLs, resolution vectors and generation. */
+async function didvh(d: Driver): Promise<DidGenerated[]> {
+  const name = d.impl.name;
+  const simple = async (file: string, op: string, field: string) => {
+    const { cases } = JSON.parse(readFileSync(join(DIDVH, file), "utf8"));
+    for (const c of cases) {
+      const res = await d.call(op, { [field]: c[field] });
+      const test = `${file.replace(/\.json$/, "")}/${c.name}`;
+      if (!res.ok) record(name, "didvh", test, `driver error: ${res.error}`);
+      else record(name, "didvh", test, same(res.result, c.expect) ? null : `expected ${show(c.expect)}\n     got ${show(res.result)}`);
+    }
+  };
+  await simple("src.json", "didvh-src", "src");
+  await simple("did-url.json", "didvh-did-url", "didUrl");
+
+  const dir = join(DIDVH, "resolution");
+  for (const file of readdirSync(dir).sort()) {
+    const group = file.replace(/\.json$/, "");
+    const { cases } = JSON.parse(readFileSync(join(dir, file), "utf8"));
+    for (const c of cases) {
+      const res = await d.call("didvh-resolve", c.input);
+      const test = `resolution/${group}/${c.name}`;
+      if (!res.ok) record(name, "didvh", test, `driver error: ${res.error}`);
+      else record(name, "didvh", test, compareDidResolution(c.expect, res.result));
+    }
+  }
+
+  const { scenarios } = JSON.parse(readFileSync(join(DIDVH, "generation.json"), "utf8"));
+  const out: DidGenerated[] = [];
+  for (const sc of scenarios) {
+    let log = "";
+    let scid = "";
+    const versionIds: string[] = [];
+    let broken = false;
+    for (const [i, step] of sc.steps.entries()) {
+      const test = `generation/${sc.name}/step${i + 1}-${step.op}`;
+      const input =
+        step.op === "didvh-create" ? step.input : { ...JSON.parse(JSON.stringify(step.input).replaceAll("{SCID}", scid)), log };
+      const res = await d.call(step.op, input);
+      if (!res.ok) {
+        record(name, "didvh", test, `driver error: ${res.error}`);
+        broken = true;
+        break;
+      }
+      log = res.result.log;
+      if (step.op === "didvh-create") scid = res.result.scid;
+      versionIds.push(res.result.versionId);
+      const line = JSON.parse(log.trimEnd().split("\n").at(-1)!);
+      const problems: string[] = [];
+      for (const key of ["versionId", "did", "scid"]) {
+        if (step.expect[key] !== undefined && res.result[key] !== step.expect[key]) {
+          problems.push(`${key}: expected ${step.expect[key]}, got ${res.result[key]}`);
+        }
+      }
+      if (!same(line, step.expect.line)) problems.push(`line: expected ${show(step.expect.line)}\n     got ${show(line)}`);
+      record(name, "didvh", test, problems.length ? problems.join("\n     ") : null);
+    }
+    if (broken) continue;
+    let witnessFile: Json[] | undefined;
+    if (sc.witness) {
+      witnessFile = [];
+      for (const w of sc.witness) {
+        const versionId = versionIds[w.step - 1];
+        const proofs = [];
+        for (const seed of w.seeds) {
+          const res = await d.call("witness", { versionId, seed });
+          if (res.ok) proofs.push(res.result.proof);
+        }
+        witnessFile.push({ versionId, proof: proofs });
+      }
+    }
+    out.push({ producer: name, scenario: sc, log, witnessFile });
+  }
+  return out;
+}
+
+/** Every did:vh driver resolves the DID logs every did:vh driver generated. */
+async function didvhCross(d: Driver, generated: DidGenerated[]) {
+  for (const g of generated) {
+    const { resolve: r } = g.scenario;
+    const options = { didLog: g.log, ...(g.witnessFile ? { didWitness: g.witnessFile } : {}) };
+    const res = await d.call("didvh-resolve", { did: r.did, options, now: r.now });
+    const test = `cross/${g.producer}/${g.scenario.name}`;
+    if (!res.ok) record(d.impl.name, "didvh", test, `driver error: ${res.error}`);
+    else record(d.impl.name, "didvh", test, compareDidResolution({ didDocument: r.didDocument, didDocumentMetadata: r.didDocumentMetadata }, res.result));
+  }
+}
+
 /**
  * Checks did:webvh logs made by the independent didwebvh-ts implementation
  * (vectors/external). did:webvh's parameters differ from VH-Log's, so the logs
@@ -356,7 +483,7 @@ const { values } = parseArgs({
 });
 const registry: ImplConfig[] = JSON.parse(readFileSync(join(ROOT, "implementations.json"), "utf8")).implementations;
 const selected = registry.filter((i) => values.impl!.length === 0 || values.impl!.includes(i.name));
-const ALL_SUITES = ["primitives", "resolution", "generation", "cross", "external"];
+const ALL_SUITES = ["primitives", "resolution", "generation", "cross", "external", "didvh"];
 const suites = values.suite!.length ? values.suite! : ALL_SUITES;
 const impls = selected.filter((i) => {
   const error = build(i);
@@ -376,6 +503,11 @@ if (suites.includes("generation") || suites.includes("cross")) {
   const generated = (await Promise.all(drivers.map((d) => generation(d)))).flat();
   if (suites.includes("cross")) await Promise.all(drivers.map((d) => cross(d, generated)));
 }
+if (suites.includes("didvh")) {
+  const didDrivers = drivers.filter((d) => d.impl.didvh);
+  const generated = (await Promise.all(didDrivers.map((d) => didvh(d)))).flat();
+  await Promise.all(didDrivers.map((d) => didvhCross(d, generated)));
+}
 for (const d of drivers) d.close();
 
 // ---------------------------------------------------------------- report
@@ -386,6 +518,7 @@ const SUITE_TITLES: Record<string, string> = {
   generation: "Generation",
   cross: "Cross",
   external: "didwebvh-ts",
+  didvh: "did:vh",
 };
 const failures = results.filter((r) => r.problem !== null);
 const tally = (rs: Result[]) => ({ pass: rs.filter((r) => r.problem === null).length, total: rs.length });

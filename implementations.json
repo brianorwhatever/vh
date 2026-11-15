@@ -6,7 +6,8 @@
       "command": [
         "node",
         "src/driver.ts"
-      ]
+      ],
+      "didvh": true
     },
     {
       "name": "rust",

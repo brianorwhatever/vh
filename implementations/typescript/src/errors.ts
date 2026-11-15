@@ -12,6 +12,7 @@ export type ErrorCode =
   | "invalid-version-time"
   | "future-version-time"
   | "scid-mismatch"
+  | "invalid-state"
   | "entry-after-deactivation"
   | "witness-threshold-not-met"
   | "invalid-witness-file"
