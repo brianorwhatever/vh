@@ -342,7 +342,8 @@
       "command": [
         "perl",
         "driver.pl"
-      ]
+      ],
+      "didvh": true
     }
   ]
 }
