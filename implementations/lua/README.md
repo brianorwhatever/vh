@@ -40,4 +40,10 @@ local resolved = vh.resolve(O{
 Use `json.object`, `json.array`, and `json.null` to distinguish empty containers
 and JSON null. `json.parse` constructs these values and rejects unsafe JSON.
 The API also exposes `update`, `sign`, `verify`, `scid`, `entry_hash`, and
-`dispatch`. Results follow the [interop protocol](../../docs/interop-protocol.md).
+`dispatch`.
+
+[did:vh](../../docs/didvh-profile.md) is in `didvh.lua` (`require('didvh')`):
+a did:vh log is verified by `vh_log` with a specialisation (`method`, a closed
+parameter set and the `state.id` check), and the module adds DID creation and
+update, `srcLog`/`srcWitness` and `src` checks, DID URL parsing and offline
+DID resolution (`resolve(did, options, {now=..., remote=...})`). Results follow the [interop protocol](../../docs/interop-protocol.md).
