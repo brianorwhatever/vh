@@ -857,7 +857,6 @@ package body Did_VH is
          Error  : Value_Access;
          MD     : Value_Access;
          Valid  : Natural;
-         Latest : Boolean;
          Text   : Unbounded_String;
       begin
          -- The log needs witnessing if a witness list applies to an entry
@@ -897,7 +896,6 @@ package body Did_VH is
            (if Get (Result, "firstInvalidVersion").Tag = Number_Value
             then Natural (Get (Result, "firstInvalidVersion").Number) - 1
             else Len (Lines));
-         Latest := Get (MD, "versionNumber").Number = Long_Float (Valid);
          for Name of
            Name_List'(U ("versionId"), U ("versionTime"), U ("created"), U ("updated"),
             U ("scid"), U ("deactivated"), U ("ttl"))
@@ -925,10 +923,11 @@ package body Did_VH is
             end if;
          end if;
          Put (R, "didResolutionMetadata", DRM);
+         -- A deactivated DID has no document unless a version was selected.
          Put
            (R,
             "didDocument",
-            (if Get (MD, "deactivated").Flag and then Latest
+            (if Get (MD, "deactivated").Flag and then Selectors = 0
              then Nil
              else Get (Result, "state")));
          Put (R, "didDocumentMetadata", DDM);
