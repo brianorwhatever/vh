@@ -251,15 +251,47 @@ static char *binary64_tokens(vh_context *c, const char *input) {
     }
     return b.data ? b.data : text(c, "");
 }
+/* Strict UTF-8 (RFC 3629): no overlong forms, surrogates or code points above
+ * U+10FFFF. json-c's JSON_TOKENER_VALIDATE_UTF8 is not used, because json-c
+ * 0.18 as packaged for Ubuntu 26.04 rejects valid multi-byte input with it. */
+static int valid_utf8(const char *text) {
+    const unsigned char *p = (const unsigned char *)text;
+    while (*p) {
+        unsigned char b = *p;
+        size_t extra;
+        unsigned int cp, min;
+        if (b < 0x80) {
+            p++;
+            continue;
+        } else if ((b & 0xE0) == 0xC0) {
+            extra = 1, cp = b & 0x1F, min = 0x80;
+        } else if ((b & 0xF0) == 0xE0) {
+            extra = 2, cp = b & 0x0F, min = 0x800;
+        } else if ((b & 0xF8) == 0xF0) {
+            extra = 3, cp = b & 0x07, min = 0x10000;
+        } else {
+            return 0;
+        }
+        for (size_t i = 1; i <= extra; i++) {
+            if ((p[i] & 0xC0) != 0x80)
+                return 0;
+            cp = (cp << 6) | (p[i] & 0x3F);
+        }
+        if (cp < min || cp > 0x10FFFF || (cp >= 0xD800 && cp <= 0xDFFF))
+            return 0;
+        p += extra + 1;
+    }
+    return 1;
+}
 static J *parse(vh_context *c, const char *input, int *valid) {
     *valid = 0;
-    if (!unicode_escapes(input))
+    if (!valid_utf8(input) || !unicode_escapes(input))
         return NULL;
     input = binary64_tokens(c, input);
     struct json_tokener *tok = json_tokener_new();
     if (!tok)
         abort();
-    json_tokener_set_flags(tok, JSON_TOKENER_STRICT | JSON_TOKENER_VALIDATE_UTF8);
+    json_tokener_set_flags(tok, JSON_TOKENER_STRICT);
     size_t n = strlen(input);
     J *v = json_tokener_parse_ex(tok, input, (int)n + 1);
     enum json_tokener_error error = json_tokener_get_error(tok);
