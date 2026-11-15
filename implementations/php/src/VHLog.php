@@ -128,10 +128,10 @@ final class Log {
         $v=self::withoutProof($e); $v->versionId=$previous;
         return self::hash(self::jcs($v));
     }
-    private static function lines(string $log): array { $ls=explode("\n",$log); if (end($ls)==='') array_pop($ls); return $ls; }
-    public static function create(object $input): array {
+    public static function lines(string $log): array { $ls=explode("\n",$log); if (end($ls)==='') array_pop($ls); return $ls; }
+    public static function create(object $input,string $vp='logVersion',string $version='vh-log:1.0'): array {
         $p=clone $input->parameters;
-        if (!property_exists($p,'logVersion')) $p->logVersion='vh-log:1.0';
+        if (!property_exists($p,$vp)) $p->$vp=$version;
         if (!property_exists($p,'scid')) $p->scid='{SCID}';
         $e=(object)['versionId'=>'{SCID}','versionTime'=>$input->versionTime,'parameters'=>$p,'state'=>$input->state];
         $id=self::scid($e); $e=self::parse(str_replace('{SCID}',$id,self::json($e)));
@@ -154,11 +154,11 @@ final class Log {
         if ($mo<1 || $mo>12 || $d<1 || $d>$days[$mo-1] || $h>23 || $mi>59 || $s>59) return null;
         return (new \DateTimeImmutable($v))->getTimestamp();
     }
-    private static function integer(mixed $v): bool { return (is_float($v) || is_int($v)) && is_finite((float)$v) && floor($v)===$v || is_int($v); }
+    public static function integer(mixed $v): bool { return (is_float($v) || is_int($v)) && is_finite((float)$v) && floor($v)===$v || is_int($v); }
     private static function strings(mixed $v): bool { return is_array($v) && count(array_filter($v,is_string(...)))===count($v); }
-    private static function parameters(object $raw,?object $previous,int $n): object {
-        foreach ($raw as $v) if ($v===null) self::error('invalid-parameter',$n);
-        if (($previous===null && !property_exists($raw,'logVersion')) || (property_exists($raw,'logVersion') && $raw->logVersion!=='vh-log:1.0')) self::error('unsupported-log-version',$n);
+    private static function parameters(object $raw,?object $previous,int $n,array $spec=self::VH_LOG): object {
+        foreach ($raw as $v) if ($v===null) self::error('invalid-parameter',$n); if ($spec['extra']!==null) foreach ($raw as $k=>$v) if (!in_array((string)$k,[$spec['param'],...self::PARAMETERS,...$spec['extra']],true)) self::error('invalid-parameter',$n);
+        self::version($raw,$previous,$n,$spec);
         if ($previous!==null ? property_exists($raw,'scid') : (!is_string($raw->scid ?? null) || !property_exists($raw,'updateKeys'))) self::error('invalid-parameter',$n);
         if (property_exists($raw,'updateKeys')) {
             if (!self::strings($raw->updateKeys)) self::error('invalid-parameter',$n);
@@ -169,7 +169,7 @@ final class Log {
             foreach ($raw->nextKeyHashes as $h) if (self::checkHash($h)!=='ok') self::error('invalid-parameter',$n);
         }
         $p=$previous===null ? (object)['nextKeyHashes'=>[],'witness'=>null,'watchers'=>[],'ttl'=>3600] : clone $previous;
-        foreach (['logVersion','scid','updateKeys','nextKeyHashes','witness','watchers','ttl'] as $k) if (property_exists($raw,$k)) $p->$k=$raw->$k;
+        foreach (['logVersion','scid','updateKeys','nextKeyHashes','witness','watchers','ttl'] as $k) if (property_exists($raw,$k)) $p->$k=$raw->$k; if (property_exists($raw,$spec['param'])) $p->logVersion=$raw->{$spec['param']};
         $p->deactivated=$raw->deactivated ?? false;
         if (property_exists($raw,'witness')) {
             $w=$raw->witness;
@@ -198,12 +198,12 @@ final class Log {
         }
         return $p;
     }
-    private static function verifyEntry(object $e,?array $previous,int $now): array {
+    private static function verifyEntry(object $e,?array $previous,int $now,array $spec=self::VH_LOG): array {
         $n=$previous===null ? 1 : $previous['n']+1;
         if ($previous!==null && $previous['p']->deactivated) self::error('entry-after-deactivation',$n);
         $keys=array_keys(get_object_vars($e)); sort($keys);
         if ($keys!==['parameters','proof','state','versionId','versionTime'] || !is_string($e->versionId) || !is_string($e->versionTime) || !is_object($e->parameters) || !is_object($e->state) || !is_array($e->proof)) self::error('invalid-entry',$n);
-        $p=self::parameters($e->parameters,$previous['p'] ?? null,$n);
+        $p=self::parameters($e->parameters,$previous['p'] ?? null,$n,$spec);
         $active=$previous===null || count($previous['p']->nextKeyHashes)>0 ? $p->updateKeys : $previous['p']->updateKeys;
         $rule=$previous===null || (property_exists($e->parameters,'witness') && $previous['p']->witness===null) ? $p->witness : $previous['p']->witness;
         if (count($e->proof)===0) self::error('invalid-proof',$n);
@@ -229,16 +229,17 @@ final class Log {
             $rest=self::parse(str_replace($p->scid,'{SCID}',self::json($rest)));
             if (self::scid($rest)!==$p->scid) self::error('scid-mismatch',$n);
         }
+        if ($spec['state']!==null) ($spec['state'])($e->state,$p->scid,$n);
         return ['e'=>$e,'p'=>$p,'n'=>$n,'time'=>$time,'rule'=>$rule];
     }
-    public static function verifyLog(string $log,mixed $witness,int $now,bool $hasWitness=true): array {
+    public static function verifyLog(string $log,mixed $witness,int $now,bool $hasWitness=true,array $spec=self::VH_LOG): array {
         $lines=self::lines($log); $entries=[]; $failure=null;
         if (count($lines)===0) return ['entries'=>[],'lines'=>[],'failure'=>(new ProtocolError('invalid-log'))->report];
         foreach ($lines as $i=>$line) {
             try {
                 try { $e=self::parse($line); } catch (\JsonException | \InvalidArgumentException) { self::error('invalid-log',$i+1); }
                 if (!is_object($e)) self::error('invalid-log',$i+1);
-                $entries[]=self::verifyEntry($e,count($entries)>0 ? $entries[count($entries)-1] : null,$now);
+                $entries[]=self::verifyEntry($e,count($entries)>0 ? $entries[count($entries)-1] : null,$now,$spec);
             } catch (ProtocolError $error) { $failure=$error->report; break; }
         }
         foreach ($entries as $i=>$entry) {
@@ -303,12 +304,12 @@ final class Log {
         if ($copies!==null) $meta['copies']=$copies;
         return ['valid'=>true,'state'=>$target['e']->state,'metadata'=>$meta,'firstInvalidVersion'=>$failure!==null ? count($entries)+1 : null,'error'=>$failure];
     }
-    private static function resolveCopies(object $input,int $now,object $options): array {
+    private static function resolveCopies(object $input,int $now,object $options,array $spec): array {
         $primary=(object)['source'=>'primary','log'=>$input->log];
         if (property_exists($input,'witness')) $primary->witness=$input->witness;
         $all=[$primary,...($input->copies ?? [])]; $warnings=[]; $status=[]; $cache=[];
-        $get=function(int $i) use (&$cache,$all,$now): array {
-            return $cache[$i] ??= self::verifyLog($all[$i]->log,$all[$i]->witness ?? null,$now,property_exists($all[$i],'witness'));
+        $get=function(int $i) use (&$cache,$all,$now,$spec): array {
+            return $cache[$i] ??= self::verifyLog($all[$i]->log,$all[$i]->witness ?? null,$now,property_exists($all[$i],'witness'),$spec);
         };
         $invalid=function(int $i) use (&$status,&$warnings,$all): void {
             $status[$i]='invalid'; $warnings[]=['code'=>'copy-invalid','source'=>$all[$i]->source,'message'=>'copy fails verification'];
@@ -357,7 +358,8 @@ final class Log {
         if ($usable<($options->minCopies ?? 1)) self::error('min-copies-not-met');
         return self::result($r,$options,$warnings,$copies);
     }
-    public static function resolve(object $input): array {
+    /** Resolves a log as plain VH-Log, or as the given specialisation. */
+    public static function resolve(object $input,array $spec=self::VH_LOG): array {
         try {
             $now=self::time($input->now ?? null);
             if ($now===null) self::error('invalid-option');
@@ -368,8 +370,8 @@ final class Log {
             if (property_exists($options,'versionId') && !is_string($options->versionId)) self::error('invalid-option');
             if (property_exists($options,'versionTime') && self::time($options->versionTime)===null) self::error('invalid-option');
             foreach (['versionNumber','minCopies'] as $k) if (property_exists($options,$k) && (!self::integer($options->$k) || $options->$k<1)) self::error('invalid-option');
-            if (property_exists($input,'copies') || ($options->minCopies ?? 1)>1) return self::resolveCopies($input,$now,$options);
-            $v=self::verifyLog($input->log,$input->witness ?? null,$now,property_exists($input,'witness'));
+            if (property_exists($input,'copies') || ($options->minCopies ?? 1)>1) return self::resolveCopies($input,$now,$options,$spec);
+            $v=self::verifyLog($input->log,$input->witness ?? null,$now,property_exists($input,'witness'),$spec);
             if (count($v['entries'])===0) return ['valid'=>false,'error'=>$v['failure']];
             $warnings=[];
             if (property_exists($input,'retainedVersionId')) self::retained($v,'primary',$input->retainedVersionId,$warnings);
@@ -377,6 +379,7 @@ final class Log {
         } catch (ProtocolError $e) { return ['valid'=>false,'error'=>$e->report]; }
     }
     public static function dispatch(string $op,object $input): mixed {
+        if (str_starts_with($op,'didvh-')) return DidVh::dispatch($op,$input);
         return match ($op) {
             'jcs'=>['output'=>self::jcs(self::parse($input->text))],
             'hash'=>['output'=>self::hash($input->data)],
@@ -391,4 +394,23 @@ final class Log {
             default=>throw new \InvalidArgumentException('unknown operation '.$op)
         };
     }
+    /**
+     * What a specialisation of VH-Log (such as did:vh) changes in verification:
+     * param, the version parameter; versions, its accepted values; syntax, a regex
+     * for a version value (missing or malformed is invalid-parameter, only a
+     * well-formed unaccepted value is unsupported-log-version); extra, null for an
+     * open parameter set or the parameters added to a closed one; state, a check
+     * run on every entry's state after the SCID check.
+     */
+    public const VH_LOG=['param'=>'logVersion','versions'=>['vh-log:1.0'],'syntax'=>null,'extra'=>null,'state'=>null];
+    private const PARAMETERS=['scid','updateKeys','nextKeyHashes','witness','watchers','deactivated','ttl'];
+    private static function version(object $raw,?object $previous,int $n,array $spec): void {
+        $vp=$spec['param']; $syntax=$spec['syntax'];
+        if ($previous===null && !property_exists($raw,$vp)) self::error($syntax!==null ? 'invalid-parameter' : 'unsupported-log-version',$n);
+        if (!property_exists($raw,$vp)) return;
+        $v=$raw->$vp;
+        if ($syntax!==null && (!is_string($v) || !preg_match($syntax,$v))) self::error('invalid-parameter',$n);
+        if (!in_array($v,$spec['versions'],true)) self::error('unsupported-log-version',$n);
+    }
 }
+require_once __DIR__.'/DidVh.php';

@@ -85,6 +85,28 @@ neighbouring candidate on the other side is tried too. This was checked
 against Node on 400,000 doubles (random bit patterns, every power of two, and
 decimal-looking values) with no differences.
 
+## did:vh
+
+`VH::Log::DidVh` (`lib/VH/Log/DidVh.pm`) implements did:vh as pinned by
+[`docs/didvh-profile.md`](../../docs/didvh-profile.md). The log is verified
+by `VH::Log` with the did:vh specialisation (`method` instead of
+`logVersion`, a closed parameter set, and a `state.id` check on every entry).
+
+```perl
+use VH::Log::DidVh ();
+my $did = VH::Log::DidVh::create_did({ document => { id => 'did:vh:{SCID}' },
+  parameters => { updateKeys => [VH::Log::multikey($seed)] },
+  versionTime => '2026-01-01T00:00:00Z', signers => [$seed] });
+my $result = VH::Log::DidVh::resolve_did($did->{did}, { didLog => $did->{log} },
+  { now => '2026-06-01T00:00:00Z' });
+VH::Log::DidVh::parse_did_url("$did->{did}?versionNumber=1#key-1");
+```
+
+The resolver is offline: it verifies the log passed in `didLog` (and
+`didWitness`) and returns `featureNotSupported` where it would have to fetch
+anything. `check_ref` and `src_references` check `srcLog`/`srcWitness`
+references and the `src` DID URL parameter.
+
 ## Verification and driver
 
 From this directory:
@@ -103,7 +125,8 @@ VH_TEST_IMPLS=perl node --test harness/ed25519.test.ts
 
 The unit tests cover the JCS vectors and parser edge cases, run the
 independent Ed25519 boundary fixtures through the library API, and exercise
-creation, rotation, witnessing and partial validity. The harness checks
+creation, rotation, witnessing and partial validity; `t/didvh.t` runs the
+did:vh vectors. The harness checks
 primitives, resolution, generation, external reference logs and
 cross-resolution.
 

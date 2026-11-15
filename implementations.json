@@ -46,7 +46,8 @@
         "python",
         "-m",
         "vh_log.driver"
-      ]
+      ],
+      "didvh": true
     },
     {
       "name": "elixir",
@@ -161,7 +162,8 @@
         "PATH_PREPEND": [
           "/opt/homebrew/opt/ruby/bin"
         ]
-      }
+      },
+      "didvh": true
     },
     {
       "name": "php",
@@ -169,7 +171,8 @@
       "command": [
         "php",
         "driver.php"
-      ]
+      ],
+      "didvh": true
     },
     {
       "name": "java",
@@ -343,7 +346,8 @@
       "command": [
         "perl",
         "driver.pl"
-      ]
+      ],
+      "didvh": true
     }
   ]
 }

@@ -48,6 +48,26 @@ Numbers: as RFC 8785 requires, `parse_json` reads every JSON number as an IEEE-7
 `123456789012345678` becomes `123456789012345680`. Integral values come back as `int`. Use
 `parse_json` (not `json.loads`) on log text you hash yourself.
 
+## did:vh
+
+`vh_log.didvh` implements [did:vh](https://identity.foundation/didvh/) as pinned by
+[`docs/didvh-profile.md`](../../docs/didvh-profile.md). The log is verified by the VH-Log code with the
+did:vh `Specialisation` (`method` instead of `logVersion`, a closed parameter set, and `state.id` checks).
+
+```python
+from vh_log import create_did, parse_did_url, resolve_did, update_did
+
+created = create_did({"id": "did:vh:{SCID}"}, {"updateKeys": [key]}, "2026-01-01T00:00:00Z", [seed])
+updated = update_did(created["log"], {"id": created["did"], "v": 2}, None, "2026-01-02T00:00:00Z", [seed])
+result = resolve_did(created["did"], {"didLog": updated["log"]}, now="2026-06-01T00:00:00Z")
+result["didDocument"], result["didDocumentMetadata"]["versionId"]  # or didResolutionMetadata["error"]
+parse_did_url(f"{created['did']}?versionNumber=1#key-1")  # {"did", "options", "fragment"}
+```
+
+The resolver is offline: it verifies the log passed in `didLog` (and `didWitness`) and returns
+`featureNotSupported` where it would have to fetch anything. `check_ref` and `src_references` check
+`srcLog`/`srcWitness` references and the `src` DID URL parameter.
+
 ## Development
 
 ```sh

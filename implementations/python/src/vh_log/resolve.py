@@ -15,6 +15,8 @@ from .errors import ErrorCode, ErrorReport, VHLogError
 from .jcs import parse_json
 from .verify import (
     ABSENT,
+    VH_LOG,
+    Specialisation,
     VerifiedEntry,
     VerifiedLog,
     WitnessConfig,
@@ -266,7 +268,9 @@ def _divergence(a: Sequence[str], b: Sequence[str]) -> int:
     return n + 1
 
 
-def _resolve_copies(request: Mapping[str, Any], now: int, options: Mapping[str, Any]) -> ResolveSuccess:
+def _resolve_copies(
+    request: Mapping[str, Any], now: int, options: Mapping[str, Any], spec: Specialisation
+) -> ResolveSuccess:
     """Comparing Copies of a Log, with copies supplied in the request instead of fetched."""
     primary: dict[str, Any] = {"source": PRIMARY, "log": request.get("log")}
     if "witness" in request:
@@ -279,7 +283,7 @@ def _resolve_copies(request: Mapping[str, Any], now: int, options: Mapping[str, 
     def verify(i: int) -> VerifiedLog:
         if i not in cache:
             c = all_copies[i]
-            cache[i] = verify_log(c["log"], c.get("witness", ABSENT), now)
+            cache[i] = verify_log(c["log"], c.get("witness", ABSENT), now, spec)
         return cache[i]
 
     def mark_invalid(i: int) -> None:
@@ -409,12 +413,13 @@ class _ReportError(Exception):
         self.report = report
 
 
-def resolve_request(request: Mapping[str, Any]) -> ResolveResult:
+def resolve_request(request: Mapping[str, Any], spec: Specialisation = VH_LOG) -> ResolveResult:
     """Resolves a log described by a protocol ``resolve`` input object.
 
     Keys: ``log``, ``now``, and optionally ``witness``, ``options``, ``copies`` and
     ``retainedVersionId``. A missing ``witness`` means "no witness file"; a present
     but malformed one fails with ``invalid-witness-file`` when witnessing is required.
+    ``spec`` is plain VH-Log or a specialisation of it, such as did:vh.
     """
     try:
         now = parse_version_time(request.get("now"))
@@ -427,8 +432,8 @@ def resolve_request(request: Mapping[str, Any]) -> ResolveResult:
             raise VHLogError(ErrorCode.INVALID_OPTION, "options must be an object")
         _validate_options(options)
         if "copies" in request or options.get("minCopies", 1) > 1:
-            return _resolve_copies(request, now, options)
-        verified = verify_log(request["log"], request.get("witness", ABSENT), now)
+            return _resolve_copies(request, now, options, spec)
+        verified = verify_log(request["log"], request.get("witness", ABSENT), now, spec)
         if not verified.entries:
             assert verified.failure is not None
             return {"valid": False, "error": verified.failure}
