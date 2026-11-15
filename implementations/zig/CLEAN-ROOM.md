@@ -27,7 +27,7 @@ vector noticing:
 
 | # | Profile passage | Choice made here |
 | --- | --- | --- |
-| 1 | §5 step 4: "the log needs witnessing, meaning some entry has an active witness list" | Decided syntactically, before verification: some line's `parameters.witness` is a non-empty object. For `includeDidLog`'s `didWitness` the same test runs on the valid entries only. |
+| 1 | §5 step 4: "the log needs witnessing, meaning some entry has an active witness list" | Originally decided syntactically, before verification. Superseded: see "The log needs witnessing" below. |
 | 2 | §4 step 3: "The query is split on `&`. Each part MUST contain `=`." | Applied literally: `did:vh:…?` (an empty query) and `?a=1&&b=2` (an empty part) are `invalidDidUrl`. |
 | 3 | §3.2 step 4: "one trailing `/` is removed" | Removed from the whole value before the authority and path checks, so `ipfs://x/` is valid and `https://h/a//` fails on its empty last segment. |
 | 4 | §3.2 steps 3 and 5: other schemes need only "`//` and a non-empty authority" | For schemes other than `https`, the authority and path are not checked further. |
@@ -39,3 +39,26 @@ vector noticing:
 | 10 | §2: the state check needs `state` to be an object | VH-Log's structure check already requires an object (`invalid-entry`), so the state check only compares `state.id`; a missing or non-string `id` is `invalid-state`. |
 | 11 | §5: `didLog` "holds the original lines of the valid entries" | The lines as split on `\n`, byte for byte, each followed by `\n`. |
 | 12 | §1: "`method` may appear in later entries, under the same rules as `logVersion`" | The same membership rule as `logVersion`; with one accepted value, "lowering" can't occur. |
+
+### The log needs witnessing (profile clarification)
+
+`docs/didvh-profile.md` §5 step 4 now defines when "the log needs
+witnessing": run the per-entry checks without a witness file, and the log
+needs witnessing if the witness list that applies (`profile.md` §3) to any
+entry before the first failing one is not `{}`. The same test decides when
+`includeDidLog` returns `didWitness`. My earlier reading (some line sets a
+non-empty `witness`) disagreed when the only witness list is in an invalid
+entry; the vectors `src-witness-invalid-entry`,
+`include-did-log-invalid-witness-entry` and `src-witness-later-entry` pin it.
+
+Read for this change, and nothing else: the new §5 step 4 text,
+`docs/profile.md` §3 and §4, those three vectors in
+`vectors/didvh/resolution/options.json`, and the harness output. No other
+implementation, its history or diffs, or `tools/generate-*.ts` was read.
+
+Change: the per-entry loop of `verifyWith` in `src/resolve.zig` moved into
+`checkEntries`, and a new `resolver.needsWitnessing` runs it alone (with the
+did:vh specialisation, so check 8 applies) and looks at each valid entry's
+`witness_applies`. `src/didvh.zig` uses it for both step 4 and `didWitness`,
+so `didWitness` no longer depends on witness verification either: an entry
+that passes the per-entry checks but is not witnessed still counts.

@@ -134,13 +134,10 @@ source (including `implementations/typescript` and its history or diffs),
 
 ### Interpretations of `docs/didvh-profile.md`
 
-- §5 step 4, "A `srcWitness` is used only if the log needs witnessing,
-  meaning some entry has an active witness list": this is decided *before*
-  verification, so it is read syntactically: some line of `didLog` parses to an
-  object whose `parameters.witness` is a non-empty object. (Any such entry
-  makes some entry's applicable list non-empty.)
-- §5 "`didWitness` is included only when the log needs witnessing": the same
-  test, applied only to the lines of the valid entries.
+- §5 step 4, "A `srcWitness` is used only if the log needs witnessing":
+  originally read syntactically (some line sets a non-empty `witness`), and
+  for `didWitness` the same test on the valid lines. Superseded by the
+  profile's definition: see "The log needs witnessing" below.
 - §5 step 6, "the log has an unsupported entry": VH-Log stops at the first
   failing entry, so this is detected only when that first failure is
   `unsupported-log-version` (an unsupported entry after an otherwise invalid
@@ -181,3 +178,30 @@ source (including `implementations/typescript` and its history or diffs),
   through `VHLog::DidVh`, and resolution of a freshly created DID.
 - `node harness/run.ts --impl raku --impl typescript`: all suites green,
   including did:vh.
+
+### The log needs witnessing (profile clarification)
+
+`docs/didvh-profile.md` §5 step 4 now defines when "the log needs
+witnessing": run the per-entry checks without a witness file, and the log
+needs witnessing if the witness list that applies (`profile.md` §3) to any
+entry before the first failing one is not `{}`. The same test decides when
+`includeDidLog` returns `didWitness`. My earlier reading (some line sets a
+non-empty `witness`) disagreed when the only witness list is in an invalid
+entry; the vectors `src-witness-invalid-entry`,
+`include-did-log-invalid-witness-entry` and `src-witness-later-entry` pin it.
+
+Read for this change, and nothing else: the new §5 step 4 text,
+`docs/profile.md` §3 and §4, `docs/didvh-profile.md` §1 (check 8), those
+three vectors in `vectors/didvh/resolution/options.json`, and the harness
+output. No other implementation, its history or diffs, or
+`tools/generate-*.ts` was read.
+
+Change: `inspect` in `lib/VHLog.rakumod` now also returns the per-entry
+`witnesses` list it already built (the list that applies to each entry that
+passed the per-entry checks), and a new exported `log-needs-witnessing($log,
+$now, :%spec)` runs `inspect` with no witness file and asks whether any of
+those lists is non-empty. `VHLog::DidVh` calls it with `didvh-spec($scid)`
+(so check 8 applies) for both step 4 and `didWitness`, so `didWitness` no
+longer depends on witness verification either: an entry that passes the
+per-entry checks but is not witnessed still counts. `sh scripts/test.sh`
+now runs 239 tests (the three new vectors included), all passing.

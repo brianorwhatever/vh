@@ -73,6 +73,11 @@ val valid_time : string -> bool
 val valid_watcher_url : string -> bool
 (** The profile's [watchers] URL rule. *)
 
+val needs_witnessing : ?spec:spec -> now:string -> string -> bool
+(** Whether a log needs witnessing (did:vh profile §5 step 4): the witness list
+    that applies (profile §3) to some entry before the first one failing a
+    per-entry check is not [{}]. No witness file is involved. *)
+
 val perform : string -> Json.t -> (Json.t, string) result
 (** JSON Lines protocol adapter. An invalid log is a successful call whose result has
     [valid = false]; malformed operations return [Error]. *)

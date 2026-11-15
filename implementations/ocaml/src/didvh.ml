@@ -326,15 +326,6 @@ let log_lines log =
   if String.ends_with ~suffix:"\n" log then List.filteri (fun i _ -> i < List.length xs - 1) xs
   else xs
 
-(* Whether some entry sets a non-empty witness list, so some entry has an
-   active one. *)
-let needs_witnessing lines =
-  List.exists
-    (fun line ->
-      try match get "witness" (get "parameters" (parse line)) with Object (_ :: _) -> true | _ -> false
-      with _ -> false)
-    lines
-
 let resolve_exn ~did ~options ~now ~remote =
   let scid =
     match did with
@@ -387,7 +378,10 @@ let resolve_exn ~did ~options ~now ~remote =
   if has "extraWatchers" && get "extraWatchers" <> Array [] then unsupported "extraWatchers";
   let log = str (get "didLog") in
   let lines = log_lines log in
-  if has "srcWitness" && needs_witnessing lines then unsupported "retrieving srcWitness is not supported";
+  (* The log needs witnessing if a witness list applies to an entry that passes
+     the per-entry checks. *)
+  let needs_witnessing () = Vh_log.needs_witnessing ~spec:(spec ~scid) ~now:(match now with String t -> t | _ -> "") log in
+  if has "srcWitness" && needs_witnessing () then unsupported "retrieving srcWitness is not supported";
   let input =
     Object
       ([ ("log", String log); ("now", now) ]
@@ -429,7 +423,7 @@ let resolve_exn ~did ~options ~now ~remote =
     if get "includeDidLog" = Bool true then
       [ ("didLog", String (String.concat "" (List.map (fun l -> l ^ "\n") valid_lines))) ]
       @
-      if needs_witnessing valid_lines then
+      if needs_witnessing () then
         [ ("didWitness", if has "didWitness" then get "didWitness" else Array []) ]
       else []
     else []

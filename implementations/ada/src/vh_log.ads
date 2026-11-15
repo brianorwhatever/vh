@@ -31,6 +31,11 @@ package VH_Log is
       Version_First                : Boolean) return JSON.Value_Access;
    function Resolve
      (Input : JSON.Value_Access; Spec : Specialisation) return JSON.Value_Access;
+   -- Whether a log needs witnessing (did:vh profile section 5 step 4): the
+   -- witness list that applies (profile section 3) to some entry before the
+   -- first one failing a per-entry check is not {}. No witness file is used.
+   function Needs_Witnessing
+     (Log, Now : String; Spec : Specialisation) return Boolean;
    function SCID (Log_Entry : JSON.Value_Access) return String;
    function Entry_Hash
      (Log_Entry : JSON.Value_Access; Previous_Version_Id : String)

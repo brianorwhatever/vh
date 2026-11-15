@@ -58,7 +58,7 @@ without a vector noticing:
 
 | # | Profile passage | Choice made here |
 | --- | --- | --- |
-| 1 | §5 step 4: "the log needs witnessing, meaning some entry has an active witness list" | Decided syntactically, before verification: some line's `parameters.witness` is a non-empty object. For `includeDidLog`'s `didWitness` the same test runs on the valid entries only. |
+| 1 | §5 step 4: "the log needs witnessing, meaning some entry has an active witness list" | Originally decided syntactically, before verification. Superseded: see "The log needs witnessing" below. |
 | 2 | §4 step 3: "The query is split on `&`. Each part MUST contain `=`." | Applied literally: `did:vh:…?` (an empty query) and `?a=1&&b=2` (an empty part) are `invalidDidUrl`. |
 | 3 | §4 step 3: an unescaped character "is kept as it is, as a whole code point" | Strings are UTF-8 bytes, so unescaped bytes are copied unchanged and the decoded result is checked as UTF-8 once. |
 | 4 | §3.2 step 4: "one trailing `/` is removed" | Removed from the whole value before the authority and path checks, so `ipfs://x/` is valid and `https://h/a//` fails on its empty last segment. |
@@ -70,3 +70,29 @@ without a vector noticing:
 | 10 | §2 Create: "`method` first, then `scid`" | The version parameter is now added before `scid` for VH-Log too (previously `scid` came first). Lines are compared as parsed JSON and hashes use JCS, so this changes no VH-Log result. |
 | 11 | §1: a missing, malformed or non-string `method` is `invalid-parameter` | Implemented by the version syntax check; VH-Log's existing `logVersion` handling (a non-string value is `unsupported-log-version`) is unchanged. |
 | 12 | §5: `didLog` "holds the original lines of the valid entries" | The lines as split on LF, byte for byte, each followed by LF. |
+
+### The log needs witnessing (profile clarification)
+
+`docs/didvh-profile.md` §5 step 4 now defines when "the log needs
+witnessing": run the per-entry checks without a witness file, and the log
+needs witnessing if the witness list that applies (`profile.md` §3) to any
+entry before the first failing one is not `{}`. The same test decides when
+`includeDidLog` returns `didWitness`. My earlier reading (some line sets a
+non-empty `witness`) disagreed when the only witness list is in an invalid
+entry; the vectors `src-witness-invalid-entry`,
+`include-did-log-invalid-witness-entry` and `src-witness-later-entry` pin it.
+
+Read for this change, and nothing else: the new §5 step 4 text,
+`docs/profile.md` §3 and §4, `docs/didvh-profile.md` §1 (check 8), those
+three vectors in `vectors/didvh/resolution/options.json`, and the harness
+output. No other implementation, its history or diffs, or
+`tools/generate-*.ts` was read.
+
+Change: `needs-witnessing?` in `didvh.fs` no longer looks at the lines. It
+installs the did:vh specialisation (so check 8 applies), runs `scan-log` from
+`validation.fs` on `{log, now}` with no witness file, and looks at the
+`witness` snapshot (the list that applies) of each entry in the returned
+`history`, which ends before the first failing entry. It decides both step 4
+and `didWitness`, so `didWitness` no longer depends on witness verification
+either: an entry that passes the per-entry checks but is not witnessed still
+counts.
