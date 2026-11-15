@@ -212,7 +212,8 @@
       "command": [
         "sh",
         "scripts/run.sh"
-      ]
+      ],
+      "didvh": true
     },
     {
       "name": "ada",

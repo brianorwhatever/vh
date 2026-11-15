@@ -140,12 +140,22 @@ and UTF-16 key order. `Crypto.hash` produces the profile SHA-256 base58 multihas
 `Crypto.hash512` is available as a primitive, but log resolution accepts SHA-256 only.
 `Vh_log.scid` and `Vh_log.entry_hash` operate on JSON entry objects.
 
+## did:vh
+
+`Didvh` (`src/didvh.ml`) implements did:vh as pinned by `docs/didvh-profile.md`,
+on top of the VH-Log verifier through a `Vh_log.spec` specialisation
+(`method` instead of `logVersion`, a closed parameter set and a `state.id`
+check). `Didvh.create`/`Didvh.update` generate entries, `Didvh.resolve ~now did
+options` is an offline resolver (the log is passed in `didLog`), and
+`Didvh.reference_kind`, `Didvh.src_locations` and `Didvh.parse_did_url` check
+references, `src` values and DID URLs.
+
 ## JSON Lines driver
 
 `sh scripts/run.sh` reads one request per LF-delimited line, processes requests in
 order, and writes exactly one compact JSON response per request to stdout.
-It supports every operation listed in `docs/interop-protocol.md` through
-`Vh_log.perform`. Diagnostics belong on stderr; EOF exits successfully.
+It supports every operation listed in `docs/interop-protocol.md`, including the
+did:vh ones, through `Didvh.perform`. Diagnostics belong on stderr; EOF exits successfully.
 
 ```json
 {"id":1,"op":"jcs","input":{"text":"{\"b\":1,\"a\":2}"}}
