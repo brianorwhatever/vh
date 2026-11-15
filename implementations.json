@@ -188,7 +188,8 @@
         "PATH_PREPEND": [
           "/opt/homebrew/opt/openjdk@21/bin"
         ]
-      }
+      },
+      "didvh": true
     },
     {
       "name": "raku",
@@ -241,7 +242,8 @@
       "command": [
         "dotnet",
         "bin/Release/net10.0/VHLog.dll"
-      ]
+      ],
+      "didvh": true
     },
     {
       "name": "cpp",
@@ -274,7 +276,8 @@
       ],
       "command": [
         "bin/vh-log-driver"
-      ]
+      ],
+      "didvh": true
     },
     {
       "name": "scala",
@@ -292,7 +295,8 @@
         "PATH_PREPEND": [
           "/opt/homebrew/opt/openjdk@21/bin"
         ]
-      }
+      },
+      "didvh": true
     },
     {
       "name": "lua",

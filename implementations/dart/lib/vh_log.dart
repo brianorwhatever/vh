@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:crypto/crypto.dart' as crypto;
 import 'package:ed25519_edwards/ed25519_edwards.dart' as ed;
+import 'didvh.dart' as didvh;
 
 typedef Json = Map<String, dynamic>;
 const alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
@@ -231,9 +232,11 @@ List<String> lines(String log) {
   return a;
 }
 
-Json create(Json input) {
+/// A specialisation passes its own version parameter and value (did:vh: method).
+Json create(Json input,
+    [String versionParameter = 'logVersion', String version = 'vh-log:1.0']) {
   final p = {
-    'logVersion': 'vh-log:1.0',
+    versionParameter: version,
     'scid': '{SCID}',
     ...input['parameters'] as Map
   };
@@ -293,10 +296,51 @@ int? time(dynamic value) {
 
 bool integer(dynamic v) => v is num && v.isFinite && v == v.truncateToDouble();
 bool strings(dynamic v) => v is List && v.every((x) => x is String);
-Json parameters(Json raw, Json? previous, int n) {
+
+/// What a specialisation of VH-Log (such as did:vh) changes in verification:
+/// the version parameter and its accepted values; an optional version syntax
+/// (missing or malformed is invalid-parameter, well-formed but unaccepted is
+/// unsupported-log-version); a closed parameter set when [extraParameters] is
+/// non-null; and a state check run after the SCID check.
+class Spec {
+  final String versionParameter;
+  final List<String> versions;
+  final RegExp? versionSyntax;
+  final List<String>? extraParameters;
+  final void Function(Json state, String scid, int n)? checkState;
+  const Spec(this.versionParameter, this.versions,
+      {this.versionSyntax, this.extraParameters, this.checkState});
+}
+
+/// Plain VH-Log (vh-log:1.0), as specified by profile vh-log-interop-0.
+const vhLogSpec = Spec('logVersion', ['vh-log:1.0']);
+
+/// The VH-Log parameters, excluding the version parameter.
+const parameterNames = [
+  'scid',
+  'updateKeys',
+  'nextKeyHashes',
+  'witness',
+  'watchers',
+  'deactivated',
+  'ttl'
+];
+
+Json parameters(Json raw, Json? previous, int n, [Spec spec = vhLogSpec]) {
   if (raw.values.any((v) => v == null)) fail('invalid-parameter', n);
-  if ((previous == null && !raw.containsKey('logVersion')) ||
-      (raw.containsKey('logVersion') && raw['logVersion'] != 'vh-log:1.0'))
+  final vp = spec.versionParameter, syntax = spec.versionSyntax;
+  final extra = spec.extraParameters;
+  if (extra != null &&
+      raw.keys.any(
+          (k) => k != vp && !parameterNames.contains(k) && !extra.contains(k)))
+    fail('invalid-parameter', n);
+  if (previous == null && !raw.containsKey(vp))
+    fail(syntax != null ? 'invalid-parameter' : 'unsupported-log-version', n);
+  if (raw.containsKey(vp) &&
+      syntax != null &&
+      !(raw[vp] is String && syntax.hasMatch(raw[vp])))
+    fail('invalid-parameter', n);
+  if (raw.containsKey(vp) && !spec.versions.contains(raw[vp]))
     fail('unsupported-log-version', n);
   if (previous != null
       ? raw.containsKey('scid')
@@ -314,8 +358,8 @@ Json parameters(Json raw, Json? previous, int n) {
   if (previous == null)
     p.addAll(
         {'nextKeyHashes': [], 'witness': null, 'watchers': [], 'ttl': 3600});
+  if (raw.containsKey(vp)) p['logVersion'] = raw[vp];
   for (final k in [
-    'logVersion',
     'scid',
     'updateKeys',
     'nextKeyHashes',
@@ -371,7 +415,7 @@ Json parameters(Json raw, Json? previous, int n) {
   return p;
 }
 
-Json verifyEntry(Json e, Json? previous, int now) {
+Json verifyEntry(Json e, Json? previous, int now, [Spec spec = vhLogSpec]) {
   final n = previous == null ? 1 : previous['n'] + 1 as int;
   if (previous != null && previous['p']['deactivated'] == true)
     fail('entry-after-deactivation', n);
@@ -383,7 +427,7 @@ Json verifyEntry(Json e, Json? previous, int now) {
       e['parameters'] is! Map<String, dynamic> ||
       e['state'] is! Map ||
       e['proof'] is! List) fail('invalid-entry', n);
-  final p = parameters(e['parameters'], previous?['p'], n);
+  final p = parameters(e['parameters'], previous?['p'], n, spec);
   final keys =
       previous == null || (previous['p']['nextKeyHashes'] as List).isNotEmpty
           ? p['updateKeys']
@@ -419,10 +463,11 @@ Json verifyEntry(Json e, Json? previous, int now) {
         .replaceAll(p['scid'], '{SCID}'));
     if (scid(restored) != p['scid']) fail('scid-mismatch', n);
   }
+  spec.checkState?.call(e['state'], p['scid'], n);
   return {'e': e, 'p': p, 'n': n, 'time': t, 'rule': rule};
 }
 
-Json verifyLog(String log, dynamic witness, int now) {
+Json verifyLog(String log, dynamic witness, int now, [Spec spec = vhLogSpec]) {
   final ls = lines(log);
   var entries = <Json>[];
   Json? failure;
@@ -441,7 +486,8 @@ Json verifyLog(String log, dynamic witness, int now) {
         fail('invalid-log', i + 1);
       }
       if (e is! Map<String, dynamic>) fail('invalid-log', i + 1);
-      entries.add(verifyEntry(e, entries.isEmpty ? null : entries.last, now));
+      entries.add(
+          verifyEntry(e, entries.isEmpty ? null : entries.last, now, spec));
     } on ProtocolError catch (e) {
       failure = e.report;
       break;
@@ -577,7 +623,7 @@ Json result(Json v, Json options, List<Json> warnings, [List<Json>? copies]) {
   };
 }
 
-Json resolveCopies(Json input, int now, Json options) {
+Json resolveCopies(Json input, int now, Json options, [Spec spec = vhLogSpec]) {
   final all = <dynamic>[
     {
       'source': 'primary',
@@ -589,8 +635,11 @@ Json resolveCopies(Json input, int now, Json options) {
   final warnings = <Json>[], status = <int, String>{}, cache = <int, Json>{};
   Json get(int i) => cache.putIfAbsent(
       i,
-      () => verifyLog(all[i]['log'],
-          all[i].containsKey('witness') ? all[i]['witness'] : absent, now));
+      () => verifyLog(
+          all[i]['log'],
+          all[i].containsKey('witness') ? all[i]['witness'] : absent,
+          now,
+          spec));
   void invalid(int i) {
     status[i] = 'invalid';
     warnings.add({
@@ -697,7 +746,8 @@ Json resolveCopies(Json input, int now, Json options) {
   return result(r, options, warnings, copies);
 }
 
-Json resolve(Json input) {
+/// Resolves a log as plain VH-Log, or as the given specialisation.
+Json resolve(Json input, [Spec spec = vhLogSpec]) {
   try {
     final now = time(input['now']);
     if (now == null) fail('invalid-option');
@@ -722,9 +772,9 @@ Json resolve(Json input) {
         fail('invalid-option');
     }
     if (input.containsKey('copies') || (options['minCopies'] ?? 1) > 1)
-      return resolveCopies(input, now, options);
+      return resolveCopies(input, now, options, spec);
     final v = verifyLog(input['log'],
-        input.containsKey('witness') ? input['witness'] : absent, now);
+        input.containsKey('witness') ? input['witness'] : absent, now, spec);
     if ((v['entries'] as List).isEmpty)
       return {'valid': false, 'error': v['failure']};
     final warnings = <Json>[];
@@ -753,5 +803,5 @@ Json dispatch(String op, Json input) => switch (op) {
       'create' => create(input),
       'update' => update(input),
       'resolve' => resolve(input),
-      _ => throw ArgumentError('unknown operation $op'),
+      _ => didvh.dispatch(op, input),
     };

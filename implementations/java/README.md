@@ -33,6 +33,24 @@ var result = VHLog.resolve(VHLog.obj("log", created.get("log"), "now", "2026-06-
 numbers. `Json.stringify` produces canonical RFC 8785 JSON. Ed25519 and
 SHA-256 use JDK security providers; no Kotlin runtime is involved.
 
+## did:vh
+
+`org.vhlog.DidVh` implements the [did:vh profile](../../docs/didvh-profile.md).
+The log is verified by `VHLog` with the did:vh specialisation (`VHLog.Spec`):
+`method` instead of `logVersion`, a closed parameter set, and the `state.id`
+check. The class adds `create`, `update`, `parseDid`, `parseDidUrl`,
+`checkRef`, `srcReferences` and an offline `resolve`:
+
+```java
+var created = DidVh.create(VHLog.obj(
+    "document", VHLog.obj("id", "did:vh:{SCID}"),
+    "parameters", VHLog.obj("updateKeys", java.util.List.of(VHLog.multikey(seed))),
+    "versionTime", "2026-01-01T00:00:00Z",
+    "signers", java.util.List.of(seed)));
+var result = DidVh.resolve(created.get("did"), VHLog.obj("didLog", created.get("log")),
+                           "2026-06-01T00:00:00Z", false);
+```
+
 ## Verification and driver
 
 From the repository root:

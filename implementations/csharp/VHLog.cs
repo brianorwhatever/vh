@@ -40,7 +40,7 @@ public static class Log
     private static bool IsString(J? v) => v is JsonValue j && j.TryGetValue<string>(out _);
     private static bool IsBool(J? v) => v is JsonValue j && j.TryGetValue<bool>(out _);
     private static double Num(J? v) => double.Parse(v!.ToJsonString(), CultureInfo.InvariantCulture);
-    private static bool Integer(J? v) => v is JsonValue j && j.GetValueKind() == JsonValueKind.Number && double.IsFinite(Num(v)) && Num(v) == Math.Truncate(Num(v));
+    internal static bool Integer(J? v) => v is JsonValue j && j.GetValueKind() == JsonValueKind.Number && double.IsFinite(Num(v)) && Num(v) == Math.Truncate(Num(v));
     private static bool Strings(J? v) => v is JsonArray a && a.All(IsString);
     private static JsonArray Arr(J? v) => (JsonArray)v!;
     private static void Fail(string code, int? version = null) => throw new ProtocolException(code, version);
@@ -173,11 +173,11 @@ public static class Log
         var d = WithoutProof(e); d["versionId"] = previous;
         return Hash(Canonicalize(d));
     }
-    private static List<string> Lines(string log) { var ls = log.Split('\n').ToList(); if (ls[^1] == "") ls.RemoveAt(ls.Count - 1); return ls; }
-    public static JsonObject Create(J input)
+    internal static List<string> Lines(string log) { var ls = log.Split('\n').ToList(); if (ls[^1] == "") ls.RemoveAt(ls.Count - 1); return ls; }
+    public static JsonObject Create(J input, string vp = "logVersion", string version = "vh-log:1.0")
     {
         var p = (JsonObject)Get(input, "parameters")!.DeepClone();
-        if (!p.ContainsKey("logVersion")) p["logVersion"] = "vh-log:1.0";
+        if (!p.ContainsKey(vp)) p[vp] = version; // a specialisation passes its own
         if (!p.ContainsKey("scid")) p["scid"] = "{SCID}";
         var e = Obj("versionId", "{SCID}", "versionTime", Get(input, "versionTime"), "parameters", p, "state", Get(input, "state"));
         string id = Scid(e); e = (JsonObject)Parse(Canonicalize(e).Replace("{SCID}", id))!;
@@ -206,15 +206,20 @@ public static class Log
         // Use a 400-year shift for year zero, outside DateTime's range.
         return new DateTime(y == 0 ? 400 : y, mo, d, h, mi, s, DateTimeKind.Utc).Ticks / TimeSpan.TicksPerSecond - (y == 0 ? 146097L * 86400 : 0);
     }
-    private static JsonObject Parameters(JsonObject raw, JsonObject? previous, int n)
+    private static JsonObject Parameters(JsonObject raw, JsonObject? previous, int n, Spec spec)
     {
         if (raw.Any(p => p.Value is null)) Fail("invalid-parameter", n);
-        if (previous is null && !Has(raw, "logVersion") || Has(raw, "logVersion") && (!IsString(raw["logVersion"]) || Str(raw["logVersion"]) != "vh-log:1.0")) Fail("unsupported-log-version", n);
+        string vp = spec.VersionParameter;
+        if (spec.ExtraParameters is { } extra && raw.Any(p => p.Key != vp && !ParameterNames.Contains(p.Key) && !extra.Contains(p.Key))) Fail("invalid-parameter", n);
+        if (previous is null && !Has(raw, vp)) Fail(spec.VersionSyntax is not null ? "invalid-parameter" : "unsupported-log-version", n);
+        if (Has(raw, vp) && spec.VersionSyntax is { } syntax && !(IsString(raw[vp]) && syntax.IsMatch(Str(raw[vp])))) Fail("invalid-parameter", n);
+        if (Has(raw, vp) && (!IsString(raw[vp]) || !spec.Versions.Contains(Str(raw[vp])))) Fail("unsupported-log-version", n);
         if (previous is not null ? Has(raw, "scid") : !IsString(raw["scid"]) || !Has(raw, "updateKeys")) Fail("invalid-parameter", n);
         if (Has(raw, "updateKeys")) { if (!Strings(raw["updateKeys"])) Fail("invalid-parameter", n); foreach (var k in Arr(raw["updateKeys"])) if (PublicKey(Str(k)) is null) Fail("invalid-parameter", n); }
         if (Has(raw, "nextKeyHashes")) { if (!Strings(raw["nextKeyHashes"])) Fail("invalid-parameter", n); foreach (var h in Arr(raw["nextKeyHashes"])) if (CheckHash(Str(h)) != "ok") Fail("invalid-parameter", n); }
         var p = previous is null ? Obj("nextKeyHashes", new JsonArray(), "witness", null, "watchers", new JsonArray(), "ttl", 3600) : (JsonObject)previous.DeepClone();
-        foreach (string k in new[] { "logVersion", "scid", "updateKeys", "nextKeyHashes", "witness", "watchers", "ttl" }) if (Has(raw, k)) p[k] = raw[k]?.DeepClone();
+        if (Has(raw, vp)) p["logVersion"] = raw[vp]?.DeepClone();
+        foreach (string k in new[] { "scid", "updateKeys", "nextKeyHashes", "witness", "watchers", "ttl" }) if (Has(raw, k)) p[k] = raw[k]?.DeepClone();
         p["deactivated"] = Has(raw, "deactivated") ? raw["deactivated"]?.DeepClone() : JsonValue.Create(false);
         if (Has(raw, "witness"))
         {
@@ -238,14 +243,14 @@ public static class Log
         }
         return p;
     }
-    private sealed record Entry(JsonObject E, JsonObject P, int N, long Time, J? Rule);
-    private sealed record Verified(List<Entry> Entries, List<string> Lines, JsonObject? Failure);
-    private static Entry VerifyEntry(JsonObject e, Entry? previous, long now)
+    internal sealed record Entry(JsonObject E, JsonObject P, int N, long Time, J? Rule);
+    internal sealed record Verified(List<Entry> Entries, List<string> Lines, JsonObject? Failure);
+    private static Entry VerifyEntry(JsonObject e, Entry? previous, long now, Spec spec)
     {
         int n = previous is null ? 1 : previous.N + 1;
         if (previous is not null && previous.P["deactivated"]!.GetValue<bool>()) Fail("entry-after-deactivation", n);
         if (!e.Select(p => p.Key).ToHashSet().SetEquals(["versionId", "versionTime", "parameters", "state", "proof"]) || !IsString(e["versionId"]) || !IsString(e["versionTime"]) || e["parameters"] is not JsonObject || e["state"] is not JsonObject || e["proof"] is not JsonArray) Fail("invalid-entry", n);
-        var p = Parameters((JsonObject)e["parameters"]!, previous?.P, n);
+        var p = Parameters((JsonObject)e["parameters"]!, previous?.P, n, spec);
         var active = Arr(previous is null || Arr(previous.P["nextKeyHashes"]).Count > 0 ? p["updateKeys"] : previous.P["updateKeys"]);
         var rule = previous is null || Has(e["parameters"], "witness") && previous.P["witness"] is null ? p["witness"] : previous.P["witness"];
         if (Arr(e["proof"]).Count == 0) Fail("invalid-proof", n);
@@ -260,9 +265,10 @@ public static class Log
             var rest = WithoutProof(e); rest["versionId"] = "{SCID}";
             if (Scid(Parse(Canonicalize(rest).Replace(id, "{SCID}"))!) != id) Fail("scid-mismatch", n);
         }
+        spec.CheckState?.Invoke((JsonObject)e["state"]!, Str(p["scid"]), n);
         return new(e, p, n, t!.Value, rule);
     }
-    private static Verified VerifyLog(string log, J? witness, bool hasWitness, long now)
+    internal static Verified VerifyLog(string log, J? witness, bool hasWitness, long now, Spec spec)
     {
         var ls = Lines(log); var entries = new List<Entry>(); JsonObject? failure = null;
         if (ls.Count == 0) return new(entries, ls, new ProtocolException("invalid-log").Report);
@@ -273,7 +279,7 @@ public static class Log
                 J? raw = null;
                 try { raw = Parse(ls[i]); } catch (Exception e) when (e is JsonException or ArgumentException or InvalidOperationException) { Fail("invalid-log", i + 1); }
                 if (raw is not JsonObject) Fail("invalid-log", i + 1);
-                entries.Add(VerifyEntry((JsonObject)raw!, entries.Count > 0 ? entries[^1] : null, now));
+                entries.Add(VerifyEntry((JsonObject)raw!, entries.Count > 0 ? entries[^1] : null, now, spec));
             }
             catch (ProtocolException e) { failure = e.Report; break; }
         }
@@ -336,12 +342,12 @@ public static class Log
         if (copies is not null) meta["copies"] = copies.DeepClone();
         return Obj("valid", true, "state", target.E["state"], "metadata", meta, "firstInvalidVersion", failure is null ? null : v.Entries.Count + 1, "error", failure);
     }
-    private static JsonObject ResolveCopies(J input, long now, JsonObject options)
+    private static JsonObject ResolveCopies(J input, long now, JsonObject options, Spec spec)
     {
         var primary = Obj("source", "primary", "log", Get(input, "log")); if (Has(input, "witness")) primary["witness"] = Get(input, "witness")?.DeepClone();
         var all = new List<J?> { primary }; if (Get(input, "copies") is JsonArray extra) all.AddRange(extra);
         var warnings = new JsonArray(); var status = new Dictionary<int, string>(); var cache = new Dictionary<int, Verified>();
-        Verified VerifyCopy(int i) { if (!cache.TryGetValue(i, out var v)) cache[i] = v = VerifyLog(Str(Get(all[i], "log")), Get(all[i], "witness"), Has(all[i], "witness"), now); return v; }
+        Verified VerifyCopy(int i) { if (!cache.TryGetValue(i, out var v)) cache[i] = v = VerifyLog(Str(Get(all[i], "log")), Get(all[i], "witness"), Has(all[i], "witness"), now, spec); return v; }
         void Invalid(int i) { status[i] = "invalid"; warnings.Add(Obj("code", "copy-invalid", "source", Get(all[i], "source"), "message", "copy fails verification")); }
         for (int i = 0; i < all.Count; i++) if (Has(all[i], "unavailable")) { status[i] = "unavailable"; warnings.Add(Obj("code", "copy-unavailable", "source", Get(all[i], "source"), "message", Get(all[i], "unavailable"))); }
         int reference = -1;
@@ -387,8 +393,10 @@ public static class Log
         if (usable < (Has(options, "minCopies") ? Num(options["minCopies"]) : 1)) Fail("min-copies-not-met");
         return Result(verified, options, warnings, copies);
     }
-    public static JsonObject Resolve(J input)
+    /// <summary>Resolves a log as plain VH-Log, or as the given specialisation.</summary>
+    public static JsonObject Resolve(J input, Spec? spec = null)
     {
+        spec ??= VHLogSpec;
         try
         {
             long? now = Time(Get(input, "now")); if (now is null) Fail("invalid-option");
@@ -398,8 +406,8 @@ public static class Log
             if (Has(options, "versionId") && !IsString(options["versionId"])) Fail("invalid-option");
             if (Has(options, "versionTime") && Time(options["versionTime"]) is null) Fail("invalid-option");
             foreach (string k in new[] { "versionNumber", "minCopies" }) if (Has(options, k) && (!Integer(options[k]) || Num(options[k]) < 1)) Fail("invalid-option");
-            if (Has(input, "copies") || Has(options, "minCopies") && Num(options["minCopies"]) > 1) return ResolveCopies(input, now!.Value, options);
-            var v = VerifyLog(Str(Get(input, "log")), Get(input, "witness"), Has(input, "witness"), now!.Value);
+            if (Has(input, "copies") || Has(options, "minCopies") && Num(options["minCopies"]) > 1) return ResolveCopies(input, now!.Value, options, spec);
+            var v = VerifyLog(Str(Get(input, "log")), Get(input, "witness"), Has(input, "witness"), now!.Value, spec);
             if (v.Entries.Count == 0) return Obj("valid", false, "error", v.Failure);
             var warnings = new JsonArray(); if (Has(input, "retainedVersionId")) Retained(v, "primary", Get(input, "retainedVersionId"), warnings);
             return Result(v, options, warnings);
@@ -420,6 +428,19 @@ public static class Log
         "create" => Create(input),
         "update" => Update(input),
         "resolve" => Resolve(input),
-        _ => throw new ArgumentException("unknown operation " + op)
+        _ => DidVh.Dispatch(op, input)
     };
+    /// <summary>Plain VH-Log (vh-log:1.0), as specified by profile vh-log-interop-0.</summary>
+    public static readonly Spec VHLogSpec = new("logVersion", ["vh-log:1.0"]);
+    /// <summary>The VH-Log parameters, excluding the version parameter.</summary>
+    private static readonly string[] ParameterNames = ["scid", "updateKeys", "nextKeyHashes", "witness", "watchers", "deactivated", "ttl"];
 }
+
+/// <summary>
+/// What a specialisation of VH-Log (such as did:vh) changes in verification: the version
+/// parameter and its accepted values; an optional version syntax (missing or malformed is
+/// invalid-parameter, well-formed but unaccepted is unsupported-log-version); a closed
+/// parameter set when ExtraParameters is non-null; and a state check after the SCID check.
+/// </summary>
+public sealed record Spec(string VersionParameter, string[] Versions, Regex? VersionSyntax = null,
+    string[]? ExtraParameters = null, Action<JsonObject, string, int>? CheckState = null);
