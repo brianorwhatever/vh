@@ -1,6 +1,7 @@
 use lib 'lib';
 use Test;
 use VHLog;
+use VHLog::DidVh;
 use VHLog::JSON;
 use VHLog::Crypto;
 
@@ -54,4 +55,35 @@ my $invalid-target = resolve-log({log => $second<log> ~ "invalid\n", :$now,
 is $invalid-target<error><code>, 'invalid-log', 'selecting malformed suffix returns its verification error';
 is b58(Buf.new(0,0,1)), '112', 'base58 preserves leading zero bytes';
 is un58('112').list.join(','), '0,0,1', 'base58 decoding preserves leading zero bytes';
+# did:vh: the shared vectors through the library API.
+my $didvh = $?FILE.IO.parent.parent.parent.parent.add('vectors/didvh');
+sub vectors($file) { parse-json($didvh.add($file).slurp(:enc<utf8-c8>))<cases>.list }
+for ('ref.json', 'didvh-ref', 'ref'), ('src.json', 'didvh-src', 'src'), ('did-url.json', 'didvh-did-url', 'didUrl') -> ($file, $op, $field) {
+    for vectors($file) -> $c {
+        is jcs(didvh-dispatch($op, %($field => $c{$field}))), jcs($c<expect>), "$file/$c<name>";
+    }
+}
+for $didvh.add('resolution').dir.sort -> $file {
+    for vectors('resolution/' ~ $file.basename) -> $c {
+        my $in = $c<input>;
+        my $e = $c<expect>;
+        my $got = resolve-did($in<did>, $in<options>, now => $in<now>, remote => so ($in<remote> // False));
+        my $meta = $got<didResolutionMetadata>;
+        my $name = "resolution/{$file.basename}/$c<name>";
+        if $e<error>:exists {
+            ok $meta<error> eq $e<error> && !$got<didDocument>.defined
+                && (!($e<vhLogError>:exists) || $meta<problemDetails><vhLog><code> eq $e<vhLogError>), $name;
+        }
+        else {
+            ok jcs($got<didDocument>) eq jcs($e<didDocument>)
+                && jcs($got<didDocumentMetadata>) eq jcs($e<didDocumentMetadata>)
+                && jcs(($meta<warnings> // []).map(*<code>).sort.Array) eq jcs($e<warnings> // [])
+                && jcs($meta<didLog>) eq jcs($e<didLog>) && jcs($meta<didWitness>) eq jcs($e<didWitness>), $name;
+        }
+    }
+}
+my $did-log = create-did({document => {id => 'did:vh:{SCID}'}, parameters => {updateKeys => [$mk]},
+    versionTime => '2026-01-01T00:00:00Z', signers => [$seed]});
+is parse-json($did-log<log>.trim)<parameters><method>, 'did:vh:1.0', 'didvh-create adds method';
+is resolve-did($did-log<did>, {didLog => $did-log<log>}, :$now)<didDocument><id>, $did-log<did>, 'a created DID resolves';
 done-testing;

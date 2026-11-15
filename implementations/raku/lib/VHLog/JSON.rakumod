@@ -26,7 +26,7 @@ sub cps(Str $s) is export {
     }
     @u
 }
-sub rawstr(@u --> Str) { my @b;
+sub rawstr(@u --> Str) is export { my @b;
     for @u -> $c { if $c < 128 {@b.push($c)} elsif $c < 2048 {@b.append(0xc0 + ($c +> 6), 0x80 + ($c +& 63))} elsif $c < 65536 {@b.append(0xe0 + ($c +> 12), 0x80 + (($c +> 6) +& 63), 0x80 + ($c +& 63))} else {@b.append(0xf0 + ($c +> 18), 0x80 + (($c +> 12) +& 63), 0x80 + (($c +> 6) +& 63), 0x80 + ($c +& 63))} };
     Buf.new(@b).decode('utf8-c8') }
 sub quote-json(Str $s) is export {

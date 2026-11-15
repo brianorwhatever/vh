@@ -9,4 +9,5 @@ c++ -std=c++17 -O2 -shared -fPIC native/number.cpp -o native/libvhnumber.so
 raku -Ilib -c lib/VHLog/JSON.rakumod >&2
 raku -Ilib -c lib/VHLog/Crypto.rakumod >&2
 raku -Ilib -c lib/VHLog.rakumod >&2
+raku -Ilib -c lib/VHLog/DidVh.rakumod >&2
 raku -Ilib -c driver.raku >&2

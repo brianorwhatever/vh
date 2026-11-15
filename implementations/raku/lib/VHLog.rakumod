@@ -14,9 +14,8 @@ sub entry-line($entry) {
     }).join(',') ~ '}'
 }
 
-sub create-log($input) is export {my %p=$input<parameters>.Hash;
-    %p<scid>//='{SCID}';
-    %p<logVersion>//='vh-log:1.0';
+sub create-log($input, :@defaults=(scid=>'{SCID}',logVersion=>'vh-log:1.0')) is export {my %p=$input<parameters>.Hash;
+    %p{.key}//=.value for @defaults;
     my %e=versionId=>'{SCID}',versionTime=>$input<versionTime>,parameters=>%p,state=>$input<state>;
     my $scid=scid(%e);
     %e=parse-json(jcs(%e).subst('{SCID}',$scid,:g));
@@ -56,14 +55,24 @@ sub err($code,$version?) {my %e=:$code,message=>$code,:$version;
     %e}
 sub failure($code,$version?) { {valid=>False,error=>err($code,$version)} }
 sub defaults { {nextKeyHashes=>[],witness=>{},watchers=>[],deactivated=>False,ttl=>3600} }
+sub valid-time($s) is export { instant($s).defined }
+# A specialisation: version parameter, accepted values, optional version syntax
+# (missing in entry 1 or malformed -> invalid-parameter), optional closed
+# parameter set and a state check (log SCID, state) run after the SCID check.
+sub vh-log-spec is export { %(version-param=>'logVersion',accepted=>['vh-log:1.0'],syntax=>Any,closed=>Any,state-check=>Any) }
 
 # Validate parameters before proofs, including explicit pre-rotation commitments.
-sub parameter-error($p,$prior,$n) {
+sub parameter-error($p,$prior,$n,%spec=vh-log-spec) {
+    my $vp=%spec<version-param>;
+    # A closed set is checked for every parameter first, right after the null check.
+    if %spec<closed>.defined {for $p.keys -> $k {return 'invalid-parameter' unless $p{$k}.defined && $k eq any(%spec<closed>.list)}}
     for $p.keys -> $k {my $v=$p{$k};
         return 'invalid-parameter' unless $v.defined;
+        if $k eq $vp {return 'invalid-parameter' unless $v ~~ Str;
+            return 'invalid-parameter' if %spec<syntax>.defined && !%spec<syntax>($v);
+            return 'unsupported-log-version' unless $v eq any(%spec<accepted>.list);
+            next}
         given $k {
-            when 'logVersion' {return 'invalid-parameter' unless $v ~~ Str;
-                return 'unsupported-log-version' unless $v eq 'vh-log:1.0'}
             when 'scid' {return 'invalid-parameter' unless $n==1 && $v ~~ Str}
             when 'updateKeys'|'nextKeyHashes' {return 'invalid-parameter' unless $v ~~ Positional && $v.all ~~ Str;
                 for $v.list {if $k eq 'updateKeys' {return 'invalid-parameter' unless (try public-key($_)).defined} else {return 'invalid-parameter' unless valid-hash($_)}}}
@@ -79,7 +88,7 @@ sub parameter-error($p,$prior,$n) {
                         return 'invalid-parameter' if %ids{$id}:exists;
                         %ids{$id}=True}}}
         }}
-    if $n==1 {return 'unsupported-log-version' unless $p<logVersion>:exists;
+    if $n==1 {return (%spec<syntax>.defined ?? 'invalid-parameter' !! 'unsupported-log-version') unless $p{$vp}:exists;
         return 'invalid-parameter' unless ($p<scid>:exists) && ($p<updateKeys>:exists)}
     if $n > 1 && $prior<nextKeyHashes>.elems {return 'prerotation-violation' unless ($p<updateKeys>:exists) && ($p<nextKeyHashes>:exists) && $p<updateKeys>.elems;
         for $p<updateKeys>.list {return 'prerotation-violation' unless hash-text($_) eq any($prior<nextKeyHashes>.list)}}
@@ -87,7 +96,7 @@ sub parameter-error($p,$prior,$n) {
 }
 
 # Verify a copy in profile check order, retaining snapshots of its valid prefix.
-sub inspect($input) {
+sub inspect($input,%spec=vh-log-spec) {
     my @entries;
     my $parse-error;
     my $parse-first;
@@ -114,7 +123,7 @@ sub inspect($input) {
         my $code;
         if %active<deactivated> {$code='entry-after-deactivation'} elsif $e.keys.sort.join(',') ne 'parameters,proof,state,versionId,versionTime' || $e<versionId> !~~ Str || $e<versionTime> !~~ Str || $e<parameters> !~~ Associative || $e<state> !~~ Associative || $e<proof> !~~ Positional {$code='invalid-entry'} else {
             my $p=$e<parameters>;
-            $code=parameter-error($p,%active,$n);
+            $code=parameter-error($p,%active,$n,%spec);
             unless $code.defined {my %next=%active;
                 for $p.kv -> $k,$v {%next{$k}=$v};
                 # Ordinary rotations are authorized by prior keys; pre-rotation uses current keys.
@@ -137,6 +146,7 @@ sub inspect($input) {
                             %pre<versionId>='{SCID}';
                             my $re=parse-json(jcs(%pre).subst($sc,'{SCID}',:g));
                             $code='scid-mismatch' if scid($re) ne $sc}}}
+                unless $code.defined {$code='invalid-state' if %spec<state-check>.defined && !(try %spec<state-check>(%next<scid>,$e<state>))}
                 unless $code.defined {%active=%next;
                     @configs.push(%active.Hash.clone);
                     @witnesses.push($wc)}
@@ -201,7 +211,7 @@ sub render($input,$checked,@extra-warnings=(),$copies?) {
 }
 
 # Prefer a fully verified primary; compare copies by their overlapping versionId.
-sub resolve-log($input) is export {
+sub resolve-log($input, :%spec=vh-log-spec) is export {
     my $o=$input<options>//{};
     return failure('invalid-option') unless $o ~~ Associative;
     return failure('invalid-option') if $o.keys.grep({$_ ne any(<versionId versionTime versionNumber minCopies>)}).elems || $o.keys.grep({$_ eq any(<versionId versionTime versionNumber>)}).elems > 1;
@@ -209,7 +219,7 @@ sub resolve-log($input) is export {
     return failure('invalid-option') if ($o<minCopies>:exists) && (!is-uint($o<minCopies>) || $o<minCopies> < 1);
     return failure('invalid-option') if ($o<versionId>:exists) && $o<versionId> !~~ Str;
     return failure('invalid-option') if ($o<versionTime>:exists) && !instant($o<versionTime>).defined;
-    my $primary=inspect($input);
+    my $primary=inspect($input,%spec);
     return render($input,$primary) unless ($input<copies>:exists) || ($input<retainedVersionId>:exists) || ($o<minCopies>//1) > 1;
     my @all;
     @all.push({source=>'primary',log=>$input<log>,witness=>$input<witness>,hasWitness=>($input<witness>:exists)});
@@ -221,7 +231,7 @@ sub resolve-log($input) is export {
             next};
         my %in=log=>$copy<log>,now=>$input<now>;
         %in<witness>=$copy<witness> if ($copy<witness>:exists) && ($i!=0 || $copy<hasWitness>);
-        my $c=$i==0 ?? $primary !! inspect(%in);
+        my $c=$i==0 ?? $primary !! inspect(%in,%spec);
         @checks.push($c);
         if !$c<error>.defined && !$ref.defined {$ref=$c;
             $refi=$i}}
@@ -237,7 +247,7 @@ sub resolve-log($input) is export {
                 # Reuse the verified reference prefix; only the additional copy entries matter.
                 my %extended=log=>($ref<entries>.list.map({jcs($_)}).join("\n")~"\n"~$c<entries>[$rl..*].map({jcs($_)}).join("\n")~"\n"),now=>$input<now>,trustedEntries=>$rl;
                 %extended<witness>=$copy<witness> if $copy<witness>:exists;
-                my $extended=inspect(%extended);
+                my $extended=inspect(%extended,%spec);
                 @checks[$i]=$extended;
                 if !$extended<error>.defined {$ref=$extended;
                     $refi=$i}
