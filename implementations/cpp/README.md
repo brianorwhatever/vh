@@ -7,6 +7,12 @@ including deterministic creation and updates, pre-rotation, witnesses,
 version selection, partial validity, watcher copies, and fork detection.
 Protocol logic runs in C++; it does not call another implementation.
 
+It also implements [did:vh](../../docs/didvh-profile.md) in `src/didvh.hpp`
+(namespace `vhlog::didvh`): a did:vh log is verified by the same VH-Log code
+with a `Specialisation` (`method`, a closed parameter set and the `state.id`
+check), and the module adds DID creation and update, `srcLog`/`srcWitness`
+and `src` checks, DID URL parsing and offline DID resolution.
+
 ## Setup
 
 ```sh
@@ -19,7 +25,8 @@ sh build.sh
 
 ## Library usage
 
-Include `src/vh_log.hpp` and link `src/vh_log.cpp` with `-lsodium`.
+Include `src/vh_log.hpp` (and `src/didvh.hpp` for did:vh) and link
+`src/vh_log.cpp` and `src/didvh.cpp` with `-lsodium`.
 Call `sodium_init()` once before using the library.
 
 ```cpp
