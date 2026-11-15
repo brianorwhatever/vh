@@ -84,7 +84,7 @@
     },
     {
       "name": "deactivating-version",
-      "description": "Selecting the deactivating entry itself returns no document.",
+      "description": "Selecting the deactivating entry itself returns its document, with deactivated true.",
       "spec": [
         "https://github.com/decentralized-identity/didvh/blob/cc2eff6/spec/specification.md#deactivate-revoke",
         "docs/didvh-profile.md#5-resolution"
@@ -98,7 +98,85 @@
         }
       },
       "expect": {
-        "didDocument": null,
+        "didDocument": {
+          "@context": [
+            "https://www.w3.org/ns/did/v1",
+            "https://w3id.org/security/multikey/v1"
+          ],
+          "id": "did:vh:QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4",
+          "verificationMethod": [
+            {
+              "id": "did:vh:QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4#key-1",
+              "type": "Multikey",
+              "controller": "did:vh:QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4",
+              "publicKeyMultibase": "z6MkvzDVEGYxf3cFrz7ocwK3rWGEFqeV3whciAcYZS2VT9Su"
+            }
+          ],
+          "assertionMethod": [
+            "did:vh:QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4#key-1"
+          ],
+          "service": [
+            {
+              "id": "did:vh:QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4#v",
+              "type": "Version",
+              "serviceEndpoint": "https://example.com/v3"
+            }
+          ]
+        },
+        "didDocumentMetadata": {
+          "versionId": "3-QmQ7GireeubgH1ucYmGNvg957yURQzikSS9BMiPuBA2jmJ",
+          "versionTime": "2026-01-03T00:00:00Z",
+          "created": "2026-01-01T00:00:00Z",
+          "updated": "2026-01-03T00:00:00Z",
+          "scid": "QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4",
+          "deactivated": true,
+          "ttl": 3600,
+          "watchers": []
+        },
+        "warnings": []
+      }
+    },
+    {
+      "name": "deactivating-version-time",
+      "description": "A versionTime that selects the deactivating entry also returns its document.",
+      "spec": [
+        "https://github.com/decentralized-identity/didvh/blob/cc2eff6/spec/specification.md#deactivate-revoke",
+        "docs/didvh-profile.md#5-resolution"
+      ],
+      "input": {
+        "now": "2026-06-01T00:00:00Z",
+        "did": "did:vh:QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4",
+        "options": {
+          "didLog": "{\"versionId\":\"1-QmXERsSpEW7gPML91n1vos56JtXJ5GKcegEqbiRcZqHKZC\",\"versionTime\":\"2026-01-01T00:00:00Z\",\"parameters\":{\"method\":\"did:vh:1.0\",\"scid\":\"QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4\",\"updateKeys\":[\"z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\"]},\"state\":{\"@context\":[\"https://www.w3.org/ns/did/v1\",\"https://w3id.org/security/multikey/v1\"],\"id\":\"did:vh:QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4\",\"verificationMethod\":[{\"id\":\"did:vh:QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4#key-1\",\"type\":\"Multikey\",\"controller\":\"did:vh:QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4\",\"publicKeyMultibase\":\"z6MkvzDVEGYxf3cFrz7ocwK3rWGEFqeV3whciAcYZS2VT9Su\"}],\"assertionMethod\":[\"did:vh:QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4#key-1\"]},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-01T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z5DzpfYidcG2qHTBkp6RSrJiiXknWjiHspa2h5Z5PcfzW1ccGm4nCZ5RuUs7XgPs1PJvth6D86CZ7kLb1UJDZq9AR\"}]}\n{\"versionId\":\"2-QmPgDR7ZDkK8QeGcHCXuJe8QB2qUrGbtDrY4WtRJJfS17S\",\"versionTime\":\"2026-01-02T00:00:00Z\",\"parameters\":{},\"state\":{\"@context\":[\"https://www.w3.org/ns/did/v1\",\"https://w3id.org/security/multikey/v1\"],\"id\":\"did:vh:QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4\",\"verificationMethod\":[{\"id\":\"did:vh:QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4#key-1\",\"type\":\"Multikey\",\"controller\":\"did:vh:QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4\",\"publicKeyMultibase\":\"z6MkvzDVEGYxf3cFrz7ocwK3rWGEFqeV3whciAcYZS2VT9Su\"}],\"assertionMethod\":[\"did:vh:QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4#key-1\"],\"service\":[{\"id\":\"did:vh:QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4#v\",\"type\":\"Version\",\"serviceEndpoint\":\"https://example.com/v2\"}]},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-02T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z3YLq9uQUmv8KkgjBdorHfT8pgzH77V5VWZoJUbAfXG9wxzViSLV4RH9Cqv66a5qPtDwzEtitQvFUuTeBkko4oxyw\"}]}\n{\"versionId\":\"3-QmQ7GireeubgH1ucYmGNvg957yURQzikSS9BMiPuBA2jmJ\",\"versionTime\":\"2026-01-03T00:00:00Z\",\"parameters\":{\"deactivated\":true},\"state\":{\"@context\":[\"https://www.w3.org/ns/did/v1\",\"https://w3id.org/security/multikey/v1\"],\"id\":\"did:vh:QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4\",\"verificationMethod\":[{\"id\":\"did:vh:QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4#key-1\",\"type\":\"Multikey\",\"controller\":\"did:vh:QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4\",\"publicKeyMultibase\":\"z6MkvzDVEGYxf3cFrz7ocwK3rWGEFqeV3whciAcYZS2VT9Su\"}],\"assertionMethod\":[\"did:vh:QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4#key-1\"],\"service\":[{\"id\":\"did:vh:QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4#v\",\"type\":\"Version\",\"serviceEndpoint\":\"https://example.com/v3\"}]},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-03T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z2hcBHWnmx655wtydZza6oyboYoRJBimz7Tqs6edLcRBGt79iQ97aPzypXtx5xodSVAkC6oSGm8TZRLDeU89pHX1S\"}]}\n",
+          "versionTime": "2026-06-01T00:00:00Z"
+        }
+      },
+      "expect": {
+        "didDocument": {
+          "@context": [
+            "https://www.w3.org/ns/did/v1",
+            "https://w3id.org/security/multikey/v1"
+          ],
+          "id": "did:vh:QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4",
+          "verificationMethod": [
+            {
+              "id": "did:vh:QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4#key-1",
+              "type": "Multikey",
+              "controller": "did:vh:QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4",
+              "publicKeyMultibase": "z6MkvzDVEGYxf3cFrz7ocwK3rWGEFqeV3whciAcYZS2VT9Su"
+            }
+          ],
+          "assertionMethod": [
+            "did:vh:QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4#key-1"
+          ],
+          "service": [
+            {
+              "id": "did:vh:QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4#v",
+              "type": "Version",
+              "serviceEndpoint": "https://example.com/v3"
+            }
+          ]
+        },
         "didDocumentMetadata": {
           "versionId": "3-QmQ7GireeubgH1ucYmGNvg957yURQzikSS9BMiPuBA2jmJ",
           "versionTime": "2026-01-03T00:00:00Z",
