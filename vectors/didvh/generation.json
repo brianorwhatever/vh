@@ -1,0 +1,669 @@
+{
+  "description": "did:vh generation scenarios. Run the steps in order, threading `log` from each output into the next didvh-update; `{SCID}` in a didvh-update document is replaced by the harness with the SCID from didvh-create. Compare each new line, parsed, to `expect.line`. Then resolve with didvh-resolve.",
+  "scenarios": [
+    {
+      "name": "create-update-deactivate",
+      "description": "Create a did:vh DID, add a service, then deactivate it.",
+      "steps": [
+        {
+          "op": "didvh-create",
+          "input": {
+            "document": {
+              "@context": [
+                "https://www.w3.org/ns/did/v1",
+                "https://w3id.org/security/multikey/v1"
+              ],
+              "id": "did:vh:{SCID}",
+              "verificationMethod": [
+                {
+                  "id": "did:vh:{SCID}#key-1",
+                  "type": "Multikey",
+                  "controller": "did:vh:{SCID}",
+                  "publicKeyMultibase": "z6MkvzDVEGYxf3cFrz7ocwK3rWGEFqeV3whciAcYZS2VT9Su"
+                }
+              ],
+              "assertionMethod": [
+                "did:vh:{SCID}#key-1"
+              ]
+            },
+            "parameters": {
+              "updateKeys": [
+                "z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv"
+              ]
+            },
+            "versionTime": "2026-01-01T00:00:00Z",
+            "signers": [
+              "90930409d492fb6cd7b50542c97fc6003fcedd59012b47ac114417373796eaaa"
+            ]
+          },
+          "expect": {
+            "versionId": "1-QmXERsSpEW7gPML91n1vos56JtXJ5GKcegEqbiRcZqHKZC",
+            "did": "did:vh:QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4",
+            "scid": "QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4",
+            "line": {
+              "versionId": "1-QmXERsSpEW7gPML91n1vos56JtXJ5GKcegEqbiRcZqHKZC",
+              "versionTime": "2026-01-01T00:00:00Z",
+              "parameters": {
+                "updateKeys": [
+                  "z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv"
+                ],
+                "method": "did:vh:1.0",
+                "scid": "QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4"
+              },
+              "state": {
+                "@context": [
+                  "https://www.w3.org/ns/did/v1",
+                  "https://w3id.org/security/multikey/v1"
+                ],
+                "id": "did:vh:QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4",
+                "verificationMethod": [
+                  {
+                    "id": "did:vh:QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4#key-1",
+                    "type": "Multikey",
+                    "controller": "did:vh:QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4",
+                    "publicKeyMultibase": "z6MkvzDVEGYxf3cFrz7ocwK3rWGEFqeV3whciAcYZS2VT9Su"
+                  }
+                ],
+                "assertionMethod": [
+                  "did:vh:QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4#key-1"
+                ]
+              },
+              "proof": [
+                {
+                  "type": "DataIntegrityProof",
+                  "cryptosuite": "eddsa-jcs-2022",
+                  "verificationMethod": "did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv",
+                  "created": "2026-01-01T00:00:00Z",
+                  "proofPurpose": "assertionMethod",
+                  "proofValue": "z5DzpfYidcG2qHTBkp6RSrJiiXknWjiHspa2h5Z5PcfzW1ccGm4nCZ5RuUs7XgPs1PJvth6D86CZ7kLb1UJDZq9AR"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "op": "didvh-update",
+          "input": {
+            "document": {
+              "@context": [
+                "https://www.w3.org/ns/did/v1",
+                "https://w3id.org/security/multikey/v1"
+              ],
+              "id": "did:vh:{SCID}",
+              "verificationMethod": [
+                {
+                  "id": "did:vh:{SCID}#key-1",
+                  "type": "Multikey",
+                  "controller": "did:vh:{SCID}",
+                  "publicKeyMultibase": "z6MkvzDVEGYxf3cFrz7ocwK3rWGEFqeV3whciAcYZS2VT9Su"
+                }
+              ],
+              "assertionMethod": [
+                "did:vh:{SCID}#key-1"
+              ],
+              "service": [
+                {
+                  "id": "did:vh:{SCID}#files",
+                  "type": "relativeRef",
+                  "serviceEndpoint": "https://example.com/files/"
+                }
+              ]
+            },
+            "parameters": {},
+            "versionTime": "2026-01-02T00:00:00Z",
+            "signers": [
+              "90930409d492fb6cd7b50542c97fc6003fcedd59012b47ac114417373796eaaa"
+            ]
+          },
+          "expect": {
+            "versionId": "2-QmU6BwJxzj3aiGowfqjDiftBHSo4bkRG1aGmrrp5uTzK6n",
+            "line": {
+              "versionId": "2-QmU6BwJxzj3aiGowfqjDiftBHSo4bkRG1aGmrrp5uTzK6n",
+              "versionTime": "2026-01-02T00:00:00Z",
+              "parameters": {},
+              "state": {
+                "@context": [
+                  "https://www.w3.org/ns/did/v1",
+                  "https://w3id.org/security/multikey/v1"
+                ],
+                "id": "did:vh:QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4",
+                "verificationMethod": [
+                  {
+                    "id": "did:vh:QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4#key-1",
+                    "type": "Multikey",
+                    "controller": "did:vh:QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4",
+                    "publicKeyMultibase": "z6MkvzDVEGYxf3cFrz7ocwK3rWGEFqeV3whciAcYZS2VT9Su"
+                  }
+                ],
+                "assertionMethod": [
+                  "did:vh:QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4#key-1"
+                ],
+                "service": [
+                  {
+                    "id": "did:vh:QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4#files",
+                    "type": "relativeRef",
+                    "serviceEndpoint": "https://example.com/files/"
+                  }
+                ]
+              },
+              "proof": [
+                {
+                  "type": "DataIntegrityProof",
+                  "cryptosuite": "eddsa-jcs-2022",
+                  "verificationMethod": "did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv",
+                  "created": "2026-01-02T00:00:00Z",
+                  "proofPurpose": "assertionMethod",
+                  "proofValue": "z3M9hHb4tyk7tHX1wvCr7YZAkQqxNYHuAXo6xjiTAAhAUNgsB52uqgnaRka5karG8bz8TxL3MgJjPZW3HhEdx7awE"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "op": "didvh-update",
+          "input": {
+            "document": {
+              "@context": [
+                "https://www.w3.org/ns/did/v1",
+                "https://w3id.org/security/multikey/v1"
+              ],
+              "id": "did:vh:{SCID}",
+              "verificationMethod": [
+                {
+                  "id": "did:vh:{SCID}#key-1",
+                  "type": "Multikey",
+                  "controller": "did:vh:{SCID}",
+                  "publicKeyMultibase": "z6MkvzDVEGYxf3cFrz7ocwK3rWGEFqeV3whciAcYZS2VT9Su"
+                }
+              ],
+              "assertionMethod": [
+                "did:vh:{SCID}#key-1"
+              ]
+            },
+            "parameters": {
+              "deactivated": true
+            },
+            "versionTime": "2026-01-03T00:00:00Z",
+            "signers": [
+              "90930409d492fb6cd7b50542c97fc6003fcedd59012b47ac114417373796eaaa"
+            ]
+          },
+          "expect": {
+            "versionId": "3-QmXJnMnfhK5vXrgup6izi2bCdfVZFE51Bn8WvHp9SDMMo5",
+            "line": {
+              "versionId": "3-QmXJnMnfhK5vXrgup6izi2bCdfVZFE51Bn8WvHp9SDMMo5",
+              "versionTime": "2026-01-03T00:00:00Z",
+              "parameters": {
+                "deactivated": true
+              },
+              "state": {
+                "@context": [
+                  "https://www.w3.org/ns/did/v1",
+                  "https://w3id.org/security/multikey/v1"
+                ],
+                "id": "did:vh:QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4",
+                "verificationMethod": [
+                  {
+                    "id": "did:vh:QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4#key-1",
+                    "type": "Multikey",
+                    "controller": "did:vh:QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4",
+                    "publicKeyMultibase": "z6MkvzDVEGYxf3cFrz7ocwK3rWGEFqeV3whciAcYZS2VT9Su"
+                  }
+                ],
+                "assertionMethod": [
+                  "did:vh:QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4#key-1"
+                ]
+              },
+              "proof": [
+                {
+                  "type": "DataIntegrityProof",
+                  "cryptosuite": "eddsa-jcs-2022",
+                  "verificationMethod": "did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv",
+                  "created": "2026-01-03T00:00:00Z",
+                  "proofPurpose": "assertionMethod",
+                  "proofValue": "z3s7pQFY9MibVpuK77RRckLQoxRHptkoL65utcxiSH895UP8qhwjxMSevrE9RbQcyyaABowUFQUvZaue5ZvNUp1Ca"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "log": "{\"versionId\":\"1-QmXERsSpEW7gPML91n1vos56JtXJ5GKcegEqbiRcZqHKZC\",\"versionTime\":\"2026-01-01T00:00:00Z\",\"parameters\":{\"updateKeys\":[\"z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\"],\"method\":\"did:vh:1.0\",\"scid\":\"QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4\"},\"state\":{\"@context\":[\"https://www.w3.org/ns/did/v1\",\"https://w3id.org/security/multikey/v1\"],\"id\":\"did:vh:QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4\",\"verificationMethod\":[{\"id\":\"did:vh:QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4#key-1\",\"type\":\"Multikey\",\"controller\":\"did:vh:QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4\",\"publicKeyMultibase\":\"z6MkvzDVEGYxf3cFrz7ocwK3rWGEFqeV3whciAcYZS2VT9Su\"}],\"assertionMethod\":[\"did:vh:QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4#key-1\"]},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-01T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z5DzpfYidcG2qHTBkp6RSrJiiXknWjiHspa2h5Z5PcfzW1ccGm4nCZ5RuUs7XgPs1PJvth6D86CZ7kLb1UJDZq9AR\"}]}\n{\"versionId\":\"2-QmU6BwJxzj3aiGowfqjDiftBHSo4bkRG1aGmrrp5uTzK6n\",\"versionTime\":\"2026-01-02T00:00:00Z\",\"parameters\":{},\"state\":{\"@context\":[\"https://www.w3.org/ns/did/v1\",\"https://w3id.org/security/multikey/v1\"],\"id\":\"did:vh:QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4\",\"verificationMethod\":[{\"id\":\"did:vh:QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4#key-1\",\"type\":\"Multikey\",\"controller\":\"did:vh:QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4\",\"publicKeyMultibase\":\"z6MkvzDVEGYxf3cFrz7ocwK3rWGEFqeV3whciAcYZS2VT9Su\"}],\"assertionMethod\":[\"did:vh:QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4#key-1\"],\"service\":[{\"id\":\"did:vh:QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4#files\",\"type\":\"relativeRef\",\"serviceEndpoint\":\"https://example.com/files/\"}]},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-02T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z3M9hHb4tyk7tHX1wvCr7YZAkQqxNYHuAXo6xjiTAAhAUNgsB52uqgnaRka5karG8bz8TxL3MgJjPZW3HhEdx7awE\"}]}\n{\"versionId\":\"3-QmXJnMnfhK5vXrgup6izi2bCdfVZFE51Bn8WvHp9SDMMo5\",\"versionTime\":\"2026-01-03T00:00:00Z\",\"parameters\":{\"deactivated\":true},\"state\":{\"@context\":[\"https://www.w3.org/ns/did/v1\",\"https://w3id.org/security/multikey/v1\"],\"id\":\"did:vh:QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4\",\"verificationMethod\":[{\"id\":\"did:vh:QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4#key-1\",\"type\":\"Multikey\",\"controller\":\"did:vh:QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4\",\"publicKeyMultibase\":\"z6MkvzDVEGYxf3cFrz7ocwK3rWGEFqeV3whciAcYZS2VT9Su\"}],\"assertionMethod\":[\"did:vh:QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4#key-1\"]},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-03T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z3s7pQFY9MibVpuK77RRckLQoxRHptkoL65utcxiSH895UP8qhwjxMSevrE9RbQcyyaABowUFQUvZaue5ZvNUp1Ca\"}]}\n",
+      "resolve": {
+        "now": "2026-06-01T00:00:00Z",
+        "did": "did:vh:QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4",
+        "didDocument": null,
+        "didDocumentMetadata": {
+          "versionId": "3-QmXJnMnfhK5vXrgup6izi2bCdfVZFE51Bn8WvHp9SDMMo5",
+          "versionTime": "2026-01-03T00:00:00Z",
+          "created": "2026-01-01T00:00:00Z",
+          "updated": "2026-01-03T00:00:00Z",
+          "scid": "QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4",
+          "deactivated": true,
+          "ttl": 3600,
+          "watchers": []
+        }
+      }
+    },
+    {
+      "name": "pre-rotation-witnesses-watchers",
+      "description": "Pre-rotation, witnesses, watchers and ttl.",
+      "steps": [
+        {
+          "op": "didvh-create",
+          "input": {
+            "document": {
+              "@context": [
+                "https://www.w3.org/ns/did/v1",
+                "https://w3id.org/security/multikey/v1"
+              ],
+              "id": "did:vh:{SCID}",
+              "verificationMethod": [
+                {
+                  "id": "did:vh:{SCID}#key-1",
+                  "type": "Multikey",
+                  "controller": "did:vh:{SCID}",
+                  "publicKeyMultibase": "z6MkvzDVEGYxf3cFrz7ocwK3rWGEFqeV3whciAcYZS2VT9Su"
+                }
+              ],
+              "assertionMethod": [
+                "did:vh:{SCID}#key-1"
+              ]
+            },
+            "parameters": {
+              "updateKeys": [
+                "z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv"
+              ],
+              "nextKeyHashes": [
+                "QmQeWRgjW9UDto37p4UPx7ovp6jJGyxKo4D1CC8Tibacco"
+              ],
+              "witness": {
+                "threshold": 1,
+                "witnesses": [
+                  {
+                    "id": "did:key:z6MkfZM53uaGQVNUuaxQB1rtcErHoHVuQrm5WfJmFtNaXPv3"
+                  },
+                  {
+                    "id": "did:key:z6Mkij8ran44p1frij95Pk5DVVamdWYcWoxEi3DJYPVhU1uC"
+                  }
+                ]
+              },
+              "watchers": [
+                "https://watcher.example"
+              ],
+              "ttl": 60
+            },
+            "versionTime": "2026-01-01T00:00:00Z",
+            "signers": [
+              "90930409d492fb6cd7b50542c97fc6003fcedd59012b47ac114417373796eaaa"
+            ]
+          },
+          "expect": {
+            "versionId": "1-QmWXHaakSCoFscxZVPjKBpw4Z9SpKv3NusXtNLGXBUNYj8",
+            "did": "did:vh:QmTK8VDunEWpsEWXE9wxadfjANF8G37HtKB9N7yyKhsJsD",
+            "scid": "QmTK8VDunEWpsEWXE9wxadfjANF8G37HtKB9N7yyKhsJsD",
+            "line": {
+              "versionId": "1-QmWXHaakSCoFscxZVPjKBpw4Z9SpKv3NusXtNLGXBUNYj8",
+              "versionTime": "2026-01-01T00:00:00Z",
+              "parameters": {
+                "updateKeys": [
+                  "z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv"
+                ],
+                "nextKeyHashes": [
+                  "QmQeWRgjW9UDto37p4UPx7ovp6jJGyxKo4D1CC8Tibacco"
+                ],
+                "witness": {
+                  "threshold": 1,
+                  "witnesses": [
+                    {
+                      "id": "did:key:z6MkfZM53uaGQVNUuaxQB1rtcErHoHVuQrm5WfJmFtNaXPv3"
+                    },
+                    {
+                      "id": "did:key:z6Mkij8ran44p1frij95Pk5DVVamdWYcWoxEi3DJYPVhU1uC"
+                    }
+                  ]
+                },
+                "watchers": [
+                  "https://watcher.example"
+                ],
+                "ttl": 60,
+                "method": "did:vh:1.0",
+                "scid": "QmTK8VDunEWpsEWXE9wxadfjANF8G37HtKB9N7yyKhsJsD"
+              },
+              "state": {
+                "@context": [
+                  "https://www.w3.org/ns/did/v1",
+                  "https://w3id.org/security/multikey/v1"
+                ],
+                "id": "did:vh:QmTK8VDunEWpsEWXE9wxadfjANF8G37HtKB9N7yyKhsJsD",
+                "verificationMethod": [
+                  {
+                    "id": "did:vh:QmTK8VDunEWpsEWXE9wxadfjANF8G37HtKB9N7yyKhsJsD#key-1",
+                    "type": "Multikey",
+                    "controller": "did:vh:QmTK8VDunEWpsEWXE9wxadfjANF8G37HtKB9N7yyKhsJsD",
+                    "publicKeyMultibase": "z6MkvzDVEGYxf3cFrz7ocwK3rWGEFqeV3whciAcYZS2VT9Su"
+                  }
+                ],
+                "assertionMethod": [
+                  "did:vh:QmTK8VDunEWpsEWXE9wxadfjANF8G37HtKB9N7yyKhsJsD#key-1"
+                ]
+              },
+              "proof": [
+                {
+                  "type": "DataIntegrityProof",
+                  "cryptosuite": "eddsa-jcs-2022",
+                  "verificationMethod": "did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv",
+                  "created": "2026-01-01T00:00:00Z",
+                  "proofPurpose": "assertionMethod",
+                  "proofValue": "z64xBGKiiGfQsbauRU2zvCBnirNhwB71pru4cvdm7Eeaf6iiuGz8hRoaLJbUzZ7nuwwqMFGcS98jnjyNKrjk4CcwK"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "op": "didvh-update",
+          "input": {
+            "document": {
+              "@context": [
+                "https://www.w3.org/ns/did/v1",
+                "https://w3id.org/security/multikey/v1"
+              ],
+              "id": "did:vh:{SCID}",
+              "verificationMethod": [
+                {
+                  "id": "did:vh:{SCID}#key-1",
+                  "type": "Multikey",
+                  "controller": "did:vh:{SCID}",
+                  "publicKeyMultibase": "z6MkvzDVEGYxf3cFrz7ocwK3rWGEFqeV3whciAcYZS2VT9Su"
+                }
+              ],
+              "assertionMethod": [
+                "did:vh:{SCID}#key-1"
+              ],
+              "alsoKnownAs": [
+                "https://example.com/alice"
+              ]
+            },
+            "parameters": {
+              "updateKeys": [
+                "z6MkfiGunxr8zjX823MQsSL4R28pKqebqhDrwKypVfLdFJjA"
+              ],
+              "nextKeyHashes": [
+                "QmUQZm7vxXkg274eyLtwBVWkJAFsSULrWC14JPcmdtyUCE"
+              ]
+            },
+            "versionTime": "2026-01-02T00:00:00Z",
+            "signers": [
+              "e0203d7f35f898d2c66bbc45b1d5ed23410af56e775d3601a1f4ee3f22987ea6"
+            ]
+          },
+          "expect": {
+            "versionId": "2-Qmbqm5EvFAAb3Hm9Qii5oiTSGu22b4k7BegmhjZCcHvr3o",
+            "line": {
+              "versionId": "2-Qmbqm5EvFAAb3Hm9Qii5oiTSGu22b4k7BegmhjZCcHvr3o",
+              "versionTime": "2026-01-02T00:00:00Z",
+              "parameters": {
+                "updateKeys": [
+                  "z6MkfiGunxr8zjX823MQsSL4R28pKqebqhDrwKypVfLdFJjA"
+                ],
+                "nextKeyHashes": [
+                  "QmUQZm7vxXkg274eyLtwBVWkJAFsSULrWC14JPcmdtyUCE"
+                ]
+              },
+              "state": {
+                "@context": [
+                  "https://www.w3.org/ns/did/v1",
+                  "https://w3id.org/security/multikey/v1"
+                ],
+                "id": "did:vh:QmTK8VDunEWpsEWXE9wxadfjANF8G37HtKB9N7yyKhsJsD",
+                "verificationMethod": [
+                  {
+                    "id": "did:vh:QmTK8VDunEWpsEWXE9wxadfjANF8G37HtKB9N7yyKhsJsD#key-1",
+                    "type": "Multikey",
+                    "controller": "did:vh:QmTK8VDunEWpsEWXE9wxadfjANF8G37HtKB9N7yyKhsJsD",
+                    "publicKeyMultibase": "z6MkvzDVEGYxf3cFrz7ocwK3rWGEFqeV3whciAcYZS2VT9Su"
+                  }
+                ],
+                "assertionMethod": [
+                  "did:vh:QmTK8VDunEWpsEWXE9wxadfjANF8G37HtKB9N7yyKhsJsD#key-1"
+                ],
+                "alsoKnownAs": [
+                  "https://example.com/alice"
+                ]
+              },
+              "proof": [
+                {
+                  "type": "DataIntegrityProof",
+                  "cryptosuite": "eddsa-jcs-2022",
+                  "verificationMethod": "did:key:z6MkfiGunxr8zjX823MQsSL4R28pKqebqhDrwKypVfLdFJjA#z6MkfiGunxr8zjX823MQsSL4R28pKqebqhDrwKypVfLdFJjA",
+                  "created": "2026-01-02T00:00:00Z",
+                  "proofPurpose": "assertionMethod",
+                  "proofValue": "z5rSzcsEiWg5JB32t8adn7RFKrZUwqbtBfi18emW41n7CDbGb8zmUMeGPsBsKkdrupNatTehnWF4LLe8f9MMz1Ngg"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "witness": [
+        {
+          "step": 2,
+          "seeds": [
+            "1c0a4ab97f14bbf94ef7598c3481699f920a4e42e961ee2a3e659aeac06de578"
+          ]
+        }
+      ],
+      "witnessFile": [
+        {
+          "versionId": "2-Qmbqm5EvFAAb3Hm9Qii5oiTSGu22b4k7BegmhjZCcHvr3o",
+          "proof": [
+            {
+              "type": "DataIntegrityProof",
+              "cryptosuite": "eddsa-jcs-2022",
+              "verificationMethod": "did:key:z6Mkij8ran44p1frij95Pk5DVVamdWYcWoxEi3DJYPVhU1uC#z6Mkij8ran44p1frij95Pk5DVVamdWYcWoxEi3DJYPVhU1uC",
+              "proofPurpose": "assertionMethod",
+              "proofValue": "z55HvLvS8VTMJh1sUmurQRKZrdhTuKip33TUGwWG43Q4VT7eCgEmgvNXpsFKF2UcMBqJnCARgzjstvSQ3zZw3oSDu"
+            }
+          ]
+        }
+      ],
+      "log": "{\"versionId\":\"1-QmWXHaakSCoFscxZVPjKBpw4Z9SpKv3NusXtNLGXBUNYj8\",\"versionTime\":\"2026-01-01T00:00:00Z\",\"parameters\":{\"updateKeys\":[\"z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\"],\"nextKeyHashes\":[\"QmQeWRgjW9UDto37p4UPx7ovp6jJGyxKo4D1CC8Tibacco\"],\"witness\":{\"threshold\":1,\"witnesses\":[{\"id\":\"did:key:z6MkfZM53uaGQVNUuaxQB1rtcErHoHVuQrm5WfJmFtNaXPv3\"},{\"id\":\"did:key:z6Mkij8ran44p1frij95Pk5DVVamdWYcWoxEi3DJYPVhU1uC\"}]},\"watchers\":[\"https://watcher.example\"],\"ttl\":60,\"method\":\"did:vh:1.0\",\"scid\":\"QmTK8VDunEWpsEWXE9wxadfjANF8G37HtKB9N7yyKhsJsD\"},\"state\":{\"@context\":[\"https://www.w3.org/ns/did/v1\",\"https://w3id.org/security/multikey/v1\"],\"id\":\"did:vh:QmTK8VDunEWpsEWXE9wxadfjANF8G37HtKB9N7yyKhsJsD\",\"verificationMethod\":[{\"id\":\"did:vh:QmTK8VDunEWpsEWXE9wxadfjANF8G37HtKB9N7yyKhsJsD#key-1\",\"type\":\"Multikey\",\"controller\":\"did:vh:QmTK8VDunEWpsEWXE9wxadfjANF8G37HtKB9N7yyKhsJsD\",\"publicKeyMultibase\":\"z6MkvzDVEGYxf3cFrz7ocwK3rWGEFqeV3whciAcYZS2VT9Su\"}],\"assertionMethod\":[\"did:vh:QmTK8VDunEWpsEWXE9wxadfjANF8G37HtKB9N7yyKhsJsD#key-1\"]},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-01T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z64xBGKiiGfQsbauRU2zvCBnirNhwB71pru4cvdm7Eeaf6iiuGz8hRoaLJbUzZ7nuwwqMFGcS98jnjyNKrjk4CcwK\"}]}\n{\"versionId\":\"2-Qmbqm5EvFAAb3Hm9Qii5oiTSGu22b4k7BegmhjZCcHvr3o\",\"versionTime\":\"2026-01-02T00:00:00Z\",\"parameters\":{\"updateKeys\":[\"z6MkfiGunxr8zjX823MQsSL4R28pKqebqhDrwKypVfLdFJjA\"],\"nextKeyHashes\":[\"QmUQZm7vxXkg274eyLtwBVWkJAFsSULrWC14JPcmdtyUCE\"]},\"state\":{\"@context\":[\"https://www.w3.org/ns/did/v1\",\"https://w3id.org/security/multikey/v1\"],\"id\":\"did:vh:QmTK8VDunEWpsEWXE9wxadfjANF8G37HtKB9N7yyKhsJsD\",\"verificationMethod\":[{\"id\":\"did:vh:QmTK8VDunEWpsEWXE9wxadfjANF8G37HtKB9N7yyKhsJsD#key-1\",\"type\":\"Multikey\",\"controller\":\"did:vh:QmTK8VDunEWpsEWXE9wxadfjANF8G37HtKB9N7yyKhsJsD\",\"publicKeyMultibase\":\"z6MkvzDVEGYxf3cFrz7ocwK3rWGEFqeV3whciAcYZS2VT9Su\"}],\"assertionMethod\":[\"did:vh:QmTK8VDunEWpsEWXE9wxadfjANF8G37HtKB9N7yyKhsJsD#key-1\"],\"alsoKnownAs\":[\"https://example.com/alice\"]},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkfiGunxr8zjX823MQsSL4R28pKqebqhDrwKypVfLdFJjA#z6MkfiGunxr8zjX823MQsSL4R28pKqebqhDrwKypVfLdFJjA\",\"created\":\"2026-01-02T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z5rSzcsEiWg5JB32t8adn7RFKrZUwqbtBfi18emW41n7CDbGb8zmUMeGPsBsKkdrupNatTehnWF4LLe8f9MMz1Ngg\"}]}\n",
+      "resolve": {
+        "now": "2026-06-01T00:00:00Z",
+        "did": "did:vh:QmTK8VDunEWpsEWXE9wxadfjANF8G37HtKB9N7yyKhsJsD",
+        "didDocument": {
+          "@context": [
+            "https://www.w3.org/ns/did/v1",
+            "https://w3id.org/security/multikey/v1"
+          ],
+          "id": "did:vh:QmTK8VDunEWpsEWXE9wxadfjANF8G37HtKB9N7yyKhsJsD",
+          "verificationMethod": [
+            {
+              "id": "did:vh:QmTK8VDunEWpsEWXE9wxadfjANF8G37HtKB9N7yyKhsJsD#key-1",
+              "type": "Multikey",
+              "controller": "did:vh:QmTK8VDunEWpsEWXE9wxadfjANF8G37HtKB9N7yyKhsJsD",
+              "publicKeyMultibase": "z6MkvzDVEGYxf3cFrz7ocwK3rWGEFqeV3whciAcYZS2VT9Su"
+            }
+          ],
+          "assertionMethod": [
+            "did:vh:QmTK8VDunEWpsEWXE9wxadfjANF8G37HtKB9N7yyKhsJsD#key-1"
+          ],
+          "alsoKnownAs": [
+            "https://example.com/alice"
+          ]
+        },
+        "didDocumentMetadata": {
+          "versionId": "2-Qmbqm5EvFAAb3Hm9Qii5oiTSGu22b4k7BegmhjZCcHvr3o",
+          "versionTime": "2026-01-02T00:00:00Z",
+          "created": "2026-01-01T00:00:00Z",
+          "updated": "2026-01-02T00:00:00Z",
+          "scid": "QmTK8VDunEWpsEWXE9wxadfjANF8G37HtKB9N7yyKhsJsD",
+          "deactivated": false,
+          "ttl": 60,
+          "witness": {
+            "threshold": 1,
+            "witnesses": [
+              {
+                "id": "did:key:z6MkfZM53uaGQVNUuaxQB1rtcErHoHVuQrm5WfJmFtNaXPv3"
+              },
+              {
+                "id": "did:key:z6Mkij8ran44p1frij95Pk5DVVamdWYcWoxEi3DJYPVhU1uC"
+              }
+            ]
+          },
+          "watchers": [
+            "https://watcher.example"
+          ]
+        }
+      }
+    },
+    {
+      "name": "unicode-document",
+      "description": "A DID document exercising JCS escaping and numbers.",
+      "steps": [
+        {
+          "op": "didvh-create",
+          "input": {
+            "document": {
+              "@context": [
+                "https://www.w3.org/ns/did/v1",
+                "https://w3id.org/security/multikey/v1"
+              ],
+              "id": "did:vh:{SCID}",
+              "verificationMethod": [
+                {
+                  "id": "did:vh:{SCID}#key-1",
+                  "type": "Multikey",
+                  "controller": "did:vh:{SCID}",
+                  "publicKeyMultibase": "z6MkvzDVEGYxf3cFrz7ocwK3rWGEFqeV3whciAcYZS2VT9Su"
+                }
+              ],
+              "assertionMethod": [
+                "did:vh:{SCID}#key-1"
+              ],
+              "ö": "ü",
+              "😀": [
+                0.1,
+                1e+21,
+                0
+              ],
+              "note": "line\nbreak"
+            },
+            "parameters": {
+              "updateKeys": [
+                "z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv",
+                "z6MkfiGunxr8zjX823MQsSL4R28pKqebqhDrwKypVfLdFJjA"
+              ]
+            },
+            "versionTime": "2026-01-01T00:00:00Z",
+            "signers": [
+              "90930409d492fb6cd7b50542c97fc6003fcedd59012b47ac114417373796eaaa",
+              "e0203d7f35f898d2c66bbc45b1d5ed23410af56e775d3601a1f4ee3f22987ea6"
+            ]
+          },
+          "expect": {
+            "versionId": "1-Qmar9nAe3Eu6uRzHmN7wCZmqXdhbSVBMTqRkUiXjGVK9vF",
+            "did": "did:vh:QmPtvsb2q5ukoydUgW4Xe5dxFc229Xnghju4wu26qGfeh1",
+            "scid": "QmPtvsb2q5ukoydUgW4Xe5dxFc229Xnghju4wu26qGfeh1",
+            "line": {
+              "versionId": "1-Qmar9nAe3Eu6uRzHmN7wCZmqXdhbSVBMTqRkUiXjGVK9vF",
+              "versionTime": "2026-01-01T00:00:00Z",
+              "parameters": {
+                "updateKeys": [
+                  "z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv",
+                  "z6MkfiGunxr8zjX823MQsSL4R28pKqebqhDrwKypVfLdFJjA"
+                ],
+                "method": "did:vh:1.0",
+                "scid": "QmPtvsb2q5ukoydUgW4Xe5dxFc229Xnghju4wu26qGfeh1"
+              },
+              "state": {
+                "@context": [
+                  "https://www.w3.org/ns/did/v1",
+                  "https://w3id.org/security/multikey/v1"
+                ],
+                "id": "did:vh:QmPtvsb2q5ukoydUgW4Xe5dxFc229Xnghju4wu26qGfeh1",
+                "verificationMethod": [
+                  {
+                    "id": "did:vh:QmPtvsb2q5ukoydUgW4Xe5dxFc229Xnghju4wu26qGfeh1#key-1",
+                    "type": "Multikey",
+                    "controller": "did:vh:QmPtvsb2q5ukoydUgW4Xe5dxFc229Xnghju4wu26qGfeh1",
+                    "publicKeyMultibase": "z6MkvzDVEGYxf3cFrz7ocwK3rWGEFqeV3whciAcYZS2VT9Su"
+                  }
+                ],
+                "assertionMethod": [
+                  "did:vh:QmPtvsb2q5ukoydUgW4Xe5dxFc229Xnghju4wu26qGfeh1#key-1"
+                ],
+                "ö": "ü",
+                "😀": [
+                  0.1,
+                  1e+21,
+                  0
+                ],
+                "note": "line\nbreak"
+              },
+              "proof": [
+                {
+                  "type": "DataIntegrityProof",
+                  "cryptosuite": "eddsa-jcs-2022",
+                  "verificationMethod": "did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv",
+                  "created": "2026-01-01T00:00:00Z",
+                  "proofPurpose": "assertionMethod",
+                  "proofValue": "z5BdMMr3UdzECjB7rEsGbt3p1qHYAyXFsDGg6FFvjEncEPsZpygACvnjUtHejZYcSswYRuKPGFmcvueQFzbRS1Zuk"
+                },
+                {
+                  "type": "DataIntegrityProof",
+                  "cryptosuite": "eddsa-jcs-2022",
+                  "verificationMethod": "did:key:z6MkfiGunxr8zjX823MQsSL4R28pKqebqhDrwKypVfLdFJjA#z6MkfiGunxr8zjX823MQsSL4R28pKqebqhDrwKypVfLdFJjA",
+                  "created": "2026-01-01T00:00:00Z",
+                  "proofPurpose": "assertionMethod",
+                  "proofValue": "z4nGu1EJhGsgsPjEbvZvqkinKWhjz7KDh7iwGGXsKntf7XXjcpiEry3UMjK4HVpLdCPGW7w7krJfcpNBEtWbjy3dy"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "log": "{\"versionId\":\"1-Qmar9nAe3Eu6uRzHmN7wCZmqXdhbSVBMTqRkUiXjGVK9vF\",\"versionTime\":\"2026-01-01T00:00:00Z\",\"parameters\":{\"updateKeys\":[\"z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"z6MkfiGunxr8zjX823MQsSL4R28pKqebqhDrwKypVfLdFJjA\"],\"method\":\"did:vh:1.0\",\"scid\":\"QmPtvsb2q5ukoydUgW4Xe5dxFc229Xnghju4wu26qGfeh1\"},\"state\":{\"@context\":[\"https://www.w3.org/ns/did/v1\",\"https://w3id.org/security/multikey/v1\"],\"id\":\"did:vh:QmPtvsb2q5ukoydUgW4Xe5dxFc229Xnghju4wu26qGfeh1\",\"verificationMethod\":[{\"id\":\"did:vh:QmPtvsb2q5ukoydUgW4Xe5dxFc229Xnghju4wu26qGfeh1#key-1\",\"type\":\"Multikey\",\"controller\":\"did:vh:QmPtvsb2q5ukoydUgW4Xe5dxFc229Xnghju4wu26qGfeh1\",\"publicKeyMultibase\":\"z6MkvzDVEGYxf3cFrz7ocwK3rWGEFqeV3whciAcYZS2VT9Su\"}],\"assertionMethod\":[\"did:vh:QmPtvsb2q5ukoydUgW4Xe5dxFc229Xnghju4wu26qGfeh1#key-1\"],\"ö\":\"ü\",\"😀\":[0.1,1e+21,0],\"note\":\"line\\nbreak\"},\"proof\":[{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv#z6MkwTAY3aCT7UL96ddvxWr1upj2VFQDMPFFRYxM1fRneSrv\",\"created\":\"2026-01-01T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z5BdMMr3UdzECjB7rEsGbt3p1qHYAyXFsDGg6FFvjEncEPsZpygACvnjUtHejZYcSswYRuKPGFmcvueQFzbRS1Zuk\"},{\"type\":\"DataIntegrityProof\",\"cryptosuite\":\"eddsa-jcs-2022\",\"verificationMethod\":\"did:key:z6MkfiGunxr8zjX823MQsSL4R28pKqebqhDrwKypVfLdFJjA#z6MkfiGunxr8zjX823MQsSL4R28pKqebqhDrwKypVfLdFJjA\",\"created\":\"2026-01-01T00:00:00Z\",\"proofPurpose\":\"assertionMethod\",\"proofValue\":\"z4nGu1EJhGsgsPjEbvZvqkinKWhjz7KDh7iwGGXsKntf7XXjcpiEry3UMjK4HVpLdCPGW7w7krJfcpNBEtWbjy3dy\"}]}\n",
+      "resolve": {
+        "now": "2026-06-01T00:00:00Z",
+        "did": "did:vh:QmPtvsb2q5ukoydUgW4Xe5dxFc229Xnghju4wu26qGfeh1",
+        "didDocument": {
+          "@context": [
+            "https://www.w3.org/ns/did/v1",
+            "https://w3id.org/security/multikey/v1"
+          ],
+          "id": "did:vh:QmPtvsb2q5ukoydUgW4Xe5dxFc229Xnghju4wu26qGfeh1",
+          "verificationMethod": [
+            {
+              "id": "did:vh:QmPtvsb2q5ukoydUgW4Xe5dxFc229Xnghju4wu26qGfeh1#key-1",
+              "type": "Multikey",
+              "controller": "did:vh:QmPtvsb2q5ukoydUgW4Xe5dxFc229Xnghju4wu26qGfeh1",
+              "publicKeyMultibase": "z6MkvzDVEGYxf3cFrz7ocwK3rWGEFqeV3whciAcYZS2VT9Su"
+            }
+          ],
+          "assertionMethod": [
+            "did:vh:QmPtvsb2q5ukoydUgW4Xe5dxFc229Xnghju4wu26qGfeh1#key-1"
+          ],
+          "ö": "ü",
+          "😀": [
+            0.1,
+            1e+21,
+            0
+          ],
+          "note": "line\nbreak"
+        },
+        "didDocumentMetadata": {
+          "versionId": "1-Qmar9nAe3Eu6uRzHmN7wCZmqXdhbSVBMTqRkUiXjGVK9vF",
+          "versionTime": "2026-01-01T00:00:00Z",
+          "created": "2026-01-01T00:00:00Z",
+          "updated": "2026-01-01T00:00:00Z",
+          "scid": "QmPtvsb2q5ukoydUgW4Xe5dxFc229Xnghju4wu26qGfeh1",
+          "deactivated": false,
+          "ttl": 3600,
+          "watchers": []
+        }
+      }
+    }
+  ]
+}

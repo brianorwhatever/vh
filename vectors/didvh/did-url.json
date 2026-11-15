@@ -1,0 +1,346 @@
+{
+  "description": "did:vh DID URLs as parsed by a dereferencer (didvh-did-url).",
+  "spec": [
+    "https://github.com/decentralized-identity/didvh/blob/cc2eff6/spec/specification.md#reading-didvh-did-urls",
+    "docs/didvh-profile.md#4-did-urls"
+  ],
+  "cases": [
+    {
+      "name": "plain",
+      "didUrl": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ",
+      "expect": {
+        "valid": true,
+        "did": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ",
+        "options": {}
+      }
+    },
+    {
+      "name": "fragment",
+      "didUrl": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ#key-1",
+      "expect": {
+        "valid": true,
+        "did": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ",
+        "options": {},
+        "fragment": "key-1"
+      }
+    },
+    {
+      "name": "empty-fragment",
+      "didUrl": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ#",
+      "expect": {
+        "valid": true,
+        "did": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ",
+        "options": {},
+        "fragment": ""
+      }
+    },
+    {
+      "name": "src",
+      "didUrl": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ?src=https://example.com/dids/issuer",
+      "expect": {
+        "valid": true,
+        "did": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ",
+        "options": {
+          "srcLog": "https://example.com/dids/issuer/did.jsonl",
+          "srcWitness": "https://example.com/dids/issuer/did-witness.json"
+        }
+      }
+    },
+    {
+      "name": "src-encoded",
+      "didUrl": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ?src=https%3A%2F%2Fexample.com%2Fdids%2Fissuer",
+      "expect": {
+        "valid": true,
+        "did": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ",
+        "options": {
+          "srcLog": "https://example.com/dids/issuer/did.jsonl",
+          "srcWitness": "https://example.com/dids/issuer/did-witness.json"
+        }
+      }
+    },
+    {
+      "name": "src-encoded-segment",
+      "didUrl": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ?src=https://example.com/a%2520b",
+      "expect": {
+        "valid": true,
+        "did": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ",
+        "options": {
+          "srcLog": "https://example.com/a%20b/did.jsonl",
+          "srcWitness": "https://example.com/a%20b/did-witness.json"
+        }
+      }
+    },
+    {
+      "name": "version-number",
+      "didUrl": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ?versionNumber=3",
+      "expect": {
+        "valid": true,
+        "did": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ",
+        "options": {
+          "versionNumber": 3
+        }
+      }
+    },
+    {
+      "name": "version-id",
+      "didUrl": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ?versionId=1-QmRRaLXwc6BjBuBPosSupJwEQ8w9f3znP7yfbpGfwcnLr6",
+      "expect": {
+        "valid": true,
+        "did": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ",
+        "options": {
+          "versionId": "1-QmRRaLXwc6BjBuBPosSupJwEQ8w9f3znP7yfbpGfwcnLr6"
+        }
+      }
+    },
+    {
+      "name": "version-time",
+      "didUrl": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ?versionTime=2026-01-01T00:00:00Z",
+      "expect": {
+        "valid": true,
+        "did": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ",
+        "options": {
+          "versionTime": "2026-01-01T00:00:00Z"
+        }
+      }
+    },
+    {
+      "name": "version-time-encoded",
+      "didUrl": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ?versionTime=2026-01-01T00%3A00%3A00Z",
+      "expect": {
+        "valid": true,
+        "did": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ",
+        "options": {
+          "versionTime": "2026-01-01T00:00:00Z"
+        }
+      }
+    },
+    {
+      "name": "src-and-version",
+      "didUrl": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ?src=https://example.com&versionNumber=2#key-1",
+      "expect": {
+        "valid": true,
+        "did": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ",
+        "options": {
+          "srcLog": "https://example.com/did.jsonl",
+          "srcWitness": "https://example.com/did-witness.json",
+          "versionNumber": 2
+        },
+        "fragment": "key-1"
+      }
+    },
+    {
+      "name": "unknown-parameter",
+      "didUrl": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ?service=files&versionNumber=2",
+      "expect": {
+        "valid": true,
+        "did": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ",
+        "options": {
+          "versionNumber": 2
+        }
+      }
+    },
+    {
+      "name": "two-selectors-passed-on",
+      "didUrl": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ?versionNumber=2&versionId=x",
+      "expect": {
+        "valid": true,
+        "did": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ",
+        "options": {
+          "versionNumber": 2,
+          "versionId": "x"
+        }
+      }
+    },
+    {
+      "name": "src-twice",
+      "didUrl": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ?src=https://a.example&src=https://b.example",
+      "expect": {
+        "valid": false,
+        "error": "invalidDidUrl"
+      }
+    },
+    {
+      "name": "version-number-twice",
+      "didUrl": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ?versionNumber=1&versionNumber=2",
+      "expect": {
+        "valid": false,
+        "error": "invalidDidUrl"
+      }
+    },
+    {
+      "name": "version-number-zero",
+      "didUrl": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ?versionNumber=0",
+      "expect": {
+        "valid": false,
+        "error": "invalidDidUrl"
+      }
+    },
+    {
+      "name": "version-number-leading-zero",
+      "didUrl": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ?versionNumber=01",
+      "expect": {
+        "valid": false,
+        "error": "invalidDidUrl"
+      }
+    },
+    {
+      "name": "version-number-text",
+      "didUrl": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ?versionNumber=two",
+      "expect": {
+        "valid": false,
+        "error": "invalidDidUrl"
+      }
+    },
+    {
+      "name": "did-log",
+      "didUrl": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ?didLog=x",
+      "expect": {
+        "valid": false,
+        "error": "invalidDidUrl"
+      }
+    },
+    {
+      "name": "did-witness",
+      "didUrl": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ?didWitness=x",
+      "expect": {
+        "valid": false,
+        "error": "invalidDidUrl"
+      }
+    },
+    {
+      "name": "src-log",
+      "didUrl": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ?srcLog=https://example.com/did.jsonl",
+      "expect": {
+        "valid": false,
+        "error": "invalidDidUrl"
+      }
+    },
+    {
+      "name": "src-witness",
+      "didUrl": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ?srcWitness=https://example.com/did-witness.json",
+      "expect": {
+        "valid": false,
+        "error": "invalidDidUrl"
+      }
+    },
+    {
+      "name": "check-watchers",
+      "didUrl": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ?checkWatchers=1",
+      "expect": {
+        "valid": false,
+        "error": "invalidDidUrl"
+      }
+    },
+    {
+      "name": "include-did-log",
+      "didUrl": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ?includeDidLog=true",
+      "expect": {
+        "valid": false,
+        "error": "invalidDidUrl"
+      }
+    },
+    {
+      "name": "src-ipns",
+      "didUrl": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ?src=ipns://k51qzi5uqu5d/dids",
+      "expect": {
+        "valid": true,
+        "did": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ",
+        "options": {
+          "srcLog": "ipns://k51qzi5uqu5d/dids/did.jsonl",
+          "srcWitness": "ipns://k51qzi5uqu5d/dids/did-witness.json"
+        }
+      }
+    },
+    {
+      "name": "no-value",
+      "didUrl": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ?versionNumber",
+      "expect": {
+        "valid": false,
+        "error": "invalidDidUrl"
+      }
+    },
+    {
+      "name": "bad-percent",
+      "didUrl": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ?versionId=%zz",
+      "expect": {
+        "valid": false,
+        "error": "invalidDidUrl"
+      }
+    },
+    {
+      "name": "src-file",
+      "didUrl": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ?src=file:///var/lib/dids",
+      "expect": {
+        "valid": false,
+        "error": "invalidDidUrl"
+      }
+    },
+    {
+      "name": "src-loopback",
+      "didUrl": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ?src=http://localhost:8000/dids",
+      "expect": {
+        "valid": false,
+        "error": "invalidDidUrl"
+      }
+    },
+    {
+      "name": "src-invalid",
+      "didUrl": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ?src=https://example.com/a/../b",
+      "expect": {
+        "valid": false,
+        "error": "invalidDidUrl"
+      }
+    },
+    {
+      "name": "src-http-public",
+      "didUrl": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ?src=http://example.com",
+      "expect": {
+        "valid": false,
+        "error": "invalidDidUrl"
+      }
+    },
+    {
+      "name": "plus-not-space",
+      "didUrl": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ?versionId=a+b",
+      "expect": {
+        "valid": true,
+        "did": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ",
+        "options": {
+          "versionId": "a+b"
+        }
+      }
+    },
+    {
+      "name": "not-did-vh",
+      "didUrl": "did:webvh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ:example.com",
+      "expect": {
+        "valid": false,
+        "error": "invalidDidUrl"
+      }
+    },
+    {
+      "name": "bad-scid",
+      "didUrl": "did:vh:Qm1?versionNumber=1",
+      "expect": {
+        "valid": false,
+        "error": "invalidDidUrl"
+      }
+    },
+    {
+      "name": "path",
+      "didUrl": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ/whois",
+      "expect": {
+        "valid": false,
+        "error": "invalidDidUrl"
+      }
+    },
+    {
+      "name": "not-string",
+      "didUrl": 7,
+      "expect": {
+        "valid": false,
+        "error": "invalidDidUrl"
+      }
+    }
+  ]
+}

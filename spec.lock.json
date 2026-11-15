@@ -8,5 +8,17 @@
   "rendered": "https://swcurran.github.io/VH-Log/next/",
   "version": "vh-log:1.0 (spec status: Pre-Draft — Editors Draft v0.1)",
   "retrieved": "2026-10-08",
-  "profile": "docs/profile.md (vh-log-interop-0)"
+  "profile": "docs/profile.md (vh-log-interop-0)",
+  "didvh": {
+    "spec": "The did:vh DID Method",
+    "editor": "Stephen Curran",
+    "repository": "https://github.com/decentralized-identity/didvh",
+    "commit": "cc2eff6",
+    "commitDate": "2026-11-12",
+    "commitMessage": "Merge pull request #2 from swcurran/standalone",
+    "rendered": "https://identity.foundation/didvh/",
+    "version": "did:vh:1.0 (spec status: v0.1 Editors Draft)",
+    "retrieved": "2026-11-15",
+    "profile": "docs/didvh-profile.md (didvh-interop-0)"
+  }
 }

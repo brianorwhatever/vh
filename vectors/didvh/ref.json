@@ -1,0 +1,441 @@
+{
+  "description": "did:vh srcLog and srcWitness references (didvh-ref). A valid reference gives its kind (web, loopback, file or other); an invalid one gives invalidOptions.",
+  "spec": [
+    "https://github.com/decentralized-identity/didvh/blob/cc2eff6/spec/specification.md#the-srclog-and-srcwitness-options",
+    "docs/didvh-profile.md#31-srclog-and-srcwitness"
+  ],
+  "cases": [
+    {
+      "name": "web",
+      "ref": "https://example.com/dids/issuer/did.jsonl",
+      "expect": {
+        "valid": true,
+        "kind": "web"
+      }
+    },
+    {
+      "name": "web-port",
+      "ref": "https://example.com:3000/dids/did.jsonl",
+      "expect": {
+        "valid": true,
+        "kind": "web"
+      }
+    },
+    {
+      "name": "web-query",
+      "ref": "https://storage.example.com/did.jsonl?X-Sig=abc&exp=1",
+      "expect": {
+        "valid": true,
+        "kind": "web"
+      }
+    },
+    {
+      "name": "web-watcher-operation",
+      "ref": "https://watcher.example.org/log?scid=QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ",
+      "expect": {
+        "valid": true,
+        "kind": "web"
+      }
+    },
+    {
+      "name": "web-root-path",
+      "ref": "https://example.com/",
+      "expect": {
+        "valid": true,
+        "kind": "web"
+      }
+    },
+    {
+      "name": "web-empty-segment",
+      "ref": "https://example.com/a//did.jsonl",
+      "expect": {
+        "valid": true,
+        "kind": "web"
+      }
+    },
+    {
+      "name": "web-trailing-slash",
+      "ref": "https://example.com/dids/",
+      "expect": {
+        "valid": true,
+        "kind": "web"
+      }
+    },
+    {
+      "name": "web-space-segment",
+      "ref": "https://example.com/%20/did.jsonl",
+      "expect": {
+        "valid": true,
+        "kind": "web"
+      }
+    },
+    {
+      "name": "web-uppercase",
+      "ref": "HTTPS://Example.COM/did.jsonl",
+      "expect": {
+        "valid": true,
+        "kind": "web"
+      }
+    },
+    {
+      "name": "web-punycode",
+      "ref": "https://xn--bcher-kva.example/did.jsonl",
+      "expect": {
+        "valid": true,
+        "kind": "web"
+      }
+    },
+    {
+      "name": "web-trailing-dot-host",
+      "ref": "https://example.com./did.jsonl",
+      "expect": {
+        "valid": true,
+        "kind": "web"
+      }
+    },
+    {
+      "name": "web-no-path",
+      "ref": "https://example.com",
+      "expect": {
+        "valid": false,
+        "error": "invalidOptions"
+      }
+    },
+    {
+      "name": "web-fragment",
+      "ref": "https://example.com/did.jsonl#x",
+      "expect": {
+        "valid": false,
+        "error": "invalidOptions"
+      }
+    },
+    {
+      "name": "web-dot-dot",
+      "ref": "https://example.com/a/../did.jsonl",
+      "expect": {
+        "valid": false,
+        "error": "invalidOptions"
+      }
+    },
+    {
+      "name": "web-encoded-dot-dot",
+      "ref": "https://example.com/a/%2e%2e/did.jsonl",
+      "expect": {
+        "valid": false,
+        "error": "invalidOptions"
+      }
+    },
+    {
+      "name": "web-encoded-slash",
+      "ref": "https://example.com/a%2Fb/did.jsonl",
+      "expect": {
+        "valid": false,
+        "error": "invalidOptions"
+      }
+    },
+    {
+      "name": "web-encoded-backslash",
+      "ref": "https://example.com/a%5Cb/did.jsonl",
+      "expect": {
+        "valid": false,
+        "error": "invalidOptions"
+      }
+    },
+    {
+      "name": "web-encoded-nul",
+      "ref": "https://example.com/a%00/did.jsonl",
+      "expect": {
+        "valid": false,
+        "error": "invalidOptions"
+      }
+    },
+    {
+      "name": "web-bad-percent",
+      "ref": "https://example.com/a%zz/did.jsonl",
+      "expect": {
+        "valid": false,
+        "error": "invalidOptions"
+      }
+    },
+    {
+      "name": "web-bad-utf8",
+      "ref": "https://example.com/a%FF/did.jsonl",
+      "expect": {
+        "valid": false,
+        "error": "invalidOptions"
+      }
+    },
+    {
+      "name": "web-dot-dot-in-query",
+      "ref": "https://example.com/did.jsonl?p=../x",
+      "expect": {
+        "valid": true,
+        "kind": "web"
+      }
+    },
+    {
+      "name": "web-userinfo",
+      "ref": "https://user@example.com/did.jsonl",
+      "expect": {
+        "valid": false,
+        "error": "invalidOptions"
+      }
+    },
+    {
+      "name": "web-ipv4",
+      "ref": "https://192.0.2.1/did.jsonl",
+      "expect": {
+        "valid": false,
+        "error": "invalidOptions"
+      }
+    },
+    {
+      "name": "web-ipv6",
+      "ref": "https://[2001:db8::1]/did.jsonl",
+      "expect": {
+        "valid": false,
+        "error": "invalidOptions"
+      }
+    },
+    {
+      "name": "web-numeric-tld",
+      "ref": "https://example.123/did.jsonl",
+      "expect": {
+        "valid": false,
+        "error": "invalidOptions"
+      }
+    },
+    {
+      "name": "web-empty-host",
+      "ref": "https:///did.jsonl",
+      "expect": {
+        "valid": false,
+        "error": "invalidOptions"
+      }
+    },
+    {
+      "name": "web-bad-port",
+      "ref": "https://example.com:99999/did.jsonl",
+      "expect": {
+        "valid": false,
+        "error": "invalidOptions"
+      }
+    },
+    {
+      "name": "web-underscore-host",
+      "ref": "https://ex_ample.com/did.jsonl",
+      "expect": {
+        "valid": false,
+        "error": "invalidOptions"
+      }
+    },
+    {
+      "name": "web-no-authority",
+      "ref": "https:example.com/did.jsonl",
+      "expect": {
+        "valid": false,
+        "error": "invalidOptions"
+      }
+    },
+    {
+      "name": "web-unicode-host",
+      "ref": "https://bücher.example/did.jsonl",
+      "expect": {
+        "valid": false,
+        "error": "invalidOptions"
+      }
+    },
+    {
+      "name": "web-space",
+      "ref": "https://example.com/a b/did.jsonl",
+      "expect": {
+        "valid": false,
+        "error": "invalidOptions"
+      }
+    },
+    {
+      "name": "localhost",
+      "ref": "http://localhost:8000/dids/did.jsonl",
+      "expect": {
+        "valid": true,
+        "kind": "loopback"
+      }
+    },
+    {
+      "name": "loopback-ipv4",
+      "ref": "http://127.0.0.1/did.jsonl",
+      "expect": {
+        "valid": true,
+        "kind": "loopback"
+      }
+    },
+    {
+      "name": "loopback-ipv6",
+      "ref": "http://[::1]:8000/did.jsonl",
+      "expect": {
+        "valid": true,
+        "kind": "loopback"
+      }
+    },
+    {
+      "name": "loopback-no-path",
+      "ref": "http://localhost:8000",
+      "expect": {
+        "valid": false,
+        "error": "invalidOptions"
+      }
+    },
+    {
+      "name": "http-public",
+      "ref": "http://example.com/did.jsonl",
+      "expect": {
+        "valid": false,
+        "error": "invalidOptions"
+      }
+    },
+    {
+      "name": "http-private",
+      "ref": "http://10.0.0.1/did.jsonl",
+      "expect": {
+        "valid": false,
+        "error": "invalidOptions"
+      }
+    },
+    {
+      "name": "http-leading-zero",
+      "ref": "http://127.0.0.01/did.jsonl",
+      "expect": {
+        "valid": false,
+        "error": "invalidOptions"
+      }
+    },
+    {
+      "name": "file-empty-host",
+      "ref": "file:///var/lib/wallet/dids/QmfGEU/did.jsonl",
+      "expect": {
+        "valid": true,
+        "kind": "file"
+      }
+    },
+    {
+      "name": "file-localhost",
+      "ref": "file://LOCALHOST/home/alice/did-witness.json",
+      "expect": {
+        "valid": true,
+        "kind": "file"
+      }
+    },
+    {
+      "name": "file-no-authority",
+      "ref": "file:/var/lib/dids/did.jsonl",
+      "expect": {
+        "valid": true,
+        "kind": "file"
+      }
+    },
+    {
+      "name": "file-dot-dot",
+      "ref": "file:///var/lib/../etc/did.jsonl",
+      "expect": {
+        "valid": false,
+        "error": "invalidOptions"
+      }
+    },
+    {
+      "name": "file-encoded-dot-dot",
+      "ref": "file:///var/%2E%2E/did.jsonl",
+      "expect": {
+        "valid": false,
+        "error": "invalidOptions"
+      }
+    },
+    {
+      "name": "file-other-host",
+      "ref": "file://server/share/did.jsonl",
+      "expect": {
+        "valid": false,
+        "error": "invalidOptions"
+      }
+    },
+    {
+      "name": "file-relative",
+      "ref": "file:did.jsonl",
+      "expect": {
+        "valid": false,
+        "error": "invalidOptions"
+      }
+    },
+    {
+      "name": "file-query",
+      "ref": "file:///var/lib/did.jsonl?x",
+      "expect": {
+        "valid": false,
+        "error": "invalidOptions"
+      }
+    },
+    {
+      "name": "ipns",
+      "ref": "ipns://k51qzi5uqu5d/dids/issuer/did.jsonl",
+      "expect": {
+        "valid": true,
+        "kind": "other"
+      }
+    },
+    {
+      "name": "ipfs-content-hash",
+      "ref": "ipfs://bafkreiexample",
+      "expect": {
+        "valid": true,
+        "kind": "other"
+      }
+    },
+    {
+      "name": "urn",
+      "ref": "urn:example:did-log",
+      "expect": {
+        "valid": true,
+        "kind": "other"
+      }
+    },
+    {
+      "name": "other-fragment",
+      "ref": "ipfs://bafkreiexample#x",
+      "expect": {
+        "valid": false,
+        "error": "invalidOptions"
+      }
+    },
+    {
+      "name": "other-empty",
+      "ref": "ipfs:",
+      "expect": {
+        "valid": false,
+        "error": "invalidOptions"
+      }
+    },
+    {
+      "name": "relative",
+      "ref": "/dids/did.jsonl",
+      "expect": {
+        "valid": false,
+        "error": "invalidOptions"
+      }
+    },
+    {
+      "name": "empty",
+      "ref": "",
+      "expect": {
+        "valid": false,
+        "error": "invalidOptions"
+      }
+    },
+    {
+      "name": "number",
+      "ref": 42,
+      "expect": {
+        "valid": false,
+        "error": "invalidOptions"
+      }
+    }
+  ]
+}

@@ -1,0 +1,236 @@
+{
+  "description": "The did:vh src DID URL parameter (didvh-src): a valid value gives the srcLog and srcWitness references derived from it; an invalid one gives invalidDidUrl.",
+  "spec": [
+    "https://github.com/decentralized-identity/didvh/blob/cc2eff6/spec/specification.md#the-src-did-url-parameter",
+    "docs/didvh-profile.md#32-the-src-did-url-parameter"
+  ],
+  "cases": [
+    {
+      "name": "root",
+      "src": "https://example.com",
+      "expect": {
+        "valid": true,
+        "srcLog": "https://example.com/did.jsonl",
+        "srcWitness": "https://example.com/did-witness.json"
+      }
+    },
+    {
+      "name": "root-slash",
+      "src": "https://example.com/",
+      "expect": {
+        "valid": true,
+        "srcLog": "https://example.com/did.jsonl",
+        "srcWitness": "https://example.com/did-witness.json"
+      }
+    },
+    {
+      "name": "well-known",
+      "src": "https://example.com/.well-known",
+      "expect": {
+        "valid": true,
+        "srcLog": "https://example.com/.well-known/did.jsonl",
+        "srcWitness": "https://example.com/.well-known/did-witness.json"
+      }
+    },
+    {
+      "name": "path",
+      "src": "https://example.com/dids/issuer",
+      "expect": {
+        "valid": true,
+        "srcLog": "https://example.com/dids/issuer/did.jsonl",
+        "srcWitness": "https://example.com/dids/issuer/did-witness.json"
+      }
+    },
+    {
+      "name": "path-slash",
+      "src": "https://example.com/dids/issuer/",
+      "expect": {
+        "valid": true,
+        "srcLog": "https://example.com/dids/issuer/did.jsonl",
+        "srcWitness": "https://example.com/dids/issuer/did-witness.json"
+      }
+    },
+    {
+      "name": "port",
+      "src": "https://example.com:3000/dids/issuer",
+      "expect": {
+        "valid": true,
+        "srcLog": "https://example.com:3000/dids/issuer/did.jsonl",
+        "srcWitness": "https://example.com:3000/dids/issuer/did-witness.json"
+      }
+    },
+    {
+      "name": "scid-path",
+      "src": "https://example.com/users/QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ",
+      "expect": {
+        "valid": true,
+        "srcLog": "https://example.com/users/QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ/did.jsonl",
+        "srcWitness": "https://example.com/users/QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ/did-witness.json"
+      }
+    },
+    {
+      "name": "uppercase-scheme",
+      "src": "HTTPS://example.com/dids",
+      "expect": {
+        "valid": true,
+        "srcLog": "https://example.com/dids/did.jsonl",
+        "srcWitness": "https://example.com/dids/did-witness.json"
+      }
+    },
+    {
+      "name": "percent-encoded-segment",
+      "src": "https://example.com/a%20b",
+      "expect": {
+        "valid": true,
+        "srcLog": "https://example.com/a%20b/did.jsonl",
+        "srcWitness": "https://example.com/a%20b/did-witness.json"
+      }
+    },
+    {
+      "name": "ipns",
+      "src": "ipns://k51qzi5uqu5d/dids/issuer",
+      "expect": {
+        "valid": true,
+        "srcLog": "ipns://k51qzi5uqu5d/dids/issuer/did.jsonl",
+        "srcWitness": "ipns://k51qzi5uqu5d/dids/issuer/did-witness.json"
+      }
+    },
+    {
+      "name": "ipfs-slash",
+      "src": "ipfs://bafybeigdyrzt/",
+      "expect": {
+        "valid": true,
+        "srcLog": "ipfs://bafybeigdyrzt/did.jsonl",
+        "srcWitness": "ipfs://bafybeigdyrzt/did-witness.json"
+      }
+    },
+    {
+      "name": "double-trailing-slash",
+      "src": "https://example.com/dids//",
+      "expect": {
+        "valid": false,
+        "error": "invalidDidUrl"
+      }
+    },
+    {
+      "name": "empty-segment",
+      "src": "https://example.com/a//b",
+      "expect": {
+        "valid": false,
+        "error": "invalidDidUrl"
+      }
+    },
+    {
+      "name": "dot-dot",
+      "src": "https://example.com/a/../b",
+      "expect": {
+        "valid": false,
+        "error": "invalidDidUrl"
+      }
+    },
+    {
+      "name": "encoded-slash",
+      "src": "https://example.com/a%2Fb",
+      "expect": {
+        "valid": false,
+        "error": "invalidDidUrl"
+      }
+    },
+    {
+      "name": "leading-space",
+      "src": "https://example.com/%20a",
+      "expect": {
+        "valid": false,
+        "error": "invalidDidUrl"
+      }
+    },
+    {
+      "name": "trailing-nbsp",
+      "src": "https://example.com/a%C2%A0",
+      "expect": {
+        "valid": false,
+        "error": "invalidDidUrl"
+      }
+    },
+    {
+      "name": "query",
+      "src": "https://example.com/dids?x=1",
+      "expect": {
+        "valid": false,
+        "error": "invalidDidUrl"
+      }
+    },
+    {
+      "name": "fragment",
+      "src": "https://example.com/dids#x",
+      "expect": {
+        "valid": false,
+        "error": "invalidDidUrl"
+      }
+    },
+    {
+      "name": "http-loopback",
+      "src": "http://localhost:8000/dids",
+      "expect": {
+        "valid": false,
+        "error": "invalidDidUrl"
+      }
+    },
+    {
+      "name": "http-public",
+      "src": "http://example.com/dids",
+      "expect": {
+        "valid": false,
+        "error": "invalidDidUrl"
+      }
+    },
+    {
+      "name": "file",
+      "src": "file:///var/lib/dids",
+      "expect": {
+        "valid": false,
+        "error": "invalidDidUrl"
+      }
+    },
+    {
+      "name": "ipv4-host",
+      "src": "https://192.0.2.1/dids",
+      "expect": {
+        "valid": false,
+        "error": "invalidDidUrl"
+      }
+    },
+    {
+      "name": "userinfo",
+      "src": "https://user@example.com/dids",
+      "expect": {
+        "valid": false,
+        "error": "invalidDidUrl"
+      }
+    },
+    {
+      "name": "urn",
+      "src": "urn:example:dids",
+      "expect": {
+        "valid": false,
+        "error": "invalidDidUrl"
+      }
+    },
+    {
+      "name": "other-empty-authority",
+      "src": "ipfs:///x",
+      "expect": {
+        "valid": false,
+        "error": "invalidDidUrl"
+      }
+    },
+    {
+      "name": "relative",
+      "src": "/dids",
+      "expect": {
+        "valid": false,
+        "error": "invalidDidUrl"
+      }
+    }
+  ]
+}
