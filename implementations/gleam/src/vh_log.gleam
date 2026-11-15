@@ -1,4 +1,5 @@
 import gleam/list
+import gleam/option.{type Option, None, Some}
 import gleam/result
 import gleam/string
 import json_value.{type Json, Arr, Boolean, Null, Num, Str} as j
@@ -8,7 +9,8 @@ fn object(pairs: List(#(String, Json))) -> Json {
   j.object(pairs)
 }
 
-fn error(code: String, n: Int) -> Json {
+/// A VH-Log error report `{code, version, message}` (version 0 means none).
+pub fn error(code: String, n: Int) -> Json {
   object([
     #("code", Str(code)),
     #("version", case n {
@@ -105,7 +107,7 @@ pub fn entry_hash(e: Json, previous: String) -> String {
   e |> j.remove("proof") |> j.set("versionId", Str(previous)) |> j.jcs |> p.hash
 }
 
-fn lines(log: String) -> List(String) {
+pub fn lines(log: String) -> List(String) {
   let parts = string.split(log, "\n")
   case string.ends_with(log, "\n") {
     True -> list.take(parts, list.length(parts) - 1)
@@ -118,10 +120,20 @@ fn lines(log: String) -> List(String) {
 }
 
 pub fn create(input: Json) -> Json {
+  create_with(input, "logVersion", "vh-log:1.0")
+}
+
+/// Creates a log whose version parameter (added if absent) is
+/// `version_parameter: version`; did:vh uses `method: did:vh:1.0`.
+pub fn create_with(
+  input: Json,
+  version_parameter: String,
+  version: String,
+) -> Json {
   let params =
     list.fold(
       j.fields(j.get(input, "parameters")),
-      object([#("logVersion", Str("vh-log:1.0")), #("scid", Str("{SCID}"))]),
+      object([#(version_parameter, Str(version)), #("scid", Str("{SCID}"))]),
       fn(a, pair) { j.set(a, pair.0, pair.1) },
     )
   let preliminary =
@@ -182,27 +194,103 @@ pub fn update(input: Json) -> Json {
   ])
 }
 
+/// What a specialisation of VH-Log (such as did:vh) changes in verification.
+/// `version_syntax`: when set, a missing or malformed version is
+/// `invalid-parameter` and only a well-formed unaccepted one is
+/// `unsupported-log-version`. `closed`: unknown parameters are
+/// `invalid-parameter` instead of ignored. `check_state(state, scid, n)` runs
+/// on every entry after the SCID check.
+pub type Spec {
+  Spec(
+    version_parameter: String,
+    versions: List(String),
+    version_syntax: Option(fn(String) -> Bool),
+    closed: Bool,
+    check_state: fn(Json, String, Int) -> Result(Nil, Json),
+  )
+}
+
+/// Plain VH-Log, as specified by profile vh-log-interop-0.
+pub fn vh_log_spec() -> Spec {
+  Spec("logVersion", ["vh-log:1.0"], None, False, fn(_, _, _) { Ok(Nil) })
+}
+
+const vh_log_parameters = [
+  "scid", "updateKeys", "nextKeyHashes", "witness", "watchers", "deactivated",
+  "ttl",
+]
+
+fn index_of(values: List(Json), value: Json, i: Int) -> Int {
+  case values {
+    [] -> -1
+    [x, ..rest] ->
+      case x == value {
+        True -> i
+        False -> index_of(rest, value, i + 1)
+      }
+  }
+}
+
+fn version_parameter(
+  raw: Json,
+  previous: Json,
+  n: Int,
+  spec: Spec,
+) -> Result(Nil, Json) {
+  let vp = spec.version_parameter
+  let versions = list.map(spec.versions, Str)
+  let malformed = case spec.version_syntax {
+    None -> "unsupported-log-version"
+    Some(_) -> "invalid-parameter"
+  }
+  use _ <- result.try(ensure(previous != Null || present(raw, vp), malformed, n))
+  case present(raw, vp) {
+    False -> Ok(Nil)
+    True -> {
+      let value = j.get(raw, vp)
+      use _ <- result.try(case spec.version_syntax {
+        None -> Ok(Nil)
+        Some(syntax) ->
+          ensure(j.is_string(value) && syntax(j.text(value)), malformed, n)
+      })
+      ensure(
+        list.contains(versions, value)
+          && index_of(versions, value, 0)
+          >= index_of(versions, j.get(previous, vp), 0),
+        "unsupported-log-version",
+        n,
+      )
+    }
+  }
+}
+
 fn valid_witness(v: Json) -> Bool {
   let id = j.text(j.get(v, "id"))
   string.starts_with(id, "did:key:")
   && p.valid_key(Str(string.drop_start(id, 8)))
 }
 
-fn parameters(raw: Json, previous: Json, n: Int) -> Result(Json, Json) {
+fn parameters(
+  raw: Json,
+  previous: Json,
+  n: Int,
+  spec: Spec,
+) -> Result(Json, Json) {
   use _ <- result.try(ensure(
     list.all(j.fields(raw), fn(pair) { pair.1 != Null }),
     "invalid-parameter",
     n,
   ))
   use _ <- result.try(ensure(
-    { previous != Null || present(raw, "logVersion") }
-      && {
-      !present(raw, "logVersion")
-      || j.get(raw, "logVersion") == Str("vh-log:1.0")
-    },
-    "unsupported-log-version",
+    !spec.closed
+      || list.all(j.fields(raw), fn(pair) {
+      pair.0 == spec.version_parameter
+      || list.contains(vh_log_parameters, pair.0)
+    }),
+    "invalid-parameter",
     n,
   ))
+  use _ <- result.try(version_parameter(raw, previous, n, spec))
   use _ <- result.try(ensure(
     case previous {
       Null -> j.is_string(j.get(raw, "scid")) && present(raw, "updateKeys")
@@ -244,7 +332,7 @@ fn parameters(raw: Json, previous: Json, n: Int) -> Result(Json, Json) {
   let params =
     list.fold(
       [
-        "logVersion",
+        spec.version_parameter,
         "scid",
         "updateKeys",
         "nextKeyHashes",
@@ -355,6 +443,7 @@ fn verify_entry(
   e: Json,
   previous: Result(Entry, Nil),
   now: Int,
+  spec: Spec,
 ) -> Result(Entry, Json) {
   let n = case previous {
     Ok(x) -> x.n + 1
@@ -379,7 +468,7 @@ fn verify_entry(
     "invalid-entry",
     n,
   ))
-  use params <- result.try(parameters(j.get(e, "parameters"), old, n))
+  use params <- result.try(parameters(j.get(e, "parameters"), old, n, spec))
   let keys = case old == Null || !empty(j.get(old, "nextKeyHashes")) {
     True -> j.get(params, "updateKeys")
     False -> j.get(old, "updateKeys")
@@ -447,6 +536,11 @@ fn verify_entry(
     Ok(_) -> Ok(Nil)
     Error(_) -> verify_scid(e, params, n)
   })
+  use _ <- result.try(spec.check_state(
+    j.get(e, "state"),
+    j.text(j.get(params, "scid")),
+    n,
+  ))
   Ok(Entry(e, params, n, t, rule))
 }
 
@@ -469,6 +563,7 @@ fn verify_lines(
   remaining: List(String),
   entries: List(Entry),
   now: Int,
+  spec: Spec,
 ) -> #(List(Entry), Json) {
   case remaining {
     [] -> #(entries, Null)
@@ -484,11 +579,11 @@ fn verify_lines(
           "invalid-log",
           list.length(entries) + 1,
         ))
-        verify_entry(e, last(entries), now)
+        verify_entry(e, last(entries), now, spec)
       }
       case checked {
         Error(e) -> #(entries, e)
-        Ok(e) -> verify_lines(rest, list.append(entries, [e]), now)
+        Ok(e) -> verify_lines(rest, list.append(entries, [e]), now, spec)
       }
     }
   }
@@ -549,12 +644,18 @@ fn witness_error(
   }
 }
 
-fn verify_log(log: String, witness: Json, now: Int) -> Verified {
+/// Verifies a log (`now` from `primitives.time`) as plain VH-Log or `spec`.
+pub fn verify_log(
+  log: String,
+  witness: Json,
+  now: Int,
+  spec: Spec,
+) -> Verified {
   let ls = lines(log)
   case ls {
     [] -> Verified([], ls, error("invalid-log", 0))
     _ -> {
-      let #(entries, failure) = verify_lines(ls, [], now)
+      let #(entries, failure) = verify_lines(ls, [], now, spec)
       let issues =
         list.index_map(entries, fn(e, i) {
           #(i, witness_error(entries, e, i, witness))
@@ -845,7 +946,12 @@ fn compare_copies(
   }
 }
 
-fn resolve_copies(input: Json, now: Int, options: Json) -> Result(Json, Json) {
+fn resolve_copies(
+  input: Json,
+  now: Int,
+  options: Json,
+  spec: Spec,
+) -> Result(Json, Json) {
   let primary =
     object([
       #("source", Str("primary")),
@@ -861,6 +967,7 @@ fn resolve_copies(input: Json, now: Int, options: Json) -> Result(Json, Json) {
           j.text(j.get(c, "log")),
           j.default(c, "witness", Arr([])),
           now,
+          spec,
         ),
         case present(c, "unavailable") {
           True -> "unavailable"
@@ -937,6 +1044,11 @@ fn resolve_copies(input: Json, now: Int, options: Json) -> Result(Json, Json) {
 }
 
 pub fn resolve(input: Json) -> Json {
+  resolve_with(input, vh_log_spec())
+}
+
+/// Resolves a log as plain VH-Log, or as the given specialisation.
+pub fn resolve_with(input: Json, spec: Spec) -> Json {
   let resolved = {
     use now <- result.try(
       result.map_error(p.time(j.get(input, "now")), fn(_) {
@@ -993,13 +1105,14 @@ pub fn resolve(input: Json) -> Json {
       present(input, "copies")
       || j.number(j.default(options, "minCopies", Num(1.0))) >. 1.0
     {
-      True -> resolve_copies(input, now, options)
+      True -> resolve_copies(input, now, options, spec)
       False -> {
         let v =
           verify_log(
             j.text(j.get(input, "log")),
             j.default(input, "witness", Arr([])),
             now,
+            spec,
           )
         case v.entries {
           [] -> Error(v.failure)

@@ -1,5 +1,5 @@
 -module(vh_native).
--export([parse/1,quote/1,number/1,utf16_compare/2,integer/1,int/1,to_int/1,sha/1,hash/1,check_hash/1,valid_key/1,method_key/1,multikey/1,sign/2,verify/3,time/1,version/1,retained_version/1,url/1,run/0]).
+-export([parse/1,quote/1,number/1,utf16_compare/2,integer/1,int/1,to_int/1,sha/1,hash/1,check_hash/1,valid_key/1,method_key/1,multikey/1,sign/2,verify/3,time/1,version/1,retained_version/1,url/1,run/0,split_all/2,contains/2,now/0]).
 parse(Text) ->
   try
     Finish=fun(Acc,Old)->{maps:from_list(lists:reverse(Acc)),Old} end,
@@ -95,6 +95,9 @@ retained_version({str,S}) -> try
 retained_version(_) -> {error,nil}.
 url({str,S}) -> re:run(S,<<"^[\\x21-\\x7e]+$">>)=/=nomatch andalso re:run(S,<<"^https?://[^/?#]">>)=/=nomatch;
 url(_) -> false.
+split_all(S,P) -> binary:split(S,P,[global]).
+contains(S,P) -> binary:match(S,P)=/=nomatch.
+now() -> list_to_binary(calendar:system_time_to_rfc3339(erlang:system_time(second),[{offset,"Z"}])).
 run() -> io:setopts(standard_io,[binary,{encoding,utf8}]),loop().
 loop() -> case io:get_line(standard_io,"") of
   eof -> nil;
@@ -104,7 +107,7 @@ loop() -> case io:get_line(standard_io,"") of
     Response=try
       {ok,Request}=Parsed,
       Op=json_value:text(json_value:get(Request,<<"op">>)), Input=json_value:get(Request,<<"input">>),
-      case vh_log:dispatch(Op,Input) of
+      case 'vh_log@driver':dispatch(Op,Input) of
         {ok,V} -> json_value:object([{<<"id">>,Id},{<<"ok">>,{boolean,true}},{<<"result">>,V}]);
         {error,E} -> erlang:error({driver,E})
       end
