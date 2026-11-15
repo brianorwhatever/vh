@@ -357,11 +357,17 @@ variable did-remote
   then
   o s" extraWatchers" j-has if o s" extraWatchers" j-get j-size 0> if true exit then then
   false ;
-\ True if some entry among the first N sets a non-empty witness list.
-: needs-witnessing? { entries n -- flag }
-  n 0 ?do
-    entries i j-at s" parameters" j-get s" witness" j-get { w }
-    w obj? w j-size 0> and if true unloop exit then
+\ True if the log needs witnessing (section 5 step 4): the witness list that
+\ applies (profile.md section 3) to some entry before the first one failing a
+\ per-entry check, with the did:vh specialisation, is not {}. No witness file
+\ is involved.
+: needs-witnessing? { o now scid -- flag }
+  j-object { input } o s" didLog" j-get input s" log" put now input s" now" put
+  scid did-scid ! did-specialisation
+  input ['] scan-log catch vh-log-specialisation 0 did-scid ! throw
+  s" history" j-get { history }
+  history j-size 0 ?do
+    history i j-at s" witness" j-get j-size 0> if true unloop exit then
   loop false ;
 : did-code ( code -- addr len )
   dup s" not-found" text= if drop s" notFound" exit then
@@ -390,7 +396,9 @@ variable did-remote
   o did-options? 0= if s" invalidOptions" fail exit then
   o offline-unsupported? if s" featureNotSupported" fail exit then
   o s" didLog" j-get { text } text entries-from-log { entries }
-  o s" srcWitness" j-has entries entries j-size needs-witnessing? and if s" featureNotSupported" fail exit then
+  o s" srcWitness" j-has if
+    o input s" now" j-get scid needs-witnessing? if s" featureNotSupported" fail exit then
+  then
   o input s" now" j-get vh-request { request }
   scid did-scid ! did-specialisation
   request ['] resolve-log catch vh-log-specialisation 0 did-scid ! throw { result }
@@ -410,7 +418,7 @@ variable did-remote
     text 10 char$ j-split { lines } empty$ { log }
     valid 0 ?do log lines i j-at j-cat 10 char$ j-cat to log loop
     log rm s" didLog" put
-    entries valid needs-witnessing? if
+    o input s" now" j-get scid needs-witnessing? if
       o s" didWitness" j-has if o s" didWitness" j-get else j-array then rm s" didWitness" put
     then
   then
