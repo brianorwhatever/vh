@@ -23,6 +23,7 @@
       "command": [
         "target/release/vh-log-driver"
       ],
+      "didvh": true,
       "env": {
         "PATH_PREPEND": [
           "/opt/homebrew/opt/rustup/bin",

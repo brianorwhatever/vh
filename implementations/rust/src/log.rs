@@ -181,9 +181,29 @@ pub fn create_log(
     version_time: &str,
     signers: &[Signer],
 ) -> CreatedLog {
+    create_log_with(
+        state,
+        parameters,
+        version_time,
+        signers,
+        "logVersion",
+        LOG_VERSION,
+    )
+}
+
+/// [`create_log`] for a specialisation with its own version parameter and value
+/// (did:vh uses `method` / `did:vh:1.0`); either way it is added only if absent.
+pub fn create_log_with(
+    state: Value,
+    parameters: Map<String, Value>,
+    version_time: &str,
+    signers: &[Signer],
+    version_parameter: &str,
+    version: &str,
+) -> CreatedLog {
     let mut parameters = parameters;
-    if !parameters.contains_key("logVersion") {
-        parameters.insert("logVersion".into(), Value::String(LOG_VERSION.into()));
+    if !parameters.contains_key(version_parameter) {
+        parameters.insert(version_parameter.into(), Value::String(version.into()));
     }
     if !parameters.contains_key("scid") {
         parameters.insert("scid".into(), Value::String(SCID_PLACEHOLDER.into()));

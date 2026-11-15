@@ -3,6 +3,7 @@
 
 use serde_json::{Map, Value, json};
 use std::io::{self, BufRead, Write};
+use vh_log::didvh::{self, DidVhError, ResolverContext};
 use vh_log::{
     CopyInput, ProofOptions, ResolveInput, ResolveOptions, ResolveResult, Signer, VhLogError,
     canonicalize, compute_entry_hash, compute_scid, create_log, create_proof, hash_b58, key_hash,
@@ -119,6 +120,85 @@ fn resolve_op(input: &Value) -> OpResult {
     Ok(resolve(&request).to_json())
 }
 
+/// Turns a did:vh error into `{"valid": false, "error": …}`.
+fn rejected(result: Result<Value, DidVhError>) -> Value {
+    result.unwrap_or_else(|e| json!({ "valid": false, "error": e.code }))
+}
+
+/// A string input to a did:vh check; anything else is rejected with `code`.
+fn didvh_string<'a>(
+    input: &'a Value,
+    key: &str,
+    code: didvh::DidVhErrorCode,
+) -> Result<&'a str, DidVhError> {
+    input
+        .get(key)
+        .and_then(Value::as_str)
+        .ok_or_else(|| DidVhError::new(code, format!("{key} must be a string")))
+}
+
+fn didvh_op(op: &str, input: &Value) -> OpResult {
+    use didvh::DidVhErrorCode::{InvalidDidUrl, InvalidOptions};
+    Ok(match op {
+        "didvh-create" => {
+            let created = didvh::create_did(
+                field(input, "document")?.clone(),
+                object(input, "parameters")?,
+                string(input, "versionTime")?,
+                &signers(input)?,
+            );
+            json!({ "log": created.log, "did": created.did, "scid": created.scid, "versionId": created.version_id })
+        }
+        "didvh-update" => {
+            let updated = didvh::update_did(
+                string(input, "log")?,
+                field(input, "document")?.clone(),
+                object(input, "parameters")?,
+                string(input, "versionTime")?,
+                &signers(input)?,
+            )
+            .map_err(|e| e.to_string())?;
+            json!({ "log": updated.log, "versionId": updated.version_id })
+        }
+        "didvh-resolve" => {
+            let context = ResolverContext {
+                now: opt_string(input, "now")?,
+                remote: input
+                    .get("remote")
+                    .and_then(Value::as_bool)
+                    .unwrap_or(false),
+            };
+            let did = input.get("did").and_then(Value::as_str).unwrap_or("");
+            let options = input.get("options").cloned().unwrap_or_else(|| json!({}));
+            didvh::resolve_did(did, &options, &context).to_json()
+        }
+        "didvh-ref" => rejected(
+            didvh_string(input, "ref", InvalidOptions)
+                .and_then(didvh::check_ref)
+                .map(|kind| json!({ "valid": true, "kind": kind })),
+        ),
+        "didvh-src" => rejected(
+            didvh_string(input, "src", InvalidDidUrl)
+                .and_then(didvh::src_references)
+                .map(
+                    |r| json!({ "valid": true, "srcLog": r.src_log, "srcWitness": r.src_witness }),
+                ),
+        ),
+        "didvh-did-url" => rejected(
+            didvh_string(input, "didUrl", InvalidDidUrl)
+                .and_then(didvh::parse_did_url)
+                .map(|u| {
+                    let mut out = json!({ "valid": true, "did": u.did, "options": u.options });
+                    if let Some(fragment) = u.fragment {
+                        out["fragment"] = Value::String(fragment);
+                    }
+                    out
+                }),
+        ),
+        other => return Err(format!("unknown op {other}")),
+    })
+}
+
 fn handle(op: &str, input: &Value) -> OpResult {
     Ok(match op {
         "jcs" => {
@@ -179,7 +259,7 @@ fn handle(op: &str, input: &Value) -> OpResult {
             json!({ "proof": to_value(&proof) })
         }
         "resolve" => resolve_op(input)?,
-        other => return Err(format!("unknown op {other}")),
+        other => return didvh_op(other, input),
     })
 }
 

@@ -1,7 +1,9 @@
 //! Resolution: version selection, partial validity and copy comparison (profile §4).
 
 use crate::error::{ErrorCode, ForkCopy, ForkReport, VhLogError};
-use crate::verify::{VerifiedEntry, VerifiedLog, WitnessConfig, parse_version_time, verify_log};
+use crate::verify::{
+    Specialisation, VerifiedEntry, VerifiedLog, WitnessConfig, parse_version_time, verify_log_with,
+};
 use serde::Serialize;
 use serde_json::{Map, Value};
 
@@ -397,7 +399,11 @@ fn divergence(a: &[String], b: &[String]) -> u64 {
 }
 
 /// Comparing Copies of a Log, with copies supplied in the request instead of fetched.
-fn resolve_copies(input: &ResolveInput, now: i64) -> Result<Resolution, VhLogError> {
+fn resolve_copies(
+    input: &ResolveInput,
+    now: i64,
+    spec: &Specialisation,
+) -> Result<Resolution, VhLogError> {
     let mut all = vec![CopyInput::Available {
         source: PRIMARY.into(),
         log: input.log.clone(),
@@ -408,7 +414,7 @@ fn resolve_copies(input: &ResolveInput, now: i64) -> Result<Resolution, VhLogErr
         .iter()
         .map(|c| match c {
             CopyInput::Available { log, witness, .. } => {
-                Some(verify_log(log, witness.as_ref(), now))
+                Some(verify_log_with(log, witness.as_ref(), now, spec))
             }
             CopyInput::Unavailable { .. } => None,
         })
@@ -577,7 +583,7 @@ fn resolve_copies(input: &ResolveInput, now: i64) -> Result<Resolution, VhLogErr
     build_result(reference, &input.options, warnings, Some(copies))
 }
 
-fn resolve_inner(input: &ResolveInput) -> Result<Resolution, VhLogError> {
+fn resolve_inner(input: &ResolveInput, spec: &Specialisation) -> Result<Resolution, VhLogError> {
     let now = parse_version_time(&input.now).ok_or_else(|| {
         VhLogError::new(
             ErrorCode::InvalidOption,
@@ -587,9 +593,9 @@ fn resolve_inner(input: &ResolveInput) -> Result<Resolution, VhLogError> {
     })?;
     input.options.validate()?;
     if input.copies.is_some() || input.options.min_copies.unwrap_or(1) > 1 {
-        return resolve_copies(input, now);
+        return resolve_copies(input, now, spec);
     }
-    let verified = verify_log(&input.log, input.witness.as_ref(), now);
+    let verified = verify_log_with(&input.log, input.witness.as_ref(), now, spec);
     if verified.entries.is_empty() {
         return Err(verified.failure.expect("an empty prefix implies a failure"));
     }
@@ -602,7 +608,12 @@ fn resolve_inner(input: &ResolveInput) -> Result<Resolution, VhLogError> {
 
 /// Resolves a log (Reading a VH-Log), comparing copies if any are given.
 pub fn resolve(input: &ResolveInput) -> ResolveResult {
-    match resolve_inner(input) {
+    resolve_with(input, &Specialisation::vh_log())
+}
+
+/// [`resolve`] for a specialisation of VH-Log, such as did:vh.
+pub fn resolve_with(input: &ResolveInput, spec: &Specialisation) -> ResolveResult {
+    match resolve_inner(input, spec) {
         Ok(r) => ResolveResult::Valid(Box::new(r)),
         Err(e) => ResolveResult::Invalid(e),
     }
