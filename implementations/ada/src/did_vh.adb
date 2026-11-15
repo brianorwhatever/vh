@@ -736,32 +736,6 @@ package body Did_VH is
       return R;
    end Log_Lines;
 
-   -- Whether one of the first Count lines sets a non-empty witness list, so
-   -- some entry has an active one.
-   function Needs_Witnessing (Lines : Value_Access; Count : Natural) return Boolean
-   is
-   begin
-      for I in 1 .. Count loop
-         begin
-            declare
-               E : constant Value_Access := Parse (S (At_Index (Lines, I)));
-            begin
-               if E.Tag = Object_Value
-                 and then Get (E, "parameters").Tag = Object_Value
-                 and then Get (Get (E, "parameters"), "witness").Tag = Object_Value
-                 and then Len (Get (Get (E, "parameters"), "witness")) > 0
-               then
-                  return True;
-               end if;
-            end;
-         exception
-            when others =>
-               null;
-         end;
-      end loop;
-      return False;
-   end Needs_Witnessing;
-
    function Resolve
      (DID, Options, Now : Value_Access; Remote : Boolean := False)
       return Value_Access
@@ -869,6 +843,11 @@ package body Did_VH is
       declare
          Log    : constant String := S (Get (O, "didLog"));
          Lines  : constant Value_Access := Log_Lines (Log);
+         function Needs_Witnessing return Boolean
+         is (VH_Log.Needs_Witnessing
+               (Log,
+                (if Now.Tag = String_Value then S (Now) else ""),
+                Specialisation (DID_SCID (S (DID)))));
          Input  : constant Value_Access := Obj;
          VH_Opt : constant Value_Access := Obj;
          DDM    : constant Value_Access := Obj;
@@ -881,7 +860,9 @@ package body Did_VH is
          Latest : Boolean;
          Text   : Unbounded_String;
       begin
-         if Has ("srcWitness") and then Needs_Witnessing (Lines, Len (Lines))
+         -- The log needs witnessing if a witness list applies to an entry
+         -- that passes the per-entry checks (section 5 step 4).
+         if Has ("srcWitness") and then Needs_Witnessing
          then
             return Unsupported ("retrieving srcWitness is not supported");
          end if;
@@ -936,7 +917,7 @@ package body Did_VH is
                Append (Text, S (At_Index (Lines, I)) & ASCII.LF);
             end loop;
             Put (DRM, "didLog", Str (To_String (Text)));
-            if Needs_Witnessing (Lines, Valid) then
+            if Needs_Witnessing then
                Put
                  (DRM,
                   "didWitness",

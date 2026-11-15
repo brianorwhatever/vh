@@ -883,6 +883,28 @@ package body VH_Log is
    end;
    function Watcher_URL_Valid (Text : String) return Boolean
    is (Valid_Watcher (Text));
+   -- did:vh profile section 5 step 4: the witness list that applies to
+   -- some entry before the first one failing a per-entry check is not {}.
+   -- Witness_Lists holds one list per entry that passed those checks, and
+   -- the witness pass never shortens it, so no witness file is involved.
+   function Needs_Witnessing
+     (Log, Now : String; Spec : Specialisation) return Boolean
+   is
+      Input : constant Value_Access := Obj;
+      L     : Verified_Log;
+   begin
+      Put (Input, "log", Str (Log));
+      L := Verify_Log (Input, Timestamp (Now), Spec => Spec);
+      for N in 1 .. Len (L.Witness_Lists) loop
+         if Len (At_Index (L.Witness_Lists, N)) > 0 then
+            return True;
+         end if;
+      end loop;
+      return False;
+   exception
+      when others =>
+         return False;
+   end Needs_Witnessing;
    function Resolve
      (Input : Value_Access; Spec : Specialisation) return Value_Access
    is
