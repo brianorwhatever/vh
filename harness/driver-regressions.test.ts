@@ -12,7 +12,7 @@ import { signerFromSeed } from "../implementations/typescript/src/ed25519.ts";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const registry = JSON.parse(readFileSync(resolve(root, "implementations.json"), "utf8")).implementations;
-const names = (process.env.VH_TEST_IMPLS ?? "c,cpp,csharp,java,ruby,php,dart,scala,lua,haskell,gleam").split(",");
+const names = (process.env.VH_TEST_IMPLS ?? "c,cpp,csharp,java,ruby,php,dart,scala,lua,haskell,gleam,perl").split(",");
 const seed = "42".repeat(32);
 const key = signerFromSeed(seed).multikey;
 
@@ -53,7 +53,7 @@ for (const name of names) {
       assert.equal(r.result.output, canonicalize(JSON.parse(inputs[i])));
     });
   });
-  if (["c", "typescript", "python"].includes(name)) {
+  if (["c", "typescript", "python", "perl"].includes(name)) {
     test(`${name}: NUL member names never collapse into prefix keys`, () => {
       const inputs = [
         '{"a\\u0000x":1,"a":2}', '{"a":2,"a\\u0000x":1}',
@@ -119,7 +119,7 @@ for (const name of names) {
     assert.equal(responses[1].ok, false);
     assert.deepEqual(responses[2], { id: "last", ok: true, result: { output: '"line\u2028paragraph\u2029"' } });
   });
-  if (["dart", "scala", "lua", "haskell", "gleam"].includes(name)) {
+  if (["dart", "scala", "lua", "haskell", "gleam", "perl"].includes(name)) {
     test(`${name}: rejects unsafe JSON and preserves LF framing and false IDs`, () => {
       const invalid = ['1e400', '"\\ud800"', '{"\\udfff":1}', '[1,]', '{"x":1} trailing'];
       const requests = invalid.map((text, id) => JSON.stringify({ id, op: "jcs", input: { text } }));

@@ -327,6 +327,18 @@
         "sh",
         "run.sh"
       ]
+    },
+    {
+      "name": "perl",
+      "cwd": "implementations/perl",
+      "build": [
+        "sh",
+        "build.sh"
+      ],
+      "command": [
+        "perl",
+        "driver.pl"
+      ]
     }
   ]
 }

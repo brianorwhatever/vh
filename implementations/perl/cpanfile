@@ -1,0 +1,5 @@
+# Pinned dependencies. build.sh installs exactly this release into ./local
+# after checking its SHA-256; `cpanm --local-lib local --installdeps .` or
+# Carton also work. Everything else used is core Perl 5.34+.
+requires 'perl', '5.034';
+requires 'CryptX', '== 0.091';

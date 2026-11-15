@@ -360,6 +360,26 @@ jobs:
       - name: Driver boundary tests
         run: VH_TEST_IMPLS=scala node --test harness/driver-regressions.test.ts
 
+  perl:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - name: Install pinned CryptX into implementations/perl/local
+        working-directory: implementations/perl
+        run: |
+          perl -v | sed -n 2p
+          sh build.sh
+      - name: Library tests
+        working-directory: implementations/perl
+        run: prove t
+      - name: Conformance and cross-resolution
+        run: node harness/run.ts --impl perl --impl typescript --list
+      - name: Driver boundary tests
+        run: VH_TEST_IMPLS=perl node --test harness/driver-regressions.test.ts
+
   benchmarks-site:
     runs-on: ubuntu-latest
     steps:
@@ -373,7 +393,7 @@ jobs:
         run: node site/build.mjs
 
   interop:
-    needs: [typescript, rust, python, elixir, go, swift, kotlin, zig, common-lisp, forth, c, cpp, csharp, java, ruby, php, dart, haskell, lua, gleam, scala]
+    needs: [typescript, rust, python, elixir, go, swift, kotlin, zig, common-lisp, forth, c, cpp, csharp, java, ruby, php, dart, haskell, lua, gleam, scala, perl]
     if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
