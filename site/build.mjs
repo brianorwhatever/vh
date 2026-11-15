@@ -51,6 +51,7 @@ const LANGS = [
   {"id": "lua", "name": "Lua", "short": "Lua"},
   {"id": "gleam", "name": "Gleam", "short": "Gleam"},
   {"id": "scala", "name": "Scala", "short": "Scala"},
+  {"id": "perl", "name": "Perl", "short": "Pl"},
 ];
 const WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty"];
 const N = WORDS[LANGS.length] || String(LANGS.length);
@@ -69,6 +70,7 @@ const MOVEMENTS = [
     lede: "Every eddsa-jcs-2022 proof signs SHA-256(JCS(proof config)) followed by SHA-256(JCS(document)). Sixty-four bytes, built the same way in every language.",
     beats: ["Hash the proof configuration", "Hash the document", "Join the two digests"],
     parts: {
+      "perl": {"ranges": [["perl/lib/VH/Log.pm", 125, 125]], "marks": [[1, "_sha256(jcs($config))"], [2, "_sha256(jcs($document))"], [3, " . "]]},
       "dart": {"ranges": [["dart/lib/vh_log.dart", 160, 162]], "marks": [[1, "sha(jcs(config))"], [2, "sha(jcs(document))"], [3, "..."]]},
       "haskell": {"ranges": [["haskell/src/VHLog.hs", 44, 44]], "marks": [[1, "C.sha (jcs config)"], [2, "C.sha (jcs document)"], [3, "<>"]]},
       "lua": {"ranges": [["lua/vh_log.lua", 59, 60]], "marks": [[1, "native.sha(J.encode(config))"], [2, "native.sha(J.encode(document))"], [3, " .. "]]},
@@ -101,6 +103,7 @@ const MOVEMENTS = [
     lede: "Each versionId carries a hash of its entry, taken with the proof removed and the previous versionId in its place. That is what chains the log.",
     beats: ["Drop the proof", "Put the previous versionId in", "Canonicalise with JCS", "Hash to a base58btc multihash"],
     parts: {
+      "perl": {"ranges": [["perl/lib/VH/Log.pm", 212, 212]], "marks": [[1, "_without($entry, 'proof')"], [2, "versionId => $previous"], [3, "jcs("], [4, "hash_b58("]]},
       "dart": {"ranges": [["dart/lib/vh_log.dart", 226, 227]], "marks": [[1, "withoutProof(e)"], [2, "'versionId': previous"], [3, "jcs("], [4, "hash("]]},
       "haskell": {"ranges": [["haskell/src/VHLog.hs", 68, 68]], "marks": [[1, "remove e \"proof\""], [2, "\"versionId\" (str previous)"], [3, "jcs"], [4, "C.hash"]]},
       "lua": {"ranges": [["lua/vh_log.lua", 79, 80]], "marks": [[1, "without(e,'proof')"], [2, "d.versionId=previous"], [3, "J.encode(d)"], [4, "V.hash("]]},
@@ -133,6 +136,7 @@ const MOVEMENTS = [
     lede: "The identifier is a hash of the first entry as it was before the identifier existed. To check it, a resolver puts the {SCID} placeholder back, as text, and hashes again.",
     beats: ["Check it is a SHA-256 multihash", "Drop the proof, versionId back to {SCID}", "Replace the SCID with {SCID} in the text", "Hash again and compare"],
     parts: {
+      "perl": {"ranges": [["perl/lib/VH/Log.pm", 380, 385]], "marks": [[1, "_check_hash($id)"], [2, "_without($e, 'proof')"], [2, "versionId => '{SCID}'"], [3, "s/\\Q$id\\E/{SCID}/g"], [4, "scid(parse($text)) eq $id"]]},
       "dart": {"ranges": [["dart/lib/vh_log.dart", 415, 420]], "marks": [[1, "checkHash(p['scid'])"], [2, "withoutProof(e)"], [2, "'versionId': '{SCID}'"], [3, ".replaceAll(p['scid'], '{SCID}')"], [4, "scid(restored) != p['scid']"]]},
       "haskell": {"ranges": [["haskell/src/VHLog.hs", 184, 188]], "marks": [[1, "checkHash id"], [2, "remove e \"proof\""], [2, "\"versionId\" (str \"{SCID}\")"], [3, "replace (text id) \"{SCID}\""], [4, "scid restored == text id"]]},
       "lua": {"ranges": [["lua/vh_log.lua", 163, 167]], "marks": [[1, "check_hash(p.scid)"], [2, "without(e,'proof')"], [2, "rest.versionId='{SCID}'"], [3, "gsub(p.scid,'{SCID}')"], [4, "V.scid(restored)~=p.scid"]]},
@@ -165,6 +169,7 @@ const MOVEMENTS = [
     lede: "A log can commit to the hashes of its next keys. While it does, every new update key must hash to one of those commitments, or the entry is rejected.",
     beats: ["Is pre-rotation active?", "Both key lists must be explicit", "Hash each new update key", "Each hash must have been committed"],
     parts: {
+      "perl": {"ranges": [["perl/lib/VH/Log.pm", 340, 343]], "marks": [[1, "@{ $previous->{nextKeyHashes} }"], [2, "exists $raw->{updateKeys}"], [2, "exists $raw->{nextKeyHashes}"], [3, "hash_b58($_)"], [4, "$committed{"]]},
       "dart": {"ranges": [["dart/lib/vh_log.dart", 363, 369]], "marks": [[1, "(previous['nextKeyHashes'] as List).isNotEmpty"], [2, "!raw.containsKey('updateKeys')"], [2, "!raw.containsKey('nextKeyHashes')"], [3, "hash(key)"], [4, "previous['nextKeyHashes'].contains("]]},
       "haskell": {"ranges": [["haskell/src/VHLog.hs", 149, 151]], "marks": [[1, "not (null (items (get old \"nextKeyHashes\")))"], [2, "has raw \"updateKeys\""], [2, "has raw \"nextKeyHashes\""], [3, "C.hash (text k)"], [4, "`elem` items (get old \"nextKeyHashes\")"]]},
       "lua": {"ranges": [["lua/vh_log.lua", 135, 137]], "marks": [[1, "#previous.nextKeyHashes>0"], [2, "has(raw,'updateKeys')"], [2, "has(raw,'nextKeyHashes')"], [3, "V.hash(key)"], [4, "contains(previous.nextKeyHashes,"]]},
@@ -210,6 +215,7 @@ const PARTS = {
   "java": { note: "JDK 21 only, with a strict JSON parser and RFC 8785 formatter.", src: ["src"], skip: [/Driver\.java$/] },
   "ruby": { note: "Ruby with JSON and OpenSSL; no additional gems.", src: ["lib"], skip: [/driver\.rb$/] },
   "php": { note: "PHP with Sodium and mbstring; no Composer dependencies.", src: ["src"], skip: [/driver\.php$/] },
+  "perl": { note: "Perl 5 with its own strict JSON parser and shortest-digits JCS formatter; CryptX for Ed25519.", src: ["lib"], skip: [/driver\.pl$/] },
   typescript: { note: "The reference. It generates the shared vectors. No runtime dependencies.", src: ["src"], skip: [/driver\.ts$/] },
   rust: { note: "A library crate with a small driver binary.", src: ["src"], skip: [/\/bin\//] },
   python: { note: "Python 3.12, packaged with uv.", src: ["src/vh_log"], skip: [/driver\.py$/] },
@@ -220,7 +226,7 @@ const PARTS = {
   zig: { note: "Clean-room: written only from the spec, the profile and the vectors, without reading the other implementations. Standard library only.", src: ["src"], skip: [/tests\.zig$/, /main\.zig$/] },
   "common-lisp": { note: "Clean-room too, for SBCL, from the same documents. Cryptography from Ironclad. Its notes record what the spec still leaves ambiguous.", src: ["src"], skip: [/driver\.lisp$/] },
 };
-const EXT = { "raku": ".rakumod", "ocaml": ".ml", "ada": ".adb", "dart": ".dart", "haskell": ".hs", "lua": ".lua", "gleam": ".gleam", "scala": ".scala", "forth": ".fs", "c": ".c", "cpp": ".cpp", "csharp": ".cs", "java": ".java", "ruby": ".rb", "php": ".php", typescript: ".ts", rust: ".rs", python: ".py", elixir: ".ex", go: ".go", swift: ".swift", kotlin: ".kt", zig: ".zig", "common-lisp": ".lisp" };
+const EXT = { "perl": ".pm", "raku": ".rakumod", "ocaml": ".ml", "ada": ".adb", "dart": ".dart", "haskell": ".hs", "lua": ".lua", "gleam": ".gleam", "scala": ".scala", "forth": ".fs", "c": ".c", "cpp": ".cpp", "csharp": ".cs", "java": ".java", "ruby": ".rb", "php": ".php", typescript: ".ts", rust: ".rs", python: ".py", elixir: ".ex", go: ".go", swift: ".swift", kotlin: ".kt", zig: ".zig", "common-lisp": ".lisp" };
 
 const esc = (s) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const read = (rel) => fs.readFileSync(path.join(IMPL, rel), "utf8").split("\n");

@@ -35,6 +35,7 @@ const versions = {
   ada: ['sh', '-c', 'if command -v gnatmake >/dev/null 2>&1; then exec gnatmake --version; fi; for compiler in "$HOME"/.local/share/alire/toolchains/gnat_native_*/bin/gnatmake; do if [ -x "$compiler" ]; then exec "$compiler" --version; fi; done; exit 1'],
   dart: ['dart', '--version'], haskell: ['ghc', '--version'], lua: ['lua', '-v'],
   gleam: ['gleam', '--version'], scala: ['scala-cli', 'version'],
+  perl: ['perl', '-MCwd', '-e', 'require lib; lib->import(getcwd() . "/local/lib/perl5"); require CryptX; printf "perl %vd, CryptX %s\\n", $^V, $CryptX::VERSION'],
 };
 function environment(impl) {
   const { PATH_PREPEND = [], ...vars } = impl.env ?? {};
