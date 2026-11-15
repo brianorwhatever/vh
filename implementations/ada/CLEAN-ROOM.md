@@ -118,3 +118,96 @@ This simultaneous partial-copy/minCopies case is not covered by shared vectors.
 Witness files that contain conflicting unknown versionIds are ignored under
 the profile's unpublished-proof rule rather than rejected; no additional
 unpublished-record consistency rule is imposed.
+
+
+## did:vh (`didvh-interop-0`)
+
+did:vh support was added later as a clean-room extension of this
+implementation, by an agent that did not read any other implementation's
+source (including `implementations/typescript` and its history or diffs),
+`tools/generate-vectors.ts` or `tools/generate-didvh-vectors.ts`.
+
+### Sources used
+
+- `docs/didvh-profile.md`, the "did:vh operations" section of
+  `docs/interop-protocol.md`, and `docs/profile.md`.
+- The pinned DIF did:vh specification
+  (`decentralized-identity/didvh@cc2eff6`) only where the profile links to it;
+  every rule exercised here is restated by the profile.
+- Profile commit `68b1f52` (on `feat/didvh-reference`) was read only for its
+  `docs/didvh-profile.md` and `vectors/didvh/did-url.json` changes: an
+  unescaped character in a DID URL query is kept as a whole code point. Its
+  TypeScript and generator changes were not read.
+- `vectors/didvh/**` and `harness/run.ts` (`didvh`, `didvhCross`,
+  `compareDidResolution`) for the comparison rules.
+- The TypeScript driver was run only as an opaque process in the harness's
+  cross-resolution checks.
+
+### Design
+
+- The VH-Log verifier takes a *specialisation* (version parameter name,
+  accepted values, optional version syntax, optional closed parameter set,
+  optional per-entry state check). Plain VH-Log passes the default
+  (`logVersion`, `vh-log:1.0`, no syntax, open set, no state check), so its
+  behaviour is unchanged. With a syntax, a missing (entry 1) or malformed
+  version parameter is `invalid-parameter`; a well-formed unaccepted value is
+  `unsupported-log-version`. The closed-set check runs inside the parameter
+  loop, before the version-value and pre-rotation checks. The state check
+  runs on every entry after the SCID check and fails with `invalid-state`.
+- The did:vh module builds on that: DID and DID URL parsing, `srcLog` /
+  `srcWitness` reference checks, `src` derivation, create/update (VH-Log
+  generation with `state` = the document and `method`, then `scid`, added when
+  absent) and offline resolution.
+
+### Interpretations of `docs/didvh-profile.md`
+
+- §5 step 4, "A `srcWitness` is used only if the log needs witnessing,
+  meaning some entry has an active witness list": this is decided *before*
+  verification, so it is read syntactically: some line of `didLog` parses to an
+  object whose `parameters.witness` is a non-empty object. (Any such entry
+  makes some entry's applicable list non-empty.)
+- §5 "`didWitness` is included only when the log needs witnessing": the same
+  test, applied only to the lines of the valid entries.
+- §5 step 6, "the log has an unsupported entry": VH-Log stops at the first
+  failing entry, so this is detected only when that first failure is
+  `unsupported-log-version` (an unsupported entry after an otherwise invalid
+  one is never reached).
+- §5 "`didLog` holds the original lines of the valid entries": lines are split
+  as the VH-Log verifier splits them (on LF only, one final LF dropped), and
+  the number of valid entries is `firstInvalidVersion - 1`, or all lines.
+- §5 Deactivation, "if the resolved entry is the last valid entry": compared
+  by version number.
+- §5 `warnings`: the VH-Log warnings are passed through as they are, so
+  `invalid-entries` also appears when an earlier version is selected
+  explicitly (the vectors expect this).
+- §4 step 3, "Each part MUST contain `=`": read literally, so an empty query
+  (`did:vh:<SCID>?`) or an empty part (`a=1&&b=2`) is `invalidDidUrl`. Every
+  part's name and value are decoded, including ignored ones, so a bad escape
+  anywhere is `invalidDidUrl`.
+- §4 step 6, `versionNumber` up to 16 digits becomes a JSON number via
+  binary64, so values above 2^53 are rounded.
+- §3.1 step 5, `file://localhost` (or `file://`) with no path is invalid: a
+  path starting with `/` is required.
+- §3.1 step 4, an IP literal needs its closing `]`; anything after it other
+  than `:port` is invalid. An empty port (`host:`) is invalid (1–5 digits).
+- §5 step 2, an option present with value `null` counts as present (so
+  `"versionId": null` is `invalidOptions`).
+- Ada specifics: `VH_Log.Specialisation` is a record (no closures in
+  access-to-subprogram values), so the state check is data-driven:
+  `Check_State`, `State_Id_Prefix` (`did:vh:`) and `Expected_SCID` (the DID's
+  SCID). The version syntax is an access-to-function (`Method_Syntax`). The
+  closed-set check (with its null check) is a pass of its own before the
+  existing parameter loop. `Did_VH` (`src/did_vh.ads`) is the did:vh package;
+  the driver dispatches through `Did_VH.Dispatch`. DID URLs are split on the
+  ASCII delimiter bytes, which never occur inside multi-byte UTF-8, so raw
+  non-ASCII characters stay whole; decoded bytes are checked by a strict
+  UTF-8 validator (no overlongs, surrogates or values above U+10FFFF).
+
+### Verification (did:vh)
+
+- `sh scripts/test.sh`: 233 native library checks, now including every case
+  in `vectors/didvh/{ref,src,did-url}.json` and
+  `vectors/didvh/resolution/*.json` through `Did_VH`, and resolution of a
+  freshly created DID.
+- `node harness/run.ts --impl ada --impl typescript`: all suites green,
+  including did:vh.

@@ -161,7 +161,11 @@ package body VH_Log is
       end loop;
       Put (E, "proof", P);
    end;
-   function Create (Input : Value_Access) return Value_Access is
+   function Create
+     (Input                        : Value_Access;
+      Version_Param, Version_Value : String;
+      Version_First                : Boolean) return Value_Access
+   is
       P : Value_Access :=
         (if Has (Input, "parameters")
          then Copy (Get (Input, "parameters"))
@@ -170,11 +174,14 @@ package body VH_Log is
       R : Value_Access := Obj;
       H : Unbounded_String;
    begin
+      if Version_First and then not Has (P, Version_Param) then
+         Put (P, Version_Param, Str (Version_Value));
+      end if;
       if not Has (P, "scid") then
          Put (P, "scid", Str ("{SCID}"));
       end if;
-      if not Has (P, "logVersion") then
-         Put (P, "logVersion", Str ("vh-log:1.0"));
+      if not Has (P, Version_Param) then
+         Put (P, Version_Param, Str (Version_Value));
       end if;
       Put (E, "versionId", Str ("{SCID}"));
       Put (E, "versionTime", Get (Input, "versionTime"));
@@ -189,6 +196,8 @@ package body VH_Log is
       Put (R, "versionId", Get (E, "versionId"));
       return R;
    end;
+   function Create (Input : Value_Access) return Value_Access
+   is (Create (Input, "logVersion", "vh-log:1.0", False));
    function Update (Input : Value_Access) return Value_Access is
       L        : constant String := S (Get (Input, "log"));
       Entries  : Value_Access := Parse_Log (L);
@@ -389,22 +398,40 @@ package body VH_Log is
       end loop;
       return True;
    end;
-   function Parameter_Error (P : Value_Access; First : Boolean) return String
+   function Parameter_Error
+     (P : Value_Access; First : Boolean; Spec : Specialisation) return String
    is
-      V : Value_Access;
+      V  : Value_Access;
+      VP : constant String := To_String (Spec.Version_Param);
    begin
-      if First and then not Has (P, "logVersion") then
-         return "unsupported-log-version";
+      -- A closed parameter set is checked first, right after the null check.
+      if Spec.Closed /= null then
+         for M of P.Children loop
+            if M.Item.Tag = Null_Value
+              or else not Contains (Spec.Closed, To_String (M.Key))
+            then
+               return "invalid-parameter";
+            end if;
+         end loop;
+      end if;
+      if First and then not Has (P, VP) then
+         return
+           (if Spec.Version_Syntax /= null
+            then "invalid-parameter"
+            else "unsupported-log-version");
       end if;
       for M of P.Children loop
          declare
             K : constant String := To_String (M.Key);
          begin
             V := M.Item;
-            if K = "logVersion" then
-               if V.Tag /= String_Value then
+            if K = VP then
+               if V.Tag /= String_Value
+                 or else (Spec.Version_Syntax /= null
+                          and then not Spec.Version_Syntax (S (V)))
+               then
                   return "invalid-parameter";
-               elsif S (V) /= "vh-log:1.0" then
+               elsif S (V) /= To_String (Spec.Accepted) then
                   return "unsupported-log-version";
                end if;
             elsif K = "scid" then
@@ -500,7 +527,8 @@ package body VH_Log is
      (E, P     : Value_Access;
       N        : Positive;
       Previous : Value_Access;
-      Now      : Long_Long_Integer) return String
+      Now      : Long_Long_Integer;
+      Spec     : Specialisation) return String
    is
       Changes : Value_Access := Get (E, "parameters");
       Keys    : Value_Access;
@@ -525,7 +553,7 @@ package body VH_Log is
       then
          return "invalid-entry";
       end if;
-      C := To_Unbounded_String (Parameter_Error (Changes, N = 1));
+      C := To_Unbounded_String (Parameter_Error (Changes, N = 1, Spec));
       if Length (C) > 0 then
          return To_String (C);
       end if;
@@ -631,6 +659,21 @@ package body VH_Log is
             end if;
          end;
       end if;
+      if Spec.Check_State then
+         declare
+            Log_SCID : constant String :=
+              S (Get ((if N = 1 then Changes else P), "scid"));
+            ID       : constant Value_Access := Get (Get (E, "state"), "id");
+         begin
+            if (Length (Spec.Expected_SCID) > 0
+                and then Log_SCID /= To_String (Spec.Expected_SCID))
+              or else ID.Tag /= String_Value
+              or else S (ID) /= To_String (Spec.State_Id_Prefix) & Log_SCID
+            then
+               return "invalid-state";
+            end if;
+         end;
+      end if;
       return "";
    end;
    function Witness_File_Valid (W : Value_Access) return Boolean is
@@ -700,7 +743,9 @@ package body VH_Log is
       Now                   : Long_Long_Integer;
       Trusted_Entries       : Value_Access := null;
       Trusted_Configs       : Value_Access := null;
-      Trusted_Witness_Lists : Value_Access := null) return Verified_Log
+      Trusted_Witness_Lists : Value_Access := null;
+      Spec                  : Specialisation := (others => <>))
+      return Verified_Log
    is
       R          : Verified_Log;
       P          : Value_Access := Defaults;
@@ -727,7 +772,7 @@ package body VH_Log is
             R.Valid_Count := N;
          else
             E := At_Index (R.Entries, N);
-            Code := To_Unbounded_String (Entry_Error (E, P, N, Prev, Now));
+            Code := To_Unbounded_String (Entry_Error (E, P, N, Prev, Now, Spec));
             if Length (Code) > 0 then
                R.First_Invalid := N;
                R.Error := Error_Object (To_String (Code), N);
@@ -827,7 +872,20 @@ package body VH_Log is
       Put (Get (R, "error"), "fork", F);
       return R;
    end;
-   function Resolve (Input : Value_Access) return Value_Access is
+   function Timestamp_Valid (Text : String) return Boolean is
+      T : Long_Long_Integer;
+   begin
+      T := Timestamp (Text);
+      return T = T;
+   exception
+      when others =>
+         return False;
+   end;
+   function Watcher_URL_Valid (Text : String) return Boolean
+   is (Valid_Watcher (Text));
+   function Resolve
+     (Input : Value_Access; Spec : Specialisation) return Value_Access
+   is
       Now                        : Long_Long_Integer;
       Options                    : Value_Access := Get (Input, "options");
       Selectors                  : Natural := 0;
@@ -896,7 +954,7 @@ package body VH_Log is
       end;
       Info.Source := To_Unbounded_String ("primary");
       Info.Input := Input;
-      Info.Verification := Verify_Log (Input, Now);
+      Info.Verification := Verify_Log (Input, Now, Spec => Spec);
       Info.Accepted := Full (Info.Verification);
       Have_Full := Info.Accepted;
       Logs.Append (Info);
@@ -907,7 +965,7 @@ package body VH_Log is
             others => <>);
          Info.Unavailable := Has (O.Item, "unavailable");
          if not Info.Unavailable then
-            Info.Verification := Verify_Log (O.Item, Now);
+            Info.Verification := Verify_Log (O.Item, Now, Spec => Spec);
          end if;
          Logs.Append (Info);
       end loop;
@@ -952,7 +1010,8 @@ package body VH_Log is
                           Now,
                           Ref_Info.Verification.Entries,
                           Ref_Info.Verification.Configs,
-                          Ref_Info.Verification.Witness_Lists);
+                          Ref_Info.Verification.Witness_Lists,
+                          Spec);
                   end if;
                   if Matching
                     and then A <= B
@@ -1153,6 +1212,8 @@ package body VH_Log is
       Put (R, "error", L.Error);
       return R;
    end;
+   function Resolve (Input : Value_Access) return Value_Access
+   is (Resolve (Input, (others => <>)));
    function Controller_Input
      (Request : VH_Types.Controller_Request) return Value_Access
    is

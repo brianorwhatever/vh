@@ -1,4 +1,7 @@
 with Ada.Text_IO;
+with Ada.Directories;
+with Ada.Streams.Stream_IO;
+with Did_VH;
 with Ada.Strings.Unbounded;
 with JSON;
 with Crypto;
@@ -194,6 +197,112 @@ begin
       Check (Has (Temporary, "extra"), "nested scope document");
    end;
    Check (Has (Document, "extra"), "outer scope remains alive");
+   -- did:vh: the shared vectors through the library API.
+   declare
+      Dir : constant String := "../../vectors/didvh/";
+      function Read (Path : String) return Value_Access is
+         use Ada.Streams.Stream_IO;
+         F    : File_Type;
+         Text : String (1 .. Natural (Ada.Directories.Size (Path)));
+      begin
+         Open (F, In_File, Path);
+         String'Read (Stream (F), Text);
+         Close (F);
+         return Parse (Text);
+      end Read;
+      function Opt (V : Value_Access; K : String) return Value_Access
+      is (if Has (V, K) then Get (V, K) else Nil);
+      procedure Simple (File, Op, Field : String) is
+         Cases : constant Value_Access := Get (Read (Dir & File), "cases");
+      begin
+         for M of Cases.Children loop
+            declare
+               In_Value : constant Value_Access := Obj;
+            begin
+               Put (In_Value, Field, Get (M.Item, Field));
+               Check
+                 (Canonical (Did_VH.Dispatch (Op, In_Value))
+                  = Canonical (Get (M.Item, "expect")),
+                  File & "/" & S (Get (M.Item, "name")));
+            end;
+         end loop;
+      end Simple;
+      procedure Resolution (File : String) is
+         Cases : constant Value_Access :=
+           Get (Read (Dir & "resolution/" & File), "cases");
+      begin
+         for M of Cases.Children loop
+            declare
+               I     : constant Value_Access := Get (M.Item, "input");
+               E     : constant Value_Access := Get (M.Item, "expect");
+               Got   : constant Value_Access :=
+                 Did_VH.Resolve
+                   (Get (I, "did"),
+                    Get (I, "options"),
+                    Get (I, "now"),
+                    Get (I, "remote").Flag);
+               Meta  : constant Value_Access := Get (Got, "didResolutionMetadata");
+               Codes : constant Value_Access := Arr;
+               Name  : constant String := File & "/" & S (Get (M.Item, "name"));
+            begin
+               if Has (E, "error") then
+                  Check
+                    (S (Get (Meta, "error")) = S (Get (E, "error"))
+                     and then Get (Got, "didDocument").Tag = Null_Value
+                     and then (not Has (E, "vhLogError")
+                               or else S (Get (Get (Get (Meta, "problemDetails"), "vhLog"), "code"))
+                                       = S (Get (E, "vhLogError"))),
+                     Name);
+               else
+                  -- The vectors list at most one warning code, so order is moot.
+                  for W of Get (Meta, "warnings").Children loop
+                     Add (Codes, Get (W.Item, "code"));
+                  end loop;
+                  Check
+                    (Canonical (Get (Got, "didDocument")) = Canonical (Get (E, "didDocument"))
+                     and then Canonical (Get (Got, "didDocumentMetadata"))
+                              = Canonical (Get (E, "didDocumentMetadata"))
+                     and then Canonical (Codes)
+                              = Canonical ((if Has (E, "warnings") then Get (E, "warnings") else Arr))
+                     and then Canonical (Opt (Meta, "didLog")) = Canonical (Opt (E, "didLog"))
+                     and then Canonical (Opt (Meta, "didWitness")) = Canonical (Opt (E, "didWitness")),
+                     Name);
+               end if;
+            end;
+         end loop;
+      end Resolution;
+      Search : Ada.Directories.Search_Type;
+      Item   : Ada.Directories.Directory_Entry_Type;
+      Made   : Value_Access;
+      Did_In : constant Value_Access := Obj;
+   begin
+      Simple ("ref.json", "didvh-ref", "ref");
+      Simple ("src.json", "didvh-src", "src");
+      Simple ("did-url.json", "didvh-did-url", "didUrl");
+      Ada.Directories.Start_Search (Search, Dir & "resolution", "*.json");
+      while Ada.Directories.More_Entries (Search) loop
+         Ada.Directories.Get_Next_Entry (Search, Item);
+         Resolution (Ada.Directories.Simple_Name (Item));
+      end loop;
+      Ada.Directories.End_Search (Search);
+      Put (Did_In, "document", Parse ("{""id"":""did:vh:{SCID}""}"));
+      Put
+        (Did_In,
+         "parameters",
+         Parse ("{""updateKeys"":[""" & Crypto.Multikey (Seed) & """]}"));
+      Put (Did_In, "versionTime", Str ("2026-01-01T00:00:00Z"));
+      Put (Did_In, "signers", Parse ("[""" & Seed & """]"));
+      Made := Did_VH.Create (Did_In);
+      Check
+        (S (Get (Get (Did_VH.Resolve
+                        (Get (Made, "did"),
+                         Parse ("{""didLog"":" & Canonical (Get (Made, "log")) & "}"),
+                         Str ("2026-01-02T00:00:00Z")),
+                      "didDocument"),
+                 "id"))
+         = S (Get (Made, "did")),
+         "a created did:vh DID resolves");
+   end;
    Ada.Text_IO.Put_Line
      (Natural'Image (Checks) & " native Ada library checks passed");
 end Test_Library;
