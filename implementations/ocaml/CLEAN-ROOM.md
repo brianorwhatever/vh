@@ -120,6 +120,10 @@ source (including `implementations/typescript` and its history or diffs),
 - The pinned DIF did:vh specification
   (`decentralized-identity/didvh@cc2eff6`) only where the profile links to it;
   every rule exercised here is restated by the profile.
+- Profile commit `68b1f52` (on `feat/didvh-reference`) was read only for its
+  `docs/didvh-profile.md` and `vectors/didvh/did-url.json` changes: an
+  unescaped character in a DID URL query is kept as a whole code point. Its
+  TypeScript and generator changes were not read.
 - `vectors/didvh/**` and `harness/run.ts` (`didvh`, `didvhCross`,
   `compareDidResolution`) for the comparison rules.
 - The TypeScript driver was run only as an opaque process in the harness's
