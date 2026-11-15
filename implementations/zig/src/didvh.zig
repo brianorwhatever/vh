@@ -543,11 +543,11 @@ pub fn resolve(a: Allocator, did_value: Value, options: Value, ctx: ResolveConte
     if (witness == .object) try doc_meta.append(a, .{ .key = "witness", .value = witness });
     try doc_meta.append(a, .{ .key = "watchers", .value = md.get("watchers").? });
 
+    // A deactivated DID has no document unless a version was selected.
     const deactivated = res.metadata.?.deactivated;
-    const latest = res.metadata.?.version_number == valid;
     return object(a, &.{
         .{ .key = "didResolutionMetadata", .value = .{ .object = meta.items } },
-        .{ .key = "didDocument", .value = if (deactivated and latest) .null else res.state.? },
+        .{ .key = "didDocument", .value = if (deactivated and selectors == 0) .null else res.state.? },
         .{ .key = "didDocumentMetadata", .value = .{ .object = doc_meta.items } },
     });
 }

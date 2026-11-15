@@ -66,7 +66,7 @@ without a vector noticing:
 | 6 | §3.1 step 4: "A port is 1–5 digits" | An empty port (`https://h:/x`) is invalid. |
 | 7 | §3.1 step 5: `file://localhost/<path>` | `file://localhost` with no `/` after the host is invalid. `file:///` is valid. |
 | 8 | §5 step 2: the order of the option checks | Presence, `didLog`/`didWitness` types, references, selectors, then `checkWatchers`, `extraWatchers`, `minCopies`, `includeDidLog`. All give `invalidOptions`. |
-| 9 | §5 Deactivation: "the resolved entry is the last valid entry" | Compared by version number: the resolved `versionNumber` equals the number of valid entries. |
+| 9 | §5 Deactivation: "no version selector (`versionId`, `versionTime` or `versionNumber`) is given" | A selector is given when its key is present in the options (a bad value already failed as `invalidOptions`). Replaces the earlier "last valid entry" reading; see below. |
 | 10 | §2 Create: "`method` first, then `scid`" | The version parameter is now added before `scid` for VH-Log too (previously `scid` came first). Lines are compared as parsed JSON and hashes use JCS, so this changes no VH-Log result. |
 | 11 | §1: a missing, malformed or non-string `method` is `invalid-parameter` | Implemented by the version syntax check; VH-Log's existing `logVersion` handling (a non-string value is `unsupported-log-version`) is unchanged. |
 | 12 | §5: `didLog` "holds the original lines of the valid entries" | The lines as split on LF, byte for byte, each followed by LF. |
@@ -96,3 +96,29 @@ installs the did:vh specialisation (so check 8 applies), runs `scan-log` from
 and `didWitness`, so `didWitness` no longer depends on witness verification
 either: an entry that passes the per-entry checks but is not witnessed still
 counts.
+
+### Selecting the deactivating entry (profile change)
+
+`docs/didvh-profile.md` §5 "Deactivation" changed. A deactivated DID now has
+`didDocument: null` only when no version selector (`versionId`,
+`versionTime` or `versionNumber`) is given. With any selector the selected
+entry's document is returned, including the deactivating entry itself, and
+`deactivated` stays `true`. Before, the document was withheld whenever the
+resolved entry was the last valid entry, selected or not. Spec note 24 now
+records the same reading. The vectors `deactivation/deactivating-version`
+(selected by `versionId`) and the new `deactivation/deactivating-version-time`
+(a `versionTime` after the last entry, so it resolves to the same entry as no
+selector would) pin it.
+
+Read for this change, and nothing else: the new §5 "Deactivation" text, spec
+note 24 in `docs/spec-notes.md`, the docs and vectors parts of commit
+`1206c43`, those two vectors in `vectors/didvh/resolution/deactivation.json`,
+and the harness output. No other implementation, its history or diffs, or
+`tools/generate-*.ts` was read.
+
+Change: a new word `version-selected?` in `didvh.fs` says whether the
+options carry `versionId`, `versionTime` or `versionNumber`. `resolve-did`
+uses it for step 6, as before, and now for the document: `0` (null) when
+`deactivated` and no version is selected. The `versionNumber = valid`
+comparison is gone. `sh run.sh test.fs`, `node --test driver.test.mjs` and
+the harness pass.

@@ -408,7 +408,6 @@ let resolve_exn ~did ~options ~now ~remote =
   in
   let valid_lines = List.filteri (fun i _ -> i < valid_count) lines in
   let deactivated = Json.get "deactivated" md = Bool true in
-  let latest = Json.get "versionNumber" md = Number (float_of_int valid_count) in
   let field k = (k, Json.get k md) in
   let document_metadata =
     List.map field [ "versionId"; "versionTime"; "created"; "updated"; "scid"; "deactivated"; "ttl" ]
@@ -431,7 +430,7 @@ let resolve_exn ~did ~options ~now ~remote =
   Object
     [
       ("didResolutionMetadata", Object resolution_metadata);
-      ("didDocument", if deactivated && latest then Null else Json.get "state" result);
+      ("didDocument", if deactivated && selectors = [] then Null else Json.get "state" result);
       ("didDocumentMetadata", Object document_metadata);
     ]
 

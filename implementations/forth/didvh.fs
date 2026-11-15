@@ -386,6 +386,9 @@ variable did-remote
   o s" minCopies" j-has if o s" minCopies" j-get vo s" minCopies" put then
   vo input s" options" put input ;
 : copy-into { from to addr len -- } from addr len j-get to addr len put ;
+\ True when the options select a version.
+: version-selected? { o -- f }
+  o s" versionId" j-has o s" versionTime" j-has or o s" versionNumber" j-has or ;
 \ Resolves a did:vh DID offline (section 5) from a didvh-resolve input
 \ {did, options, now, remote?}.
 : resolve-did { input -- result }
@@ -406,7 +409,7 @@ variable did-remote
   result s" valid" j-get j-truth 0= if
     error error s" code" j-get did-code error s" message" j-get did-error exit
   then
-  o s" versionId" j-has o s" versionTime" j-has or o s" versionNumber" j-has or 0=
+  o version-selected? 0=
   error s" code" j-get s" unsupported-log-version" text= and if
     error s" featureNotSupported" error s" message" j-get did-error exit
   then
@@ -429,7 +432,8 @@ variable did-remote
   meta s" witness" j-get obj? if meta dm s" witness" copy-into then
   meta dm s" watchers" copy-into
   j-object { r } rm r s" didResolutionMetadata" put
-  meta s" deactivated" j-get j-truth meta s" versionNumber" j-get j-integer valid = and
+  \ A deactivated DID has no document unless a version was selected.
+  meta s" deactivated" j-get j-truth o version-selected? 0= and
   if 0 else result s" state" j-get then r s" didDocument" put
   dm r s" didDocumentMetadata" put r ;
 
