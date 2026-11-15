@@ -340,9 +340,8 @@ resolveDid did options now remote = either failure id $ do
           then [("didLog", str (concatMap (++ "\n") (take valid lines')))] ++ [("didWitness", if has options "didWitness" then get options "didWitness" else array []) | witnessed]
           else []
       meta = object ([("contentType", str "application/did+json")] ++ [("warnings", get m "warnings") | not (null (items (get m "warnings")))] ++ included)
-      -- A deactivated DID's document is not returned; earlier versions still are (profile §5).
-      isLast = get m "versionTime" == get m "updated"
-      document = if get m "deactivated" == Boolean True && isLast then Null else get result "state"
+      -- A deactivated DID's document is returned only for an explicit version selector (profile §5).
+      document = if get m "deactivated" == Boolean True && not selected then Null else get result "state"
   pure (object [("didResolutionMetadata", meta), ("didDocument", document), ("didDocumentMetadata", metadata)])
   where
     unsupported why = Left (DidVhError "featureNotSupported" why Nothing)

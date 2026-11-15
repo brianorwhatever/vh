@@ -1965,12 +1965,11 @@ static J *resolve_did(vh_context *c, J *did, J *options, J *now, int remote) {
         if (witnessed)
             set(meta, "didWitness", has(options, "didWitness") ? get(options, "didWitness") : array(c));
     }
-    /* A deactivated DID's document is not returned; earlier versions still are (profile §5). */
-    int last = !strcmp(s(get(m, "versionTime")), s(get(m, "updated")));
+    /* A deactivated DID's document is returned only for an explicit version selector (profile §5). */
     J *out = object(c);
     set(out, "didResolutionMetadata", meta);
     set(out, "didDocument",
-        json_object_get_boolean(get(m, "deactivated")) && last ? NULL : get(result, "state"));
+        json_object_get_boolean(get(m, "deactivated")) && !selected ? NULL : get(result, "state"));
     set(out, "didDocumentMetadata", dm);
     return out;
 }

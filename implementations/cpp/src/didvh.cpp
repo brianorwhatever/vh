@@ -540,10 +540,9 @@ static Json resolve_or_throw(const Json &did, const Json &options, const Json &n
         if (witnessed)
             meta["didWitness"] = has(options, "didWitness") ? options.at("didWitness") : Json::array();
     }
-    // A deactivated DID's document is not returned; earlier versions still are (profile §5).
-    bool last = m.at("versionTime") == m.at("updated");
+    // A deactivated DID's document is returned only for an explicit version selector (profile §5).
     return {{"didResolutionMetadata", meta},
-            {"didDocument", m.at("deactivated") == true && last ? Json() : result.at("state")},
+            {"didDocument", m.at("deactivated") == true && !selected ? Json() : result.at("state")},
             {"didDocumentMetadata", metadata}};
 }
 

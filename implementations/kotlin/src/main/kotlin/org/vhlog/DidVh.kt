@@ -506,8 +506,6 @@ object DidVh {
             return fromVHLog(error)
         }
         val m = result.metadata
-        // A deactivated DID's document is not returned; earlier versions still are (profile §5).
-        val isLast = m.versionTime == m.updated
         var didLog: String? = null
         var didWitness: JsonValue? = null
         if ((o["includeDidLog"] as? JsonBool) == JsonBool.TRUE) {
@@ -519,6 +517,7 @@ object DidVh {
         val metadata = DidDocumentMetadata(
             m.versionId, m.versionTime, m.created, m.updated, m.scid, m.deactivated, m.ttl, m.witness, m.watchers,
         )
-        return DidResolution.Resolved(if (m.deactivated && isLast) null else result.state, metadata, m.warnings, didLog, didWitness)
+        // A deactivated DID's document is returned only for an explicit version selector (profile §5).
+        return DidResolution.Resolved(if (m.deactivated && !selected) null else result.state, metadata, m.warnings, didLog, didWitness)
     }
 }
