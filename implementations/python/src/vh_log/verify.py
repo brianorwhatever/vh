@@ -6,8 +6,8 @@ import calendar
 import math
 import re
 import unicodedata
-from collections.abc import Sequence
-from dataclasses import dataclass
+from collections.abc import Callable, Sequence
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any, Final, TypedDict
 
@@ -28,7 +28,9 @@ from .proof import multikey_from_verification_method, verify_proof
 __all__ = [
     "ABSENT",
     "FUTURE_TOLERANCE_SECONDS",
+    "VH_LOG",
     "Parameters",
+    "Specialisation",
     "VerifiedEntry",
     "VerifiedLog",
     "WitnessConfig",
@@ -40,7 +42,6 @@ __all__ = [
 
 #: Seconds a ``versionTime`` may be ahead of the resolver's clock (profile section 4).
 FUTURE_TOLERANCE_SECONDS: Final = 300
-SUPPORTED_LOG_VERSIONS: Final = (LOG_VERSION,)
 
 _VERSION_TIME = re.compile(r"([0-9]{4})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2}):([0-9]{2})(?:Z|\+00:00)")
 _VERSION_ID = re.compile(r"([1-9][0-9]*)-([^-]+)", re.DOTALL)
@@ -56,6 +57,41 @@ class _Absent:
 
 
 ABSENT: Final = _Absent()
+
+
+@dataclass(frozen=True)
+class Specialisation:
+    """What a specialisation of VH-Log (such as did:vh) changes in verification.
+
+    Everything else (hashing, proofs, witnesses, pre-rotation) is shared.
+    """
+
+    #: Name of the parameter that carries the log version (``logVersion`` in plain VH-Log).
+    version_parameter: str
+    #: Accepted values of the version parameter, oldest first.
+    versions: tuple[str, ...]
+    #: Syntax of a version value. When set, a missing or malformed value fails with
+    #: ``invalid-parameter``, and only a well-formed value that is not accepted fails with
+    #: ``unsupported-log-version``. Without it, every unaccepted value is ``unsupported-log-version``.
+    version_syntax: re.Pattern[str] | None = None
+    #: Parameters added to the VH-Log set. With ``None``, unknown parameters are ignored (plain
+    #: VH-Log); otherwise the set is closed and an unknown parameter fails with ``invalid-parameter``.
+    extra_parameters: tuple[str, ...] | None = None
+    #: Checks an entry's ``state`` once the SCID is known: ``(state, scid, version)``; raises VHLogError.
+    check_state: Callable[[dict[str, Any], str, int], None] | None = field(default=None, compare=False)
+
+
+#: Plain VH-Log (``vh-log:1.0``), as specified by profile vh-log-interop-0.
+VH_LOG: Final = Specialisation("logVersion", (LOG_VERSION,))
+_VH_LOG_PARAMETERS: Final = (
+    "scid",
+    "updateKeys",
+    "nextKeyHashes",
+    "witness",
+    "watchers",
+    "deactivated",
+    "ttl",
+)
 
 
 class WitnessConfig(TypedDict):
@@ -226,7 +262,28 @@ def _validate_witness(value: object, version: int) -> WitnessConfig | None:
     return {"threshold": int(threshold), "witnesses": witnesses}  # type: ignore[arg-type, return-value]
 
 
-def _apply_parameters(raw: dict[str, Any], previous: Parameters | None, version: int) -> Parameters:
+def _check_version(
+    raw: dict[str, Any], previous: Parameters | None, version: int, spec: Specialisation
+) -> None:
+    """Checks the version parameter (``logVersion``, or the specialisation's)."""
+    vp, syntax = spec.version_parameter, spec.version_syntax
+    if previous is None and vp not in raw:
+        code = ErrorCode.INVALID_PARAMETER if syntax else ErrorCode.UNSUPPORTED_LOG_VERSION
+        raise VHLogError(code, f"{vp} missing from first entry", 1)
+    if vp not in raw:
+        return
+    value = raw[vp]
+    if syntax is not None and (not isinstance(value, str) or not syntax.fullmatch(value)):
+        raise VHLogError(ErrorCode.INVALID_PARAMETER, f"malformed {vp} {to_json(value)}", version)
+    if not isinstance(value, str) or value not in spec.versions:
+        raise VHLogError(ErrorCode.UNSUPPORTED_LOG_VERSION, f"unsupported {vp} {to_json(value)}", version)
+    if previous is not None and spec.versions.index(value) < spec.versions.index(previous.log_version):
+        raise VHLogError(ErrorCode.UNSUPPORTED_LOG_VERSION, f"{vp} may not be lowered", version)
+
+
+def _apply_parameters(
+    raw: dict[str, Any], previous: Parameters | None, version: int, spec: Specialisation
+) -> Parameters:
     """Applies an entry's ``parameters`` (Read step 1 and the pre-rotation rule of step 7)."""
 
     def invalid(msg: str) -> VHLogError:
@@ -235,18 +292,12 @@ def _apply_parameters(raw: dict[str, Any], previous: Parameters | None, version:
     for key, value in raw.items():
         if value is None:
             raise invalid(f"{key} must not be null")
-    if previous is None and "logVersion" not in raw:
-        raise VHLogError(ErrorCode.UNSUPPORTED_LOG_VERSION, "logVersion missing from first entry", 1)
-    if "logVersion" in raw:
-        log_version = raw["logVersion"]
-        if not isinstance(log_version, str) or log_version not in SUPPORTED_LOG_VERSIONS:
-            raise VHLogError(
-                ErrorCode.UNSUPPORTED_LOG_VERSION, f"unsupported logVersion {to_json(log_version)}", version
-            )
-        if previous is not None and SUPPORTED_LOG_VERSIONS.index(log_version) < SUPPORTED_LOG_VERSIONS.index(
-            previous.log_version
-        ):
-            raise VHLogError(ErrorCode.UNSUPPORTED_LOG_VERSION, "logVersion may not be lowered", version)
+    if spec.extra_parameters is not None:
+        known = (spec.version_parameter, *_VH_LOG_PARAMETERS, *spec.extra_parameters)
+        for key in raw:
+            if key not in known:
+                raise invalid(f"{key} is not a parameter of this log type")
+    _check_version(raw, previous, version, spec)
     if previous is None:
         if not isinstance(raw.get("scid"), str):
             raise invalid("scid missing from first entry")
@@ -294,7 +345,7 @@ def _apply_parameters(raw: dict[str, Any], previous: Parameters | None, version:
 
     if previous is None:
         return Parameters(
-            log_version=raw["logVersion"],
+            log_version=raw[spec.version_parameter],
             scid=raw["scid"],
             update_keys=raw["updateKeys"],
             next_key_hashes=raw.get("nextKeyHashes", []),
@@ -304,7 +355,7 @@ def _apply_parameters(raw: dict[str, Any], previous: Parameters | None, version:
             ttl=int(raw.get("ttl", 3600)),
         )
     return Parameters(
-        log_version=raw.get("logVersion", previous.log_version),
+        log_version=raw.get(spec.version_parameter, previous.log_version),
         scid=previous.scid,
         update_keys=raw.get("updateKeys", previous.update_keys),
         next_key_hashes=raw.get("nextKeyHashes", previous.next_key_hashes),
@@ -365,7 +416,9 @@ def _verify_scid(entry: dict[str, Any], scid: str) -> None:
         raise VHLogError(ErrorCode.SCID_MISMATCH, "SCID does not match", 1)
 
 
-def _verify_entry(raw: dict[str, Any], previous: VerifiedEntry | None, now: int) -> VerifiedEntry:
+def _verify_entry(
+    raw: dict[str, Any], previous: VerifiedEntry | None, now: int, spec: Specialisation
+) -> VerifiedEntry:
     """Runs the per-entry checks (profile section 4, steps 1-7) on one parsed line."""
     version = previous.version_number + 1 if previous else 1
     if previous is not None and previous.parameters.deactivated:
@@ -383,7 +436,7 @@ def _verify_entry(raw: dict[str, Any], previous: VerifiedEntry | None, now: int)
             ErrorCode.INVALID_ENTRY, "entry does not have the required properties and types", version
         )
     raw_parameters: dict[str, Any] = raw["parameters"]
-    parameters = _apply_parameters(raw_parameters, previous.parameters if previous else None, version)
+    parameters = _apply_parameters(raw_parameters, previous.parameters if previous else None, version, spec)
 
     if previous is None:
         active_keys = parameters.update_keys
@@ -407,6 +460,8 @@ def _verify_entry(raw: dict[str, Any], previous: VerifiedEntry | None, now: int)
         raise VHLogError(ErrorCode.FUTURE_VERSION_TIME, "versionTime is in the future", version)
     if previous is None:
         _verify_scid(raw, parameters.scid)
+    if spec.check_state is not None:
+        spec.check_state(raw["state"], parameters.scid, version)
 
     return VerifiedEntry(raw, version, time, parameters, witness_rule)
 
@@ -479,11 +534,17 @@ def _check_witnesses(entries: list[VerifiedEntry], witness: object) -> tuple[int
     return None
 
 
-def verify_log(log: str, witness: object = ABSENT, now: int | datetime | str | None = None) -> VerifiedLog:
+def verify_log(
+    log: str,
+    witness: object = ABSENT,
+    now: int | datetime | str | None = None,
+    spec: Specialisation = VH_LOG,
+) -> VerifiedLog:
     """Verifies a whole log, returning its valid, witnessed prefix and the first failure.
 
     ``witness`` is the parsed witness file (``ABSENT`` if there is none). ``now`` is the
     resolver's clock: epoch seconds, a ``datetime`` or a ``versionTime`` string (default: now).
+    ``spec`` is plain VH-Log or a specialisation of it, such as did:vh.
     """
     clock = _to_epoch(now) if now is not None else int(datetime.now(UTC).timestamp())
     lines = parse_log_lines(log)
@@ -505,7 +566,7 @@ def verify_log(log: str, witness: object = ABSENT, now: int | datetime | str | N
                 raise VHLogError(
                     ErrorCode.INVALID_LOG, f"line {i + 1} has a non-finite number or a lone surrogate", i + 1
                 )
-            entries.append(_verify_entry(raw, entries[-1] if entries else None, clock))
+            entries.append(_verify_entry(raw, entries[-1] if entries else None, clock, spec))
         except VHLogError as e:
             failure = e.to_report()
             break

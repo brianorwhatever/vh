@@ -150,14 +150,17 @@ def create_log(
     parameters: Mapping[str, Any] | None,
     version_time: str,
     signers: Sequence[str | bytes],
+    version_parameter: str = "logVersion",
+    version: str = LOG_VERSION,
 ) -> CreatedLog:
     """Creates a one-entry log. ``scid`` and ``logVersion`` parameters are added if absent.
 
     ``{SCID}`` placeholders in ``state`` and ``parameters`` are replaced by the SCID.
-    ``signers`` are Ed25519 seeds (hex or bytes); each adds one proof, in order.
+    ``signers`` are Ed25519 seeds (hex or bytes); each adds one proof, in order. A
+    specialisation passes its own version parameter and value (did:vh: ``method``).
     """
     params = dict(parameters or {})
-    params.setdefault("logVersion", LOG_VERSION)
+    params.setdefault(version_parameter, version)
     params.setdefault("scid", SCID_PLACEHOLDER)
     entry, scid = seal_genesis(
         {"versionId": SCID_PLACEHOLDER, "versionTime": version_time, "parameters": params, "state": state},

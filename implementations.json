@@ -46,7 +46,8 @@
         "python",
         "-m",
         "vh_log.driver"
-      ]
+      ],
+      "didvh": true
     },
     {
       "name": "elixir",
