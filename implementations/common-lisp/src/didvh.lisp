@@ -307,12 +307,13 @@ DID URL is invalid (invalidDidUrl)."
              "didDocument" :null
              "didDocumentMetadata" (make-json)))
 
-(defun lines-need-witnessing-p (lines)
-  "True if some entry among LINES sets a non-empty witness list."
-  (some (lambda (line)
-          (let ((witness (and (json-object-p line) (jget (jget line "parameters") "witness"))))
-            (and (json-object-p witness) (jpairs witness))))
-        lines))
+(defun log-needs-witnessing-p (lines scid now)
+  "True if the log needs witnessing (§5 step 4): the witness list that applies
+(profile.md §3) to some entry before the first one failing a per-entry check,
+with the did:vh specialisation, is not {}. No witness file is involved."
+  (let ((*specialisation* (did-vh-specialisation scid))
+        (seconds (parse-version-time now)))
+    (and seconds (some #'log-entry-witness-applies (verify-entries lines seconds)))))
 
 (defun extra-watcher-p (url)
   (and (stringp url) (starts-with-p "https://" url) (watcher-url-p url)))
@@ -372,8 +373,9 @@ didDocument and didDocumentMetadata."
             (fail "featureNotSupported" "this resolver does not query watchers"))
           (let* ((text (opt "didLog"))
                  (lines (parse-log-lines text)))
-            ;; 4. A srcWitness matters only if the log needs witnessing.
-            (when (and (has "srcWitness") (lines-need-witnessing-p lines))
+            ;; 4. A srcWitness matters only if the log needs witnessing: some
+            ;; entry that passes the per-entry checks has a witness list.
+            (when (and (has "srcWitness") (log-needs-witnessing-p lines scid now))
               (fail "featureNotSupported" "this resolver does not retrieve srcWitness"))
             ;; 5. VH-Log resolution with the did:vh specialisation.
             (let* ((selected (some #'has '("versionId" "versionTime" "versionNumber")))
@@ -396,7 +398,6 @@ didDocument and didDocumentMetadata."
                      (latest-p (= (jget metadata "versionNumber") valid))
                      (witness (jget metadata "witness"))
                      (warnings (jget metadata "warnings"))
-                     (needs-witnessing (lines-need-witnessing-p (subseq lines 0 valid)))
                      (resolution-metadata
                        (apply #'make-json "contentType" "application/did+json"
                               (append
@@ -404,7 +405,7 @@ didDocument and didDocumentMetadata."
                                (when (eq (opt "includeDidLog") :true)
                                  (append
                                   (list "didLog" (format nil "~{~a~%~}" (subseq (split-log-lines text) 0 valid)))
-                                  (when needs-witnessing
+                                  (when (log-needs-witnessing-p lines scid now)
                                     (list "didWitness" (if (has "didWitness") (opt "didWitness") #()))))))))
                      (document-metadata
                        (apply #'make-json
