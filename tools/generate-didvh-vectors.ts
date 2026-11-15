@@ -412,6 +412,19 @@ group("options", () => {
   vector("src-witness-needed", "This resolver does not retrieve a srcWitness the log needs.", [S.refs, PROFILE + "#5-resolution"],
     { did: w.did, options: { didLog: w.log, srcWitness: "https://example.com/did-witness.json" } }, { error: "featureNotSupported" });
 
+  const invalidWitness = new DidLog().genesis().update({ witness: witnessConfig(1, "wA") }).tamper((e) => {
+    (e.proof as Json[])[0].proofValue = createProof({ x: 1 }, KEYS.k1).proofValue;
+  });
+  vector("src-witness-invalid-entry", "A witness list set only in an invalid entry is never active, so srcWitness is ignored.", [S.refs, PROFILE + "#5-resolution"],
+    { did: invalidWitness.did, options: { didLog: invalidWitness.log, srcWitness: "https://example.com/did-witness.json" } },
+    { didDocument: invalidWitness.state(1), warnings: ["invalid-entries"] });
+  vector("include-did-log-invalid-witness-entry", "No didWitness is returned when only an invalid entry sets a witness list.", [S.meta],
+    { did: invalidWitness.did, options: { didLog: invalidWitness.log, didWitness: [], includeDidLog: true } },
+    { didDocument: invalidWitness.state(1), warnings: ["invalid-entries"] });
+  const laterWitness = new DidLog().genesis().update({ witness: witnessConfig(1, "wA") });
+  vector("src-witness-later-entry", "A valid later entry that turns witnessing on makes the log need witnessing.", [S.refs, PROFILE + "#5-resolution"],
+    { did: laterWitness.did, options: { didLog: laterWitness.log, srcWitness: "https://example.com/did-witness.json" } }, { error: "featureNotSupported" });
+
   const u = new DidLog().genesis().update().update().tamper((e) => {
     (e.proof as Json[])[0].proofValue = createProof({ x: 1 }, KEYS.k1).proofValue;
   });

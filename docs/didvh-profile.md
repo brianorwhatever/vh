@@ -194,10 +194,18 @@ a `file` or `loopback` `srcLog` or `srcWitness` is `invalidOptions`.
    - **Profile:** other options (for example `accept`) are ignored.
 3. `featureNotSupported` for a `srcLog`, a `checkWatchers` other than `0`, or
    a non-empty `extraWatchers`.
-4. A `srcWitness` is used only if the log needs witnessing, meaning some
-   entry has an active witness list. If it does, this resolver gives
-   `featureNotSupported`. Otherwise the `srcWitness` is ignored, as the spec
-   requires.
+4. A `srcWitness` is used only if the log needs witnessing. If it does, this
+   resolver gives `featureNotSupported`. Otherwise the `srcWitness` is ignored,
+   as the spec requires.
+
+   **The log needs witnessing** when some *valid* entry needs witnessing: run
+   the per-entry checks (`profile.md` §4 checks 1–7, plus check 8 from §1)
+   without a witness file, and look at the entries before the first one that
+   fails. The log needs witnessing if the witness list that applies to any of
+   those entries (`profile.md` §3) is not `{}`. This follows the spec's "if
+   the active parameters of the DID Log require witnesses": a `witness`
+   parameter set only in an invalid entry never becomes active, so a log
+   whose only witness list is in an invalid entry does not need witnessing.
 5. VH-Log resolution of `didLog` with the did:vh specialisation for this DID,
    with `versionId`, `versionTime`, `versionNumber` and `minCopies`. With no
    watchers there is one copy, so a `minCopies` above 1 gives
