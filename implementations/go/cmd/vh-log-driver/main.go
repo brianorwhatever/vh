@@ -241,9 +241,130 @@ var ops = map[string]opFunc{
 		return vhlog.ObjectOf("proof", proof), nil
 	},
 	"resolve": resolve,
+	// did:vh (docs/interop-protocol.md, "did:vh operations")
+	"didvh-create": func(in *vhlog.Object) (any, error) {
+		document, _ := in.Get("document")
+		params, err := optionalObj(in, "parameters")
+		if err != nil {
+			return nil, err
+		}
+		versionTime, err := str(in, "versionTime")
+		if err != nil {
+			return nil, err
+		}
+		signers, err := seeds(in)
+		if err != nil {
+			return nil, err
+		}
+		created, err := vhlog.CreateDid(document, params, versionTime, signers)
+		if err != nil {
+			return nil, err
+		}
+		return vhlog.ObjectOf("log", created.Log, "did", created.Did, "scid", created.SCID, "versionId", created.VersionID), nil
+	},
+	"didvh-update": func(in *vhlog.Object) (any, error) {
+		logText, err := str(in, "log")
+		if err != nil {
+			return nil, err
+		}
+		document, _ := in.Get("document")
+		params, err := optionalObj(in, "parameters")
+		if err != nil {
+			return nil, err
+		}
+		versionTime, err := str(in, "versionTime")
+		if err != nil {
+			return nil, err
+		}
+		signers, err := seeds(in)
+		if err != nil {
+			return nil, err
+		}
+		updated, err := vhlog.UpdateDid(logText, document, params, versionTime, signers)
+		if err != nil {
+			return nil, err
+		}
+		return vhlog.ObjectOf("log", updated.Log, "versionId", updated.VersionID), nil
+	},
+	"didvh-resolve": func(in *vhlog.Object) (any, error) {
+		did, _ := optionalStr(in, "did")
+		options, ok := in.Get("options")
+		if !ok {
+			options = vhlog.NewObject()
+		}
+		ctx := vhlog.ResolverContext{}
+		ctx.Remote, _ = optionalBool(in, "remote")
+		if v, ok := in.Get("now"); ok {
+			s, _ := v.(string)
+			now, valid := vhlog.ParseVersionTime(s)
+			if !valid {
+				err := &vhlog.DidVhError{Code: vhlog.DidVhInvalidOptions, Message: "now must be a whole-second UTC ISO 8601 time"}
+				return (&vhlog.DidResolution{Error: err}).JSON(), nil
+			}
+			ctx.Now = now
+		}
+		return vhlog.ResolveDid(did, options, ctx).JSON(), nil
+	},
+	"didvh-ref": func(in *vhlog.Object) (any, error) {
+		ref, _ := optionalStr(in, "ref")
+		if !isStringMember(in, "ref") {
+			ref = "\x00" // not a reference
+		}
+		kind, err := vhlog.CheckRef(ref)
+		if err != nil {
+			return rejected(err)
+		}
+		return vhlog.ObjectOf("valid", true, "kind", string(kind)), nil
+	},
+	"didvh-src": func(in *vhlog.Object) (any, error) {
+		src, _ := optionalStr(in, "src")
+		if !isStringMember(in, "src") {
+			src = "\x00" // not a src value
+		}
+		srcLog, srcWitness, err := vhlog.SrcReferences(src)
+		if err != nil {
+			return rejected(err)
+		}
+		return vhlog.ObjectOf("valid", true, "srcLog", srcLog, "srcWitness", srcWitness), nil
+	},
+	"didvh-did-url": func(in *vhlog.Object) (any, error) {
+		didURL, _ := optionalStr(in, "didUrl")
+		if !isStringMember(in, "didUrl") {
+			didURL = "\x00" // not a DID URL
+		}
+		u, err := vhlog.ParseDidURL(didURL)
+		if err != nil {
+			return rejected(err)
+		}
+		out := vhlog.ObjectOf("valid", true, "did", u.Did, "options", u.Options)
+		if u.HasFragment {
+			out.Set("fragment", u.Fragment)
+		}
+		return out, nil
+	},
 }
 
 func resolve(in *vhlog.Object) (any, error) { return vhlog.ResolveRequest(in) }
+
+// rejected turns a did:vh error into {"valid": false, "error": code}.
+func rejected(err error) (any, error) {
+	var dErr *vhlog.DidVhError
+	if !errors.As(err, &dErr) {
+		return nil, err
+	}
+	return vhlog.ObjectOf("valid", false, "error", string(dErr.Code)), nil
+}
+
+func isStringMember(o *vhlog.Object, key string) bool {
+	_, ok := optionalStr(o, key)
+	return ok
+}
+
+func optionalBool(o *vhlog.Object, key string) (bool, bool) {
+	v, _ := o.Get(key)
+	b, ok := v.(bool)
+	return b, ok
+}
 
 func str(o *vhlog.Object, key string) (string, error) {
 	v, _ := o.Get(key)

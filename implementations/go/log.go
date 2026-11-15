@@ -104,12 +104,19 @@ type CreatedLog struct {
 // CreateLog does not validate parameters (profile §5): it signs whatever it is
 // given, so verify the result with VerifyLog if the input is untrusted.
 func CreateLog(state any, parameters *Object, versionTime string, signers []ed25519.PrivateKey) (*CreatedLog, error) {
+	return CreateLogWith(state, parameters, versionTime, signers, "logVersion", LogVersion)
+}
+
+// CreateLogWith is CreateLog for a specialisation with its own version
+// parameter and value (did:vh uses "method" and "did:vh:1.0"); either way it
+// is added only if absent.
+func CreateLogWith(state any, parameters *Object, versionTime string, signers []ed25519.PrivateKey, versionParameter, version string) (*CreatedLog, error) {
 	params := NewObject()
 	if parameters != nil {
 		params = parameters.Clone()
 	}
-	if !params.Has("logVersion") {
-		params.Set("logVersion", LogVersion)
+	if !params.Has(versionParameter) {
+		params.Set(versionParameter, version)
 	}
 	if !params.Has("scid") {
 		params.Set("scid", SCIDPlaceholder)

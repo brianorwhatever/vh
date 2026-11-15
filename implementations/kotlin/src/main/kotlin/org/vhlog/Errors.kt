@@ -15,6 +15,7 @@ enum class ErrorCode(val code: String) {
     INVALID_VERSION_TIME("invalid-version-time"),
     FUTURE_VERSION_TIME("future-version-time"),
     SCID_MISMATCH("scid-mismatch"),
+    INVALID_STATE("invalid-state"),
     ENTRY_AFTER_DEACTIVATION("entry-after-deactivation"),
     WITNESS_THRESHOLD_NOT_MET("witness-threshold-not-met"),
     INVALID_WITNESS_FILE("invalid-witness-file"),

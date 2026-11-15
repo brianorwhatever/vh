@@ -68,8 +68,49 @@ func handle(_ op: String, _ i: JSONValue) throws -> JSONValue {
         return ["proof": .object(proof)]
     case "resolve":
         return try resolve(request: i).json
+    // did:vh (docs/interop-protocol.md, "did:vh operations")
+    case "didvh-create":
+        let r = try DidVh.createDid(document: i["document"] ?? .object([:]), parameters: i["parameters"]?.objectValue ?? [:],
+                                    versionTime: try i.string("versionTime"), signers: try i.signers("signers"))
+        return ["log": .string(r.log), "did": .string(r.did), "scid": .string(r.scid), "versionId": .string(r.versionId)]
+    case "didvh-update":
+        let r = try DidVh.updateDid(log: try i.string("log"), document: i["document"] ?? .object([:]),
+                                    parameters: i["parameters"]?.objectValue ?? [:], versionTime: try i.string("versionTime"),
+                                    signers: try i.signers("signers"))
+        return ["log": .string(r.log), "versionId": .string(r.versionId)]
+    case "didvh-resolve":
+        let context = DidVh.ResolverContext(now: i["now"].map { $0.stringValue ?? "" }, remote: i["remote"]?.boolValue ?? false)
+        return DidVh.resolve(did: i["did"]?.stringValue ?? "", options: i["options"] ?? .object([:]), context: context).json
+    case "didvh-ref":
+        return rejected { () throws(DidVhError) in
+            guard let ref = i["ref"]?.stringValue else { throw DidVhError(.invalidOptions, "ref must be a string") }
+            return ["valid": true, "kind": .string(try DidVh.checkRef(ref).rawValue)]
+        }
+    case "didvh-src":
+        return rejected { () throws(DidVhError) in
+            guard let src = i["src"]?.stringValue else { throw DidVhError(.invalidDidUrl, "src must be a string") }
+            let refs = try DidVh.srcReferences(src)
+            return ["valid": true, "srcLog": .string(refs.srcLog), "srcWitness": .string(refs.srcWitness)]
+        }
+    case "didvh-did-url":
+        return rejected { () throws(DidVhError) in
+            guard let didURL = i["didUrl"]?.stringValue else { throw DidVhError(.invalidDidUrl, "didUrl must be a string") }
+            let u = try DidVh.parseDidURL(didURL)
+            var out: JSONObject = ["valid": true, "did": .string(u.did), "options": .object(u.options)]
+            if let fragment = u.fragment { out["fragment"] = .string(fragment) }
+            return .object(out)
+        }
     default:
         throw DriverError("unknown op \(op)")
+    }
+}
+
+/// Runs `body`, turning a did:vh error into `{"valid": false, "error": code}`.
+func rejected(_ body: () throws(DidVhError) -> JSONValue) -> JSONValue {
+    do throws(DidVhError) {
+        return try body()
+    } catch {
+        return ["valid": false, "error": .string(error.code.rawValue)]
     }
 }
 

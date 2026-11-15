@@ -13,6 +13,7 @@ public enum ErrorCode: String, Sendable, CaseIterable, Codable {
     case invalidVersionTime = "invalid-version-time"
     case futureVersionTime = "future-version-time"
     case scidMismatch = "scid-mismatch"
+    case invalidState = "invalid-state"
     case entryAfterDeactivation = "entry-after-deactivation"
     case witnessThresholdNotMet = "witness-threshold-not-met"
     case invalidWitnessFile = "invalid-witness-file"

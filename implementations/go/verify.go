@@ -14,7 +14,35 @@ const FutureTolerance = 300 * time.Second
 
 const defaultTTL = 3600
 
-var supportedLogVersions = []string{LogVersion}
+// Specialisation is what a specialisation of VH-Log (such as did:vh) changes
+// in verification. Everything else (hashing, proofs, witnesses, pre-rotation)
+// is shared.
+type Specialisation struct {
+	// VersionParameter is the name of the parameter that carries the log
+	// version ("logVersion" in plain VH-Log).
+	VersionParameter string
+	// Versions are the accepted values of the version parameter, oldest first.
+	Versions []string
+	// VersionSyntax, when set, says whether a version value is well formed. A
+	// missing or malformed value then fails with ErrInvalidParameter, and only
+	// a well-formed value that is not accepted fails with
+	// ErrUnsupportedLogVersion. Without it, every unaccepted value is
+	// ErrUnsupportedLogVersion (plain VH-Log).
+	VersionSyntax func(string) bool
+	// ClosedParameters makes the parameter set closed: a parameter other than
+	// the version parameter, the VH-Log ones and ExtraParameters fails with
+	// ErrInvalidParameter. Otherwise unknown parameters are ignored.
+	ClosedParameters bool
+	ExtraParameters  []string
+	// CheckState, when set, checks every entry's state after the SCID check.
+	CheckState func(state *Object, scid string, version int) error
+}
+
+// VHLog is plain VH-Log ("vh-log:1.0"), as specified by profile vh-log-interop-0.
+var VHLog = &Specialisation{VersionParameter: "logVersion", Versions: []string{LogVersion}}
+
+// vhLogParameters are the VH-Log parameters, excluding the version parameter.
+var vhLogParameters = []string{"scid", "updateKeys", "nextKeyHashes", "witness", "watchers", "deactivated", "ttl"}
 
 // Witness is one entry of a witness list.
 type Witness struct {
@@ -29,6 +57,8 @@ type WitnessConfig struct {
 
 // Parameters is the parameter set active after an entry.
 type Parameters struct {
+	// LogVersion is the value of the specialisation's version parameter
+	// (logVersion for plain VH-Log).
 	LogVersion    string
 	SCID          string
 	UpdateKeys    []string
@@ -230,7 +260,7 @@ func validateWitness(value any, version int) (*WitnessConfig, error) {
 
 // applyParameters applies an entry's parameters to the previously active set
 // (Read step 1 and the pre-rotation rule of step 7).
-func applyParameters(raw *Object, previous *Parameters, version int) (Parameters, error) {
+func applyParameters(raw *Object, previous *Parameters, version int, spec *Specialisation) (Parameters, error) {
 	invalid := func(format string, args ...any) error {
 		return newError(ErrInvalidParameter, version, format, args...)
 	}
@@ -239,16 +269,31 @@ func applyParameters(raw *Object, previous *Parameters, version int) (Parameters
 			return Parameters{}, invalid("%s must not be null", k)
 		}
 	}
-	if previous == nil && !raw.Has("logVersion") {
-		return Parameters{}, newError(ErrUnsupportedLogVersion, 1, "logVersion missing from first entry")
-	}
-	if v, ok := raw.Get("logVersion"); ok {
-		s, isString := v.(string)
-		if !isString || !slices.Contains(supportedLogVersions, s) {
-			return Parameters{}, newError(ErrUnsupportedLogVersion, version, "unsupported logVersion %s", Stringify(v))
+	vp := spec.VersionParameter
+	if spec.ClosedParameters {
+		for _, k := range raw.keys {
+			if k != vp && !slices.Contains(vhLogParameters, k) && !slices.Contains(spec.ExtraParameters, k) {
+				return Parameters{}, invalid("%s is not a parameter of this log type", k)
+			}
 		}
-		if previous != nil && slices.Index(supportedLogVersions, s) < slices.Index(supportedLogVersions, previous.LogVersion) {
-			return Parameters{}, newError(ErrUnsupportedLogVersion, version, "logVersion may not be lowered")
+	}
+	if previous == nil && !raw.Has(vp) {
+		code := ErrUnsupportedLogVersion
+		if spec.VersionSyntax != nil {
+			code = ErrInvalidParameter
+		}
+		return Parameters{}, newError(code, 1, "%s missing from first entry", vp)
+	}
+	if v, ok := raw.Get(vp); ok {
+		s, isString := v.(string)
+		if spec.VersionSyntax != nil && (!isString || !spec.VersionSyntax(s)) {
+			return Parameters{}, invalid("malformed %s %s", vp, Stringify(v))
+		}
+		if !isString || !slices.Contains(spec.Versions, s) {
+			return Parameters{}, newError(ErrUnsupportedLogVersion, version, "unsupported %s %s", vp, Stringify(v))
+		}
+		if previous != nil && slices.Index(spec.Versions, s) < slices.Index(spec.Versions, previous.LogVersion) {
+			return Parameters{}, newError(ErrUnsupportedLogVersion, version, "%s may not be lowered", vp)
 		}
 	}
 	if previous == nil {
@@ -328,7 +373,7 @@ func applyParameters(raw *Object, previous *Parameters, version int) (Parameters
 	}
 
 	p := Parameters{Witness: witness, Deactivated: deactivated, TTL: ttl}
-	if v, ok := raw.Get("logVersion"); ok {
+	if v, ok := raw.Get(vp); ok {
 		p.LogVersion = v.(string)
 	} else {
 		p.LogVersion = previous.LogVersion
@@ -439,7 +484,7 @@ func verifySCID(entry *Object, scid string) error {
 }
 
 // verifyEntry runs the per-entry checks (profile §4, steps 1–7) on one parsed line.
-func verifyEntry(raw any, previous *VerifiedEntry, now time.Time) (*VerifiedEntry, error) {
+func verifyEntry(raw any, previous *VerifiedEntry, now time.Time, spec *Specialisation) (*VerifiedEntry, error) {
 	version := 1
 	if previous != nil {
 		version = previous.VersionNumber + 1
@@ -479,7 +524,7 @@ func verifyEntry(raw any, previous *VerifiedEntry, now time.Time) (*VerifiedEntr
 	if previous != nil {
 		prevParams = &previous.Parameters
 	}
-	params, err := applyParameters(rawParams, prevParams, version)
+	params, err := applyParameters(rawParams, prevParams, version, spec)
 	if err != nil {
 		return nil, err
 	}
@@ -524,6 +569,12 @@ func verifyEntry(raw any, previous *VerifiedEntry, now time.Time) (*VerifiedEntr
 	}
 	if previous == nil {
 		if err := verifySCID(entry, params.SCID); err != nil {
+			return nil, err
+		}
+	}
+	if spec.CheckState != nil {
+		state, _ := entry.Get("state")
+		if err := spec.CheckState(state.(*Object), params.SCID, version); err != nil {
 			return nil, err
 		}
 	}
@@ -649,6 +700,11 @@ func checkWitnesses(entries []*VerifiedEntry, witnessFile []byte) (int, *VHLogEr
 // and the first failure. witnessFile is the raw content of the witness file,
 // or nil if there is none. now is the resolver's clock.
 func VerifyLog(log string, witnessFile []byte, now time.Time) *VerifiedLog {
+	return VerifyLogWith(log, witnessFile, now, VHLog)
+}
+
+// VerifyLogWith is VerifyLog for a specialisation of VH-Log, such as did:vh.
+func VerifyLogWith(log string, witnessFile []byte, now time.Time, spec *Specialisation) *VerifiedLog {
 	lines := SplitLogLines(log)
 	result := &VerifiedLog{Lines: lines}
 	if log == "" {
@@ -658,7 +714,7 @@ func VerifyLog(log string, witnessFile []byte, now time.Time) *VerifiedLog {
 	}
 	var previous *VerifiedEntry
 	for i, line := range lines {
-		entry, err := verifyLine(line, i+1, previous, now)
+		entry, err := verifyLine(line, i+1, previous, now, spec)
 		if err != nil {
 			result.Failure = err
 			break
@@ -673,7 +729,7 @@ func VerifyLog(log string, witnessFile []byte, now time.Time) *VerifiedLog {
 	return result
 }
 
-func verifyLine(line string, number int, previous *VerifiedEntry, now time.Time) (*VerifiedEntry, *VHLogError) {
+func verifyLine(line string, number int, previous *VerifiedEntry, now time.Time, spec *Specialisation) (*VerifiedEntry, *VHLogError) {
 	raw, err := ParseJSON(line)
 	if err != nil {
 		return nil, newError(ErrInvalidLog, number, "line %d is not JSON", number)
@@ -684,7 +740,7 @@ func verifyLine(line string, number int, previous *VerifiedEntry, now time.Time)
 	if !isSafeJSON(raw) {
 		return nil, newError(ErrInvalidLog, number, "line %d has a non-finite number or a lone surrogate", number)
 	}
-	entry, err := verifyEntry(raw, previous, now)
+	entry, err := verifyEntry(raw, previous, now, spec)
 	if err != nil {
 		return nil, err.(*VHLogError)
 	}

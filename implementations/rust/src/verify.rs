@@ -13,10 +13,72 @@ use std::collections::HashSet;
 
 /// Seconds a `versionTime` may be ahead of the resolver's clock (profile §4).
 pub const FUTURE_TOLERANCE_SECONDS: i64 = 300;
-const SUPPORTED_LOG_VERSIONS: [&str; 1] = [LOG_VERSION];
 const ENTRY_KEYS: [&str; 5] = ["versionId", "versionTime", "parameters", "state", "proof"];
 /// Default `ttl` in seconds.
 pub const DEFAULT_TTL: u64 = 3600;
+/// The VH-Log parameters, excluding the version parameter.
+const VH_LOG_PARAMETERS: [&str; 7] = [
+    "scid",
+    "updateKeys",
+    "nextKeyHashes",
+    "witness",
+    "watchers",
+    "deactivated",
+    "ttl",
+];
+
+/// A state check run on every entry once the SCID is known: `(state, scid, version)`.
+pub type StateCheck =
+    dyn Fn(&Map<String, Value>, &str, u64) -> Result<(), VhLogError> + Send + Sync;
+
+/// What a specialisation of VH-Log (such as did:vh) changes in verification.
+/// Everything else (hashing, proofs, witnesses, pre-rotation) is shared.
+pub struct Specialisation {
+    /// Name of the parameter that carries the log version (`logVersion` in plain VH-Log).
+    pub version_parameter: String,
+    /// Accepted values of the version parameter, oldest first.
+    pub versions: Vec<String>,
+    /// Syntax of a version value. When set, a missing or malformed value fails
+    /// with `invalid-parameter`, and only a well-formed value that is not
+    /// accepted fails with `unsupported-log-version`. Without it, every
+    /// unaccepted value is `unsupported-log-version` (plain VH-Log).
+    pub version_syntax: Option<fn(&str) -> bool>,
+    /// Parameters the specialisation adds to the VH-Log set. With `None`, any
+    /// unknown parameter is ignored (plain VH-Log); otherwise the set is closed
+    /// and an unknown parameter fails with `invalid-parameter`.
+    pub extra_parameters: Option<Vec<String>>,
+    /// Checks every entry's `state` after the SCID check.
+    pub check_state: Option<Box<StateCheck>>,
+}
+
+impl Specialisation {
+    /// Plain VH-Log (`vh-log:1.0`), as specified by profile vh-log-interop-0.
+    pub fn vh_log() -> Self {
+        Specialisation {
+            version_parameter: "logVersion".into(),
+            versions: vec![LOG_VERSION.into()],
+            version_syntax: None,
+            extra_parameters: None,
+            check_state: None,
+        }
+    }
+}
+
+impl Default for Specialisation {
+    fn default() -> Self {
+        Self::vh_log()
+    }
+}
+
+impl std::fmt::Debug for Specialisation {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Specialisation")
+            .field("version_parameter", &self.version_parameter)
+            .field("versions", &self.versions)
+            .field("extra_parameters", &self.extra_parameters)
+            .finish_non_exhaustive()
+    }
+}
 
 /// One witness in a witness configuration. Extra properties are kept.
 #[derive(Debug, Clone, PartialEq, Serialize)]
@@ -251,26 +313,44 @@ fn apply_parameters(
     raw: &Map<String, Value>,
     previous: Option<&Parameters>,
     version: u64,
+    spec: &Specialisation,
 ) -> Result<Parameters, VhLogError> {
     let invalid = |msg: &str| VhLogError::at(ErrorCode::InvalidParameter, version, msg);
     let unsupported = |msg: String| VhLogError::at(ErrorCode::UnsupportedLogVersion, version, msg);
     if let Some(key) = raw.iter().find(|(_, v)| v.is_null()).map(|(k, _)| k) {
         return Err(invalid(&format!("{key} must not be null")));
     }
-    if previous.is_none() && !raw.contains_key("logVersion") {
-        return Err(unsupported("logVersion missing from first entry".into()));
+    let vp = spec.version_parameter.as_str();
+    if let Some(extra) = &spec.extra_parameters {
+        let known =
+            |k: &str| k == vp || VH_LOG_PARAMETERS.contains(&k) || extra.iter().any(|e| e == k);
+        if let Some(key) = raw.keys().find(|k| !known(k)) {
+            return Err(invalid(&format!(
+                "{key} is not a parameter of this log type"
+            )));
+        }
     }
-    if let Some(lv) = raw.get("logVersion") {
+    if previous.is_none() && !raw.contains_key(vp) {
+        let message = format!("{vp} missing from first entry");
+        return Err(match spec.version_syntax {
+            Some(_) => invalid(&message),
+            None => unsupported(message),
+        });
+    }
+    if let Some(lv) = raw.get(vp) {
+        if let Some(syntax) = spec.version_syntax
+            && !lv.as_str().is_some_and(syntax)
+        {
+            return Err(invalid(&format!("malformed {vp} {lv}")));
+        }
         let position = lv
             .as_str()
-            .and_then(|s| SUPPORTED_LOG_VERSIONS.iter().position(|v| *v == s))
-            .ok_or_else(|| unsupported(format!("unsupported logVersion {lv}")))?;
+            .and_then(|s| spec.versions.iter().position(|v| v == s))
+            .ok_or_else(|| unsupported(format!("unsupported {vp} {lv}")))?;
         if let Some(prev) = previous {
-            let prev_position = SUPPORTED_LOG_VERSIONS
-                .iter()
-                .position(|v| *v == prev.log_version);
+            let prev_position = spec.versions.iter().position(|v| *v == prev.log_version);
             if prev_position.is_some_and(|p| position < p) {
-                return Err(unsupported("logVersion may not be lowered".into()));
+                return Err(unsupported(format!("{vp} may not be lowered")));
             }
         }
     }
@@ -357,7 +437,7 @@ fn apply_parameters(
     };
     Ok(Parameters {
         log_version: raw
-            .get("logVersion")
+            .get(vp)
             .and_then(Value::as_str)
             .map(String::from)
             .or_else(|| previous.map(|p| p.log_version.clone()))
@@ -508,6 +588,7 @@ fn verify_entry(
     raw: Map<String, Value>,
     previous: Option<&VerifiedEntry>,
     now: i64,
+    spec: &Specialisation,
 ) -> Result<VerifiedEntry, VhLogError> {
     let version = previous.map_or(1, |p| p.version_number + 1);
     if previous.is_some_and(|p| p.parameters.deactivated) {
@@ -524,7 +605,12 @@ fn verify_entry(
             "entry does not have the required properties and types",
         )
     })?;
-    let parameters = apply_parameters(&entry.parameters, previous.map(|p| &p.parameters), version)?;
+    let parameters = apply_parameters(
+        &entry.parameters,
+        previous.map(|p| &p.parameters),
+        version,
+        spec,
+    )?;
 
     let (active_keys, witness_rule) = match previous {
         None => (parameters.update_keys.clone(), parameters.witness.clone()),
@@ -572,6 +658,9 @@ fn verify_entry(
     }
     if previous.is_none() {
         verify_scid(&raw, &parameters.scid)?;
+    }
+    if let Some(check) = &spec.check_state {
+        check(&entry.state, &parameters.scid, version)?;
     }
     Ok(VerifiedEntry {
         entry,
@@ -694,6 +783,16 @@ fn check_witnesses(
 /// `witness` is the parsed witness file, if there is one; `now` is the resolver's
 /// clock in seconds since the epoch.
 pub fn verify_log(log: &str, witness: Option<&Value>, now: i64) -> VerifiedLog {
+    verify_log_with(log, witness, now, &Specialisation::vh_log())
+}
+
+/// [`verify_log`] for a specialisation of VH-Log, such as did:vh.
+pub fn verify_log_with(
+    log: &str,
+    witness: Option<&Value>,
+    now: i64,
+    spec: &Specialisation,
+) -> VerifiedLog {
     let lines: Vec<String> = parse_log_lines(log).into_iter().map(String::from).collect();
     let mut entries: Vec<VerifiedEntry> = Vec::new();
     let mut failure = None;
@@ -713,7 +812,7 @@ pub fn verify_log(log: &str, witness: Option<&Value>, now: i64) -> VerifiedLog {
                 version,
                 format!("line {version} is not JSON"),
             )),
-            Ok(Value::Object(raw)) => verify_entry(raw, entries.last(), now),
+            Ok(Value::Object(raw)) => verify_entry(raw, entries.last(), now, spec),
             Ok(_) => Err(VhLogError::at(
                 ErrorCode::InvalidLog,
                 version,

@@ -1,6 +1,8 @@
 // Interop driver: JSON Lines requests on stdin, responses on stdout (docs/interop-protocol.md).
 package org.vhlog.driver
 
+import org.vhlog.DidVh
+import org.vhlog.DidVhException
 import org.vhlog.Ed25519Signer
 import org.vhlog.Hashes
 import org.vhlog.Jcs
@@ -13,6 +15,7 @@ import org.vhlog.JsonValue
 import org.vhlog.LogController
 import org.vhlog.ProofOptions
 import org.vhlog.Proofs
+import org.vhlog.ResolverContext
 import org.vhlog.Resolver
 import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
@@ -63,7 +66,51 @@ private val ops: Map<String, (JsonObject) -> JsonValue> = mapOf(
     },
     "witness" to { i -> result("proof" to LogController.witnessProof(i.str("versionId"), i.str("seed"), i.string("created"))) },
     "resolve" to { i -> Resolver.resolve(i).toJson() },
+    // did:vh (docs/interop-protocol.md, "did:vh operations")
+    "didvh-create" to { i ->
+        val r = DidVh.createDid(i.objOf("document"), i.obj("parameters") ?: JsonObject(), i.str("versionTime"), i.strings("signers"))
+        result("log" to JsonString(r.log), "did" to JsonString(r.did), "scid" to JsonString(r.scid), "versionId" to JsonString(r.versionId))
+    },
+    "didvh-update" to { i ->
+        val r = DidVh.updateDid(
+            i.str("log"), i.objOf("document"), i.str("versionTime"), i.strings("signers"), i.obj("parameters") ?: JsonObject(),
+        )
+        result("log" to JsonString(r.log), "versionId" to JsonString(r.versionId))
+    },
+    "didvh-resolve" to { i ->
+        val context = ResolverContext(i["now"]?.let { (it as? JsonString)?.value ?: "" }, i["remote"] == JsonBool.TRUE)
+        DidVh.resolve(i.string("did") ?: "", i["options"] ?: JsonObject(), context).toJson()
+    },
+    "didvh-ref" to { i ->
+        rejected {
+            val ref = i.string("ref") ?: throw DidVhException(org.vhlog.DidVhErrorCode.INVALID_OPTIONS, "ref must be a string")
+            result("valid" to JsonBool.TRUE, "kind" to JsonString(DidVh.checkRef(ref).wire))
+        }
+    },
+    "didvh-src" to { i ->
+        rejected {
+            val src = i.string("src") ?: throw DidVhException(org.vhlog.DidVhErrorCode.INVALID_DID_URL, "src must be a string")
+            val (srcLog, srcWitness) = DidVh.srcReferences(src)
+            result("valid" to JsonBool.TRUE, "srcLog" to JsonString(srcLog), "srcWitness" to JsonString(srcWitness))
+        }
+    },
+    "didvh-did-url" to { i ->
+        rejected {
+            val didUrl = i.string("didUrl") ?: throw DidVhException(org.vhlog.DidVhErrorCode.INVALID_DID_URL, "didUrl must be a string")
+            val u = DidVh.parseDidUrl(didUrl)
+            val out = linkedMapOf<String, JsonValue>("valid" to JsonBool.TRUE, "did" to JsonString(u.did), "options" to u.options)
+            if (u.fragment != null) out["fragment"] = JsonString(u.fragment)
+            JsonObject(out)
+        }
+    },
 )
+
+/** Runs [body], turning a did:vh error into `{"valid": false, "error": code}`. */
+private fun rejected(body: () -> JsonValue): JsonValue = try {
+    body()
+} catch (e: DidVhException) {
+    result("valid" to JsonBool.FALSE, "error" to JsonString(e.code.code))
+}
 
 /** Handles one request line and returns the response object. */
 fun handle(line: String): JsonObject {

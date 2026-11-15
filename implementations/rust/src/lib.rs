@@ -4,6 +4,7 @@
 //! - [`create_log`], [`update_log`] and [`witness_proof`] are the Log Controller operations.
 //! - [`verify_log`] runs every per-entry and witness check on a log file.
 //! - [`resolve`] selects a version, handles partial validity and compares copies.
+//! - [`didvh`] is did:vh (docs/didvh-profile.md), built on the same verifier.
 //! - [`jcs`], [`encoding`], [`hash`] and [`proof`] expose the primitives.
 //!
 //! ```
@@ -35,6 +36,7 @@
 //! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
 
+pub mod didvh;
 pub mod encoding;
 pub mod error;
 pub mod hash;
@@ -52,14 +54,14 @@ pub use hash::{MultihashCheck, check_sha256_multihash, hash_b58, key_hash};
 pub use jcs::canonicalize;
 pub use log::{
     CreatedLog, LOG_VERSION, SCID_PLACEHOLDER, UpdatedLog, compute_entry_hash, compute_scid,
-    create_log, parse_log_lines, serialize_entry, update_log, witness_proof,
+    create_log, create_log_with, parse_log_lines, serialize_entry, update_log, witness_proof,
 };
 pub use proof::{Proof, ProofOptions, Signer, create_proof, verify_proof};
 pub use resolve::{
     CopyInput, CopyReport, CopyStatus, Resolution, ResolutionMetadata, ResolveInput,
-    ResolveOptions, ResolveResult, Warning, WarningCode, resolve,
+    ResolveOptions, ResolveResult, Warning, WarningCode, resolve, resolve_with,
 };
 pub use verify::{
-    LogEntry, Parameters, VerifiedEntry, VerifiedLog, Witness, WitnessConfig, parse_version_time,
-    verify_log,
+    LogEntry, Parameters, Specialisation, VerifiedEntry, VerifiedLog, Witness, WitnessConfig,
+    parse_version_time, verify_log, verify_log_with,
 };
