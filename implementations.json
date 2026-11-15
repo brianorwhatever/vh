@@ -306,7 +306,8 @@
       "command": [
         "lua",
         "driver.lua"
-      ]
+      ],
+      "didvh": true
     },
     {
       "name": "haskell",

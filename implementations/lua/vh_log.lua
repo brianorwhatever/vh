@@ -13,6 +13,12 @@ local function contains(a,v) for _,x in ipairs(a) do if x==v then return true en
 local function every(a,f) for _,x in ipairs(a) do if not f(x) then return false end end; return true end
 local function integer(v) return type(v)=='number' and v==v and math.abs(v)~=math.huge and v==math.floor(v) end
 local function strings(v) return J.isarray(v) and every(v,function(x) return type(x)=='string' end) end
+-- A specialisation of VH-Log (such as did:vh) changes the version parameter
+-- and its value; with version_syntax, a missing or malformed version is
+-- invalid-parameter and only a well-formed, unaccepted one is
+-- unsupported-log-version; closed rejects unknown parameters; check_state(state,
+-- scid) returning false is invalid-state. Everything else is shared.
+V.VH_LOG={version_parameter='logVersion',version='vh-log:1.0',closed=false}
 function V.encode(bytes)
   local digits={}
   for i=1,#bytes do
@@ -83,8 +89,9 @@ local function lines(log)
   local a={}; local start=1
   while true do local p=log:find('\n',start,true); if not p then if start<=#log then a[#a+1]=log:sub(start) end; return a end; a[#a+1]=log:sub(start,p-1); start=p+1 end
 end
-function V.create(input)
-  local p=O{logVersion='vh-log:1.0',scid='{SCID}'}; for k,x in pairs(input.parameters) do p[k]=x end
+function V.create(input,spec)
+  spec=spec or V.VH_LOG
+  local p=O{[spec.version_parameter]=spec.version,scid='{SCID}'}; for k,x in pairs(input.parameters) do p[k]=x end
   local e=O{versionId='{SCID}',versionTime=input.versionTime,parameters=p,state=input.state}
   local id=V.scid(e); e=J.parse((J.encode(e):gsub('{SCID}',function() return id end))); e.versionId='1-'..V.entry_hash(e,id)
   local proofs=A{}; for _,s in ipairs(input.signers) do proofs[#proofs+1]=V.sign(e,s,O{created=input.versionTime}) end; e.proof=proofs
@@ -110,14 +117,22 @@ local function time(value)
   for i=1,mo-1 do days=days+months[i] end
   return days*86400+h*3600+mi*60+s
 end
-local function parameters(raw,previous,n)
+local function parameters(raw,previous,n,spec)
+  local vp=spec.version_parameter
+  local names={vp,'scid','updateKeys','nextKeyHashes','witness','watchers','ttl'}
   for _,v in pairs(raw) do if v==N then fail('invalid-parameter',n) end end
-  if (not previous and not has(raw,'logVersion')) or (has(raw,'logVersion') and raw.logVersion~='vh-log:1.0') then fail('unsupported-log-version',n) end
+  if spec.closed then for k in pairs(raw) do if k~='deactivated' and not contains(names,k) then fail('invalid-parameter',n) end end end
+  if not previous and not has(raw,vp) then fail(spec.version_syntax and 'invalid-parameter' or 'unsupported-log-version',n) end
+  if has(raw,vp) then
+    local value=raw[vp]
+    if spec.version_syntax and (type(value)~='string' or not spec.version_syntax(value)) then fail('invalid-parameter',n) end
+    if value~=spec.version then fail('unsupported-log-version',n) end
+  end
   if (previous and has(raw,'scid')) or (not previous and (type(raw.scid)~='string' or not has(raw,'updateKeys'))) then fail('invalid-parameter',n) end
   if has(raw,'updateKeys') and (not strings(raw.updateKeys) or not every(raw.updateKeys,V.public_key)) then fail('invalid-parameter',n) end
   if has(raw,'nextKeyHashes') and (not strings(raw.nextKeyHashes) or not every(raw.nextKeyHashes,function(h) return check_hash(h)=='ok' end)) then fail('invalid-parameter',n) end
   local p=copy(previous or O{nextKeyHashes=A{},witness=N,watchers=A{},ttl=3600})
-  for _,k in ipairs({'logVersion','scid','updateKeys','nextKeyHashes','witness','watchers','ttl'}) do if has(raw,k) then p[k]=raw[k] end end
+  for _,k in ipairs(names) do if has(raw,k) then p[k]=raw[k] end end
   p.deactivated=has(raw,'deactivated') and raw.deactivated or false
   if has(raw,'witness') then
     local w=raw.witness; if not J.isobject(w) then fail('invalid-parameter',n) end
@@ -138,12 +153,12 @@ local function parameters(raw,previous,n)
   end
   return p
 end
-local function verify_entry(e,previous,now)
+local function verify_entry(e,previous,now,spec)
   local n=previous and previous.n+1 or 1
   if previous and previous.p.deactivated then fail('entry-after-deactivation',n) end
   local count=0; for _ in pairs(e) do count=count+1 end
   if count~=5 or type(e.versionId)~='string' or type(e.versionTime)~='string' or not J.isobject(e.parameters) or not J.isobject(e.state) or not J.isarray(e.proof) then fail('invalid-entry',n) end
-  local p=parameters(e.parameters,previous and previous.p,n)
+  local p=parameters(e.parameters,previous and previous.p,n,spec)
   local keys=(not previous or #previous.p.nextKeyHashes>0) and p.updateKeys or previous.p.updateKeys
   local rule=(not previous or (has(e.parameters,'witness') and previous.p.witness==N)) and p.witness or previous.p.witness
   if #e.proof==0 then fail('invalid-proof',n) end
@@ -166,15 +181,16 @@ local function verify_entry(e,previous,now)
     local restored=J.parse((J.encode(rest):gsub(p.scid,'{SCID}')))
     if V.scid(restored)~=p.scid then fail('scid-mismatch',n) end
   end
+  if spec.check_state and not spec.check_state(e.state,p.scid) then fail('invalid-state',n) end
   return {e=e,p=p,n=n,time=t,rule=rule}
 end
-local function verify_log(log,witness,now)
+local function verify_log(log,witness,now,spec)
   local ls=lines(log); local entries={}; local failure
   if #ls==0 then return {entries=entries,lines=ls,failure=O{code='invalid-log',version=N,message='invalid-log'}} end
   for i,line in ipairs(ls) do
     local ok,value=pcall(function()
       local parsed,e=pcall(J.parse,line); if not parsed or not J.isobject(e) then fail('invalid-log',i) end
-      return verify_entry(e,entries[#entries],now)
+      return verify_entry(e,entries[#entries],now,spec)
     end)
     if not ok then if not J.isobject(value) then error(value) end; failure=value; break end
     entries[#entries+1]=value
@@ -230,11 +246,11 @@ local function result(v,options,warnings,copies)
     deactivated=last.p.deactivated,ttl=last.p.ttl,witness=last.p.witness,watchers=last.p.watchers,updateKeys=target.p.updateKeys,nextKeyHashes=target.p.nextKeyHashes,warnings=warnings,copies=copies}
   return O{valid=true,state=target.e.state,metadata=meta,firstInvalidVersion=failure and #entries+1 or N,error=failure or N}
 end
-local function resolve_copies(input,now,options)
+local function resolve_copies(input,now,options,spec)
   local all={O{source='primary',log=input.log,witness=input.witness or absent}}
   for _,c in ipairs(input.copies or {}) do all[#all+1]=c end
   local warnings,status,cache=A{},{},{}
-  local function get_log(i) if not cache[i] then cache[i]=verify_log(all[i].log,all[i].witness or absent,now) end; return cache[i] end
+  local function get_log(i) if not cache[i] then cache[i]=verify_log(all[i].log,all[i].witness or absent,now,spec) end; return cache[i] end
   local function invalid(i) status[i]='invalid'; warnings[#warnings+1]=O{code='copy-invalid',source=all[i].source,message='copy fails verification'} end
   for i,c in ipairs(all) do if has(c,'unavailable') then status[i]='unavailable'; warnings[#warnings+1]=O{code='copy-unavailable',source=c.source,message=c.unavailable} end end
   local ref
@@ -273,7 +289,18 @@ local function resolve_copies(input,now,options)
   if count<(options.minCopies or 1) then fail('min-copies-not-met') end
   return result(r,options,warnings,copies)
 end
-function V.resolve(input)
+-- Whether some entry of the log has an active witness list. Without a witness
+-- file, the first entry that needs witnessing fails, which cuts it from the entries.
+function V.needs_witnessing(log,now,spec)
+  local v=verify_log(log,absent,now,spec)
+  if v.failure and v.failure.code=='witness-threshold-not-met' then return true end
+  for _,e in ipairs(v.entries) do if e.rule~=N then return true end end
+  return false
+end
+V.time,V.lines=time,lines
+-- Resolves a log as plain VH-Log, or as the given specialisation.
+function V.resolve(input,spec)
+  spec=spec or V.VH_LOG
   local ok,res=pcall(function()
     local now=time(input.now); if not now then fail('invalid-option') end
     local options=input.options; if options==nil or options==N then options=O{} end
@@ -282,8 +309,8 @@ function V.resolve(input)
     local count=0; for _,k in ipairs({'versionId','versionTime','versionNumber'}) do if has(options,k) then count=count+1 end end
     if count>1 or (has(options,'versionId') and type(options.versionId)~='string') or (has(options,'versionTime') and not time(options.versionTime)) then fail('invalid-option') end
     for _,k in ipairs({'versionNumber','minCopies'}) do if has(options,k) and (not integer(options[k]) or options[k]<1) then fail('invalid-option') end end
-    if has(input,'copies') or (options.minCopies or 1)>1 then return resolve_copies(input,now,options) end
-    local v=verify_log(input.log,input.witness or absent,now)
+    if has(input,'copies') or (options.minCopies or 1)>1 then return resolve_copies(input,now,options,spec) end
+    local v=verify_log(input.log,input.witness or absent,now,spec)
     if #v.entries==0 then return O{valid=false,error=v.failure} end
     local warnings=A{}; if has(input,'retainedVersionId') then retained(v,'primary',input.retainedVersionId,warnings) end
     return result(v,options,warnings)
@@ -305,6 +332,7 @@ function V.dispatch(op,input)
   elseif op=='create' then return V.create(input)
   elseif op=='update' then return V.update(input)
   elseif op=='resolve' then return V.resolve(input)
+  elseif type(op)=='string' and op:sub(1,6)=='didvh-' then return require('didvh').dispatch(op:sub(7),input)
   else error('unknown operation '..tostring(op)) end
 end
 return V
