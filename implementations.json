@@ -242,7 +242,8 @@
       "command": [
         "dotnet",
         "bin/Release/net10.0/VHLog.dll"
-      ]
+      ],
+      "didvh": true
     },
     {
       "name": "cpp",
