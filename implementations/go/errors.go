@@ -23,6 +23,7 @@ const (
 	ErrInvalidVersionTime     ErrorCode = "invalid-version-time"
 	ErrFutureVersionTime      ErrorCode = "future-version-time"
 	ErrSCIDMismatch           ErrorCode = "scid-mismatch"
+	ErrInvalidState           ErrorCode = "invalid-state"
 	ErrEntryAfterDeactivation ErrorCode = "entry-after-deactivation"
 	ErrWitnessThresholdNotMet ErrorCode = "witness-threshold-not-met"
 	ErrInvalidWitnessFile     ErrorCode = "invalid-witness-file"

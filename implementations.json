@@ -82,7 +82,8 @@
       ],
       "command": [
         "bin/vh-log-driver"
-      ]
+      ],
+      "didvh": true
     },
     {
       "name": "swift",

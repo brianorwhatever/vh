@@ -127,6 +127,16 @@ type ResolveInput struct {
 	// RetainedVersionID is a versionId the resolver retained from an earlier
 	// resolution; if set, the log must agree with it.
 	RetainedVersionID *string
+	// Specialisation resolves the log as a specialisation of VH-Log, such as
+	// did:vh; nil means plain VH-Log.
+	Specialisation *Specialisation
+}
+
+func (in ResolveInput) spec() *Specialisation {
+	if in.Specialisation == nil {
+		return VHLog
+	}
+	return in.Specialisation
 }
 
 // CopyStatus is the outcome of comparing one copy of a log.
@@ -370,7 +380,7 @@ func resolveCopies(in ResolveInput) (*Resolution, error) {
 		if v, ok := verified[i]; ok {
 			return v
 		}
-		v := VerifyLog(all[i].Log, all[i].Witness, in.Now)
+		v := VerifyLogWith(all[i].Log, all[i].Witness, in.Now, in.spec())
 		verified[i] = v
 		return v
 	}
@@ -504,7 +514,7 @@ func Resolve(in ResolveInput) (*Resolution, error) {
 	if in.Copies != nil || in.Options.minCopies() > 1 {
 		return resolveCopies(in)
 	}
-	verified := VerifyLog(in.Log, in.Witness, in.Now)
+	verified := VerifyLogWith(in.Log, in.Witness, in.Now, in.spec())
 	if len(verified.Entries) == 0 {
 		return nil, verified.Failure
 	}
