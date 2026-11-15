@@ -95,6 +95,18 @@ String? percentDecode(String s) {
       bytes.add(int.parse(s.substring(i + 1, i + 3), radix: 16));
       i += 2;
     } else {
+      // Unescaped characters are taken whole (by code point), not per UTF-16
+      // unit; a lone surrogate is malformed.
+      final unit = s.codeUnitAt(i);
+      if (unit >= 0xD800 && unit <= 0xDBFF && i + 1 < s.length) {
+        final next = s.codeUnitAt(i + 1);
+        if (next >= 0xDC00 && next <= 0xDFFF) {
+          bytes.addAll(utf8.encode(s.substring(i, i + 2)));
+          i++;
+          continue;
+        }
+      }
+      if (unit >= 0xD800 && unit <= 0xDFFF) return null;
       bytes.addAll(utf8.encode(s[i]));
     }
   }
