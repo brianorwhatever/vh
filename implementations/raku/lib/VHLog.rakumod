@@ -175,7 +175,14 @@ sub inspect($input,%spec=vh-log-spec) {
                     last}}}}
     unless $error.defined {$error=$parse-error;
         $first=$parse-first};
-    {entries=>@entries.Array,configs=>@configs.Array,:$error,:$first,count=>@lines.elems}
+    {entries=>@entries.Array,configs=>@configs.Array,witnesses=>@witnesses.Array,:$error,:$first,count=>@lines.elems}
+}
+
+# Whether a log needs witnessing (did:vh profile §5 step 4): the witness list that
+# applies (profile §3) to some entry before the first one failing a per-entry
+# check is not {}. No witness file is involved; only the per-entry pass is used.
+sub log-needs-witnessing(Str $log, $now, :%spec=vh-log-spec) is export {
+    so inspect(%(:$log, :$now), %spec)<witnesses>.grep(*.elems)
 }
 
 # Select a historical state while reporting the latest valid log metadata.

@@ -244,15 +244,6 @@ sub log-lines(Str $log) {
     @lines.pop while @lines && @lines[*-1].trim eq '';
     @lines
 }
-# Whether some entry sets a non-empty witness list, so some entry has an active one.
-sub needs-witnessing(@lines) {
-    so @lines.first(-> $line {
-        my $e = try parse-json($line);
-        $e ~~ Associative && $e<parameters> ~~ Associative && $e<parameters><witness> ~~ Associative
-            && $e<parameters><witness>.elems > 0
-    }).defined
-}
-
 sub resolve-or-die($did, $options, $now, $remote) {
     my $scid = did-scid($did) // fail-did('invalidDid', 'not a did:vh DID');
     my &bad = -> $m { fail-did('invalidOptions', $m) };
@@ -285,7 +276,9 @@ sub resolve-or-die($did, $options, $now, $remote) {
     unsupported('extraWatchers') if has('extraWatchers') && $o<extraWatchers>.elems;
     my $log = $o<didLog>;
     my @lines = log-lines($log);
-    unsupported('retrieving srcWitness is not supported') if has('srcWitness') && needs-witnessing(@lines);
+    # The log needs witnessing if a witness list applies to an entry that passes the per-entry checks.
+    my &needs-witnessing = { log-needs-witnessing($log, $now, :spec(didvh-spec($scid))) };
+    unsupported('retrieving srcWitness is not supported') if has('srcWitness') && needs-witnessing();
 
     my %input = :$log, :$now, options => %(<versionId versionTime versionNumber minCopies>.grep({ has($_) }).map({ $_ => $o{$_} }));
     %input<witness> = $o<didWitness> if has('didWitness');
@@ -303,7 +296,7 @@ sub resolve-or-die($did, $options, $now, $remote) {
     %resolution-metadata<warnings> = $md<warnings> if $md<warnings> && $md<warnings>.elems;
     if has('includeDidLog') && $o<includeDidLog> {
         %resolution-metadata<didLog> = @valid-lines.map({ "$_\n" }).join;
-        %resolution-metadata<didWitness> = (has('didWitness') ?? $o<didWitness> !! []) if needs-witnessing(@valid-lines);
+        %resolution-metadata<didWitness> = (has('didWitness') ?? $o<didWitness> !! []) if needs-witnessing();
     }
     %(didResolutionMetadata => %resolution-metadata,
       didDocument => ($md<deactivated> && $latest ?? Any !! $r<state>),
