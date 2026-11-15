@@ -12,7 +12,7 @@ import java.util.regex.*;
 public final class VHLog {
     private static final String ALPHABET =
         "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
-    private static final Object ABSENT = new Object();
+    static final Object ABSENT = new Object();
     public static final class ProtocolError extends RuntimeException {
         public final Map<String, Object> report;
         ProtocolError(String code, Integer version, Object fork) {
@@ -211,14 +211,18 @@ public final class VHLog {
         d.put("versionId", previous);
         return hash(Json.stringify(d));
     }
-    private static List<String> lines(String log) {
+    static List<String> lines(String log) {
         List<String> ls = new ArrayList<>(Arrays.asList(log.split("\n", -1)));
         if (!ls.isEmpty() && ls.getLast().isEmpty())
             ls.removeLast();
         return ls;
     }
     public static Map<String, Object> create(Map<String, Object> in) {
-        Map<String, Object> p = obj("logVersion", "vh-log:1.0", "scid", "{SCID}");
+        return create(in, "logVersion", "vh-log:1.0");
+    }
+    /** A specialisation passes its own version parameter and value (did:vh: method). */
+    public static Map<String, Object> create(Map<String, Object> in, String vp, String version) {
+        Map<String, Object> p = obj(vp, version, "scid", "{SCID}");
         p.putAll(map(in.get("parameters")));
         Map<String, Object> e = obj("versionId", "{SCID}", "versionTime", in.get("versionTime"),
                                     "parameters", p, "state", in.get("state"));
@@ -256,7 +260,7 @@ public final class VHLog {
             return null;
         }
     }
-    private static boolean integer(Object v) {
+    static boolean integer(Object v) {
         return v instanceof Number n && Double.isFinite(n.doubleValue()) &&
             n.doubleValue() == Math.rint(n.doubleValue());
     }
@@ -264,11 +268,20 @@ public final class VHLog {
         return v instanceof List<?> a && a.stream().allMatch(x -> x instanceof String);
     }
     private static Map<String, Object> parameters(Map<String, Object> raw,
-                                                  Map<String, Object> previous, int n) {
+                                                  Map<String, Object> previous, int n, Spec spec) {
         if (raw.values().stream().anyMatch(Objects::isNull))
             fail("invalid-parameter", n);
-        if (previous == null && !raw.containsKey("logVersion") ||
-            raw.containsKey("logVersion") && !"vh-log:1.0".equals(raw.get("logVersion")))
+        String vp = spec.versionParameter();
+        if (spec.extraParameters() != null)
+            for (String k : raw.keySet())
+                if (!k.equals(vp) && !PARAMETERS.contains(k) && !spec.extraParameters().contains(k))
+                    fail("invalid-parameter", n);
+        if (previous == null && !raw.containsKey(vp))
+            fail(spec.versionSyntax() != null ? "invalid-parameter" : "unsupported-log-version", n);
+        if (raw.containsKey(vp) && spec.versionSyntax() != null &&
+            !(raw.get(vp) instanceof String s && spec.versionSyntax().matcher(s).matches()))
+            fail("invalid-parameter", n);
+        if (raw.containsKey(vp) && !spec.versions().contains(raw.get(vp)))
             fail("unsupported-log-version", n);
         if (previous != null
                 ? raw.containsKey("scid")
@@ -292,8 +305,9 @@ public final class VHLog {
                                     ? obj("nextKeyHashes", new ArrayList<>(), "witness", null,
                                           "watchers", new ArrayList<>(), "ttl", 3600)
                                     : new LinkedHashMap<>(previous);
-        for (String k : List.of("logVersion", "scid", "updateKeys", "nextKeyHashes", "witness",
-                                "watchers", "ttl"))
+        if (raw.containsKey(vp))
+            p.put("logVersion", raw.get(vp));
+        for (String k : List.of("scid", "updateKeys", "nextKeyHashes", "witness", "watchers", "ttl"))
             if (raw.containsKey(k))
                 p.put(k, raw.get(k));
         p.put("deactivated", raw.getOrDefault("deactivated", false));
@@ -342,17 +356,16 @@ public final class VHLog {
         }
         return p;
     }
-    private record
-        Entry(Map<String, Object> e, Map<String, Object> p, int n, long time, Object rule) {}
-    private record Verified(List<Entry> entries, List<String> lines, Map<String, Object> failure) {}
-    private static Entry verifyEntry(Map<String, Object> e, Entry previous, long now) {
+    record Entry(Map<String, Object> e, Map<String, Object> p, int n, long time, Object rule) {}
+    record Verified(List<Entry> entries, List<String> lines, Map<String, Object> failure) {}
+    private static Entry verifyEntry(Map<String, Object> e, Entry previous, long now, Spec spec) {
         int n = previous == null ? 1 : previous.n + 1;
         if (previous != null && Boolean.TRUE.equals(previous.p.get("deactivated")))
             fail("entry-after-deactivation", n);
         if(!e.keySet().equals(Set.of("versionId","versionTime","parameters","state","proof")) || !(e.get("versionId") instanceof String) || !(e.get("versionTime") instanceof String) || !(e.get("parameters") instanceof Map<?,?>) || !(e.get("state") instanceof Map<?,?>) || !(e.get("proof") instanceof List<?>))
             fail("invalid-entry", n);
         Map<String, Object> p =
-            parameters(map(e.get("parameters")), previous == null ? null : previous.p, n);
+            parameters(map(e.get("parameters")), previous == null ? null : previous.p, n, spec);
         List<Object> active =
             list(previous == null || !list(previous.p.get("nextKeyHashes")).isEmpty()
                      ? p.get("updateKeys")
@@ -401,9 +414,11 @@ public final class VHLog {
             if (!scid(rest).equals(id))
                 fail("scid-mismatch", n);
         }
+        if (spec.checkState() != null)
+            spec.checkState().check(map(e.get("state")), str(p.get("scid")), n);
         return new Entry(e, p, n, t, rule);
     }
-    private static Verified verifyLog(String log, Object witness, long now) {
+    static Verified verifyLog(String log, Object witness, long now, Spec spec) {
         List<String> ls = lines(log);
         List<Entry> entries = new ArrayList<>();
         Map<String, Object> failure = null;
@@ -420,7 +435,7 @@ public final class VHLog {
                 if(!(raw instanceof Map<?,?>))
                     fail("invalid-log", i + 1);
                 entries.add(
-                    verifyEntry(map(raw), entries.isEmpty() ? null : entries.getLast(), now));
+                    verifyEntry(map(raw), entries.isEmpty() ? null : entries.getLast(), now, spec));
             } catch (ProtocolError e) {
                 failure = e.report;
                 break;
@@ -556,7 +571,7 @@ public final class VHLog {
                    failure);
     }
     private static Map<String, Object> resolveCopies(Map<String, Object> in, long now,
-                                                     Map<String, Object> options) {
+                                                     Map<String, Object> options, Spec spec) {
         Map<String, Object> primary = obj("source", "primary", "log", in.get("log"), "witness",
                                           in.getOrDefault("witness", ABSENT));
         List<Object> all = new ArrayList<>(List.of(primary));
@@ -566,7 +581,7 @@ public final class VHLog {
         Map<Integer, Verified> cache = new HashMap<>();
         java.util.function.IntFunction<Verified> get = i -> cache.computeIfAbsent(i, k -> {
             Map<String, Object> c = map(all.get(k));
-            return verifyLog(str(c.get("log")), c.getOrDefault("witness", ABSENT), now);
+            return verifyLog(str(c.get("log")), c.getOrDefault("witness", ABSENT), now, spec);
         });
         java.util.function.IntConsumer invalid = i -> {
             status.put(i, "invalid");
@@ -661,7 +676,9 @@ public final class VHLog {
             fail("min-copies-not-met", null);
         return result(r, options, warnings, copies);
     }
-    public static Map<String, Object> resolve(Map<String, Object> in) {
+    public static Map<String, Object> resolve(Map<String, Object> in) { return resolve(in, VH_LOG); }
+    /** Resolves a log as plain VH-Log, or as the given specialisation. */
+    public static Map<String, Object> resolve(Map<String, Object> in, Spec spec) {
         try {
             Long now = time(in.get("now"));
             if (now == null)
@@ -688,8 +705,8 @@ public final class VHLog {
                     fail("invalid-option", null);
             if (in.containsKey("copies") ||
                 ((Number)options.getOrDefault("minCopies", 1)).doubleValue() > 1)
-                return resolveCopies(in, now, options);
-            Verified v = verifyLog(str(in.get("log")), in.getOrDefault("witness", ABSENT), now);
+                return resolveCopies(in, now, options, spec);
+            Verified v = verifyLog(str(in.get("log")), in.getOrDefault("witness", ABSENT), now, spec);
             if (v.entries.isEmpty())
                 return obj("valid", false, "error", v.failure);
             List<Object> warnings = new ArrayList<>();
@@ -716,7 +733,22 @@ public final class VHLog {
             case "create" -> create(in);
             case "update" -> update(in);
             case "resolve" -> resolve(in);
-            default -> throw new IllegalArgumentException("unknown operation " + op);
+            default -> DidVh.dispatch(op, in);
         };
     }
+    /** Checks an entry's state once the SCID is known; throws a ProtocolError. */
+    public interface StateCheck { void check(Map<String, Object> state, String scid, int n); }
+    /**
+     * What a specialisation of VH-Log (such as did:vh) changes in verification: the version
+     * parameter and its accepted values; an optional version syntax (missing or malformed is
+     * invalid-parameter, well-formed but unaccepted is unsupported-log-version); a closed
+     * parameter set when extraParameters is non-null; and a state check after the SCID check.
+     */
+    public record Spec(String versionParameter, List<String> versions, Pattern versionSyntax,
+                       List<String> extraParameters, StateCheck checkState) {}
+    /** Plain VH-Log (vh-log:1.0), as specified by profile vh-log-interop-0. */
+    public static final Spec VH_LOG = new Spec("logVersion", List.of("vh-log:1.0"), null, null, null);
+    /** The VH-Log parameters, excluding the version parameter. */
+    static final List<String> PARAMETERS =
+        List.of("scid", "updateKeys", "nextKeyHashes", "witness", "watchers", "deactivated", "ttl");
 }
