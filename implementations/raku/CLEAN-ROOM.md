@@ -145,8 +145,10 @@ source (including `implementations/typescript` and its history or diffs),
 - §5 "`didLog` holds the original lines of the valid entries": lines are split
   as the VH-Log verifier splits them (on LF only, one final LF dropped), and
   the number of valid entries is `firstInvalidVersion - 1`, or all lines.
-- §5 Deactivation, "if the resolved entry is the last valid entry": compared
-  by version number.
+- §5 Deactivation, "no version selector (`versionId`, `versionTime` or
+  `versionNumber`) is given": a selector is given when its key is present in
+  the options (a bad value already failed as `invalidOptions`). This replaces
+  the earlier "last valid entry" reading; see below.
 - §5 `warnings`: the VH-Log warnings are passed through as they are, so
   `invalid-entries` also appears when an earlier version is selected
   explicitly (the vectors expect this).
@@ -205,3 +207,27 @@ those lists is non-empty. `VHLog::DidVh` calls it with `didvh-spec($scid)`
 longer depends on witness verification either: an entry that passes the
 per-entry checks but is not witnessed still counts. `sh scripts/test.sh`
 now runs 239 tests (the three new vectors included), all passing.
+
+### Selecting the deactivating entry (profile change)
+
+`docs/didvh-profile.md` §5 "Deactivation" changed. A deactivated DID now has
+`didDocument: null` only when no version selector (`versionId`,
+`versionTime` or `versionNumber`) is given. With any selector the selected
+entry's document is returned, including the deactivating entry itself, and
+`deactivated` stays `true`. Before, the document was withheld whenever the
+resolved entry was the last valid entry, selected or not. Spec note 24 now
+records the same reading. The vectors `deactivation/deactivating-version`
+(selected by `versionId`) and the new `deactivation/deactivating-version-time`
+(a `versionTime` after the last entry, so it resolves to the same entry as no
+selector would) pin it.
+
+Read for this change, and nothing else: the new §5 "Deactivation" text, spec
+note 24 in `docs/spec-notes.md`, the docs and vectors parts of commit
+`1206c43`, those two vectors in `vectors/didvh/resolution/deactivation.json`,
+and the harness output. No other implementation, its history or diffs, or
+`tools/generate-*.ts` was read.
+
+Change: in `resolve-or-die` in `lib/VHLog/DidVh.rakumod`, `didDocument`
+is `Any` (null) when `$md<deactivated>` and `@selectors` is empty, using the
+list the option checks already build. The `$latest` comparison is gone.
+`sh scripts/test.sh` and the harness pass.

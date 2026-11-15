@@ -289,7 +289,6 @@ sub resolve-or-die($did, $options, $now, $remote) {
     my $md = $r<metadata>;
     my $valid = $r<firstInvalidVersion>.defined ?? $r<firstInvalidVersion> - 1 !! @lines.elems;
     my @valid-lines = @lines[^$valid];
-    my $latest = $md<versionNumber> == $valid;
     my %document-metadata = <versionId versionTime created updated scid deactivated ttl watchers>.map({ $_ => $md{$_} });
     %document-metadata<witness> = $md<witness> if $md<witness>.defined;
     my %resolution-metadata = contentType => 'application/did+json';
@@ -299,7 +298,7 @@ sub resolve-or-die($did, $options, $now, $remote) {
         %resolution-metadata<didWitness> = (has('didWitness') ?? $o<didWitness> !! []) if needs-witnessing();
     }
     %(didResolutionMetadata => %resolution-metadata,
-      didDocument => ($md<deactivated> && $latest ?? Any !! $r<state>),
+      didDocument => ($md<deactivated> && !@selectors ?? Any !! $r<state>),
       didDocumentMetadata => %document-metadata)
 }
 # Offline resolution: {didResolutionMetadata, didDocument, didDocumentMetadata}.
