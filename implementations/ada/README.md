@@ -115,6 +115,17 @@ applications using multiple Ada tasks must serialize library access. Without
 a scope, values remain allocated for the process lifetime. Binary strings in
 `Crypto` contain raw bytes; JSON strings contain validated UTF-8.
 
+## did:vh
+
+`Did_VH` (`src/did_vh.ads`) implements did:vh as pinned by
+`docs/didvh-profile.md`, on the VH-Log verifier through a
+`VH_Log.Specialisation` (`method` instead of `logVersion`, a closed parameter
+set and a `state.id` check). `Did_VH.Create`/`Update` generate entries,
+`Did_VH.Resolve (DID, Options, Now)` is an offline resolver (the log is passed
+in `didLog`), and `Reference_Kind`, `Src_Locations` and `Parse_DID_URL` check
+references, `src` values and DID URLs. The driver serves the did:vh operations
+through `Did_VH.Dispatch`.
+
 ## JSON Lines driver
 
 ```sh

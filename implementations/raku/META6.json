@@ -8,7 +8,8 @@
   "provides": {
     "VHLog": "lib/VHLog.rakumod",
     "VHLog::JSON": "lib/VHLog/JSON.rakumod",
-    "VHLog::Crypto": "lib/VHLog/Crypto.rakumod"
+    "VHLog::Crypto": "lib/VHLog/Crypto.rakumod",
+    "VHLog::DidVh": "lib/VHLog/DidVh.rakumod"
   },
   "depends": [],
   "test-depends": ["Test"],

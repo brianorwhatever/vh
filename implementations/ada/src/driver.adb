@@ -4,7 +4,7 @@ with Ada.Strings.Unbounded;
 with Interfaces.C;
 with System;
 with JSON;
-with VH_Log;
+with Did_VH;
 
 procedure Driver is
    use JSON;
@@ -30,7 +30,7 @@ procedure Driver is
          Put
            (Response,
             "result",
-            VH_Log.Dispatch (S (Get (Request, "op")), Get (Request, "input")));
+            Did_VH.Dispatch (S (Get (Request, "op")), Get (Request, "input")));
       exception
          when E : others =>
             Put (Response, "ok", Bool (False));

@@ -212,7 +212,8 @@
       "command": [
         "sh",
         "scripts/run.sh"
-      ]
+      ],
+      "didvh": true
     },
     {
       "name": "ocaml",
@@ -224,7 +225,8 @@
       "command": [
         "sh",
         "scripts/run.sh"
-      ]
+      ],
+      "didvh": true
     },
     {
       "name": "ada",
@@ -236,7 +238,8 @@
       "command": [
         "sh",
         "scripts/run.sh"
-      ]
+      ],
+      "didvh": true
     },
     {
       "name": "csharp",

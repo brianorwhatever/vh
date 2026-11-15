@@ -68,8 +68,14 @@ Exported operations:
 | Module | Functions |
 | --- | --- |
 | `VHLog` | `create-log`, `update-log`, `resolve-log`, `entry-hash`, `scid`, `dispatch` |
-| `VHLog::JSON` | `parse-json`, `jcs`, `quote-json`, `cps` |
+| `VHLog::DidVh` | `create-did`, `update-did`, `resolve-did`, `did-scid`, `parse-did-url`, `reference-kind`, `src-locations`, `didvh-spec`, `perform` |
+| `VHLog::JSON` | `parse-json`, `jcs`, `quote-json`, `cps`, `rawstr` |
 | `VHLog::Crypto` | `sha` (256 or 512), `b58`, `un58`, `hash-text`, `valid-hash`, `public-key`, `multikey`, `method-key`, `without-proof`, `sign`, `verify` |
+
+`VHLog::DidVh` implements did:vh as pinned by `docs/didvh-profile.md`, by
+passing a specialisation (`didvh-spec`) to the VH-Log verifier.
+`resolve-did($did, { didLog => $log }, now => $now)` is an offline resolver
+returning `didResolutionMetadata`, `didDocument` and `didDocumentMetadata`.
 
 `sign($document, $seed, :$verificationMethod, :$created)` creates a proof;
 `verify($document, $proof)` verifies it without checking authorization. Witness

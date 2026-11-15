@@ -47,10 +47,9 @@ let sign_entry doc signers =
           (arr signers)))
     doc
 
-let create input =
+let create ?(defaults = [ ("scid", "{SCID}"); ("logVersion", "vh-log:1.0") ]) input =
   let p = get "parameters" input in
-  let p = if has "scid" p then p else set "scid" (s "{SCID}") p in
-  let p = if has "logVersion" p then p else set "logVersion" (s "vh-log:1.0") p in
+  let p = List.fold_left (fun p (k, v) -> if has k p then p else set k (s v) p) p defaults in
   let preliminary =
     o
       [
@@ -203,13 +202,43 @@ let defaults =
       ("ttl", n 3600);
     ]
 
-let parameters version before p =
+(* A specialisation of the verifier: the version parameter, its accepted values
+   and optional syntax, an optional closed parameter set and a per-entry state
+   check (log SCID -> state -> ok). Plain VH-Log uses [vh_log_spec]. *)
+type spec = {
+  version_param : string;
+  accepted : string list;
+  version_syntax : (string -> bool) option;
+  closed : string list option;
+  state_check : (string -> t -> bool) option;
+}
+
+let vh_log_spec =
+  {
+    version_param = "logVersion";
+    accepted = [ "vh-log:1.0" ];
+    version_syntax = None;
+    closed = None;
+    state_check = None;
+  }
+
+let parameters spec version before p =
   let bad () = fail ~version "invalid-parameter" in
   List.iter
     (fun (k, v) ->
+      let known =
+        match spec.closed with None -> true | Some names -> List.mem k names
+      in
       let valid =
+        known
+        &&
+        if k = spec.version_param then
+          match (v, spec.version_syntax) with
+          | String _, None -> true
+          | String x, Some syntax -> syntax x
+          | _ -> false
+        else
         match k with
-        | "logVersion" -> ( match v with String _ -> true | _ -> false)
         | "scid" -> ( match v with String _ -> version = 1 | _ -> false)
         | "updateKeys" -> string_list Crypto.valid_key v
         | "nextKeyHashes" -> string_list Crypto.multihash v
@@ -225,9 +254,11 @@ let parameters version before p =
       if not valid then bad ())
     (obj p);
   if version = 1 && ((not (has "scid" p)) || not (has "updateKeys" p)) then bad ();
+  let vp = spec.version_param in
+  if version = 1 && (not (has vp p)) && spec.version_syntax <> None then bad ();
   if
-    (version = 1 && not (has "logVersion" p))
-    || (has "logVersion" p && get "logVersion" p <> s "vh-log:1.0")
+    (version = 1 && not (has vp p))
+    || (has vp p && not (List.mem (str (get vp p)) spec.accepted))
   then fail ~version "unsupported-log-version";
   let pre = get "nextKeyHashes" before <> a [] in
   if version > 1 && pre then (
@@ -251,7 +282,7 @@ let parameters version before p =
 type snapshot = { entry : t; params : t; witness : t }
 type checked = { all : t list; valid : snapshot list; error : error option }
 
-let check ?(prefix = []) log witness now =
+let check ?(spec = vh_log_spec) ?(prefix = []) log witness now =
   let raw_lines = String.split_on_char '\n' log in
   let raw_lines =
     if String.ends_with ~suffix:"\n" log then List.rev (List.tl (List.rev raw_lines))
@@ -303,7 +334,7 @@ let check ?(prefix = []) log witness now =
                  | String _, String _, Object _, Object _, Array _ -> true
                  | _ -> false)
           then fail ~version:v "invalid-entry";
-          let params, keys, w = parameters v !active (get "parameters" entry) in
+          let params, keys, w = parameters spec v !active (get "parameters" entry) in
           let proofs = arr (get "proof" entry) in
           if proofs = [] then fail ~version:v "invalid-proof";
           List.iter
@@ -340,6 +371,11 @@ let check ?(prefix = []) log witness now =
             let preliminary = set "versionId" (s "{SCID}") (remove "proof" entry) in
             let preliminary = parse (replace (serialize preliminary) id "{SCID}") in
             if scid preliminary <> id then fail ~version:v "scid-mismatch");
+          (match spec.state_check with
+          | Some ok when not (try ok (gs "scid" params) (get "state" entry) with _ -> false)
+            ->
+              fail ~version:v "invalid-state"
+          | _ -> ());
           active := params;
           prev := vid;
           time := t;
@@ -463,7 +499,7 @@ let option_validate opts =
     > 1
   then fail "invalid-option"
 
-let resolve_exn input =
+let resolve_exn ?(spec = vh_log_spec) input =
   let opts = if has "options" input then get "options" input else o [] in
   (try option_validate opts with
   | Failure e -> raise (Failure e)
@@ -500,7 +536,7 @@ let resolve_exn input =
         None
     | Some log ->
         let checked =
-          try Some (check ~prefix log c.witness_file now) with Failure _ -> None
+          try Some (check ~spec ~prefix log c.witness_file now) with Failure _ -> None
         in
         c.checked <- checked;
         checked
@@ -739,8 +775,8 @@ let resolve_exn input =
       ("error", match r.error with None -> Null | Some e -> error_json e);
     ]
 
-let resolve input =
-  try resolve_exn input
+let resolve ?spec input =
+  try resolve_exn ?spec input
   with Failure e -> o [ ("valid", Bool false); ("error", error_json e) ]
 
 let dispatch op input =
@@ -914,3 +950,10 @@ let resolve_log (request : resolution_request) =
                  | _ -> None);
                error;
              })
+
+(* Entry points for specialisations such as did:vh (see didvh.ml). *)
+let create_json = create
+let update_json = update
+let resolve_json = resolve
+let valid_time text = try ignore (timestamp text); true with _ -> false
+let valid_watcher_url = valid_url

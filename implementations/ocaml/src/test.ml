@@ -154,4 +154,69 @@ let () =
   expect
     (not (Crypto.verify (Object [ ("versionId", String "changed") ]) proof))
     "proof rejects altered document";
+  (* did:vh: the shared vectors through the library API. *)
+  let read path =
+    let ic = open_in_bin path in
+    let text = really_input_string ic (in_channel_length ic) in
+    close_in ic;
+    Json.parse text
+  in
+  let dir = "../../vectors/didvh/" in
+  let canon j = Json.canonicalize j in
+  let call op input = unwrap (Didvh.perform op input) in
+  List.iter
+    (fun (file, op, field) ->
+      List.iter
+        (fun c ->
+          let got = call op (Object [ (field, get field c) ]) in
+          expect (canon got = canon (get "expect" c)) (file ^ "/" ^ str (get "name" c)))
+        (arr (get "cases" (read (dir ^ file)))))
+    [ ("ref.json", "didvh-ref", "ref"); ("src.json", "didvh-src", "src"); ("did-url.json", "didvh-did-url", "didUrl") ];
+  let opt k j = if has k j then get k j else Null in
+  let resolution = Sys.readdir (dir ^ "resolution") in
+  Array.sort compare resolution;
+  Array.iter
+    (fun file ->
+      List.iter
+        (fun c ->
+          let name = file ^ "/" ^ str (get "name" c) in
+          let input = get "input" c and e = get "expect" c in
+          let got =
+            Didvh.resolve ~remote:(get "remote" input = Bool true) ~now:(get "now" input)
+              (get "did" input) (get "options" input)
+          in
+          let meta = get "didResolutionMetadata" got in
+          if has "error" e then (
+            expect (get "error" meta = get "error" e) name;
+            if has "vhLogError" e then
+              expect (get "code" (get "vhLog" (get "problemDetails" meta)) = get "vhLogError" e) name;
+            expect (get "didDocument" got = Null) name)
+          else
+            let codes = List.sort compare (List.map (fun w -> str (get "code" w)) (arr (opt "warnings" meta |> function Null -> Array [] | w -> w))) in
+            expect
+              (canon (get "didDocument" got) = canon (get "didDocument" e)
+              && canon (get "didDocumentMetadata" got) = canon (get "didDocumentMetadata" e)
+              && canon (Array (List.map (fun c -> String c) codes)) = canon (opt "warnings" e |> function Null -> Array [] | w -> w)
+              && canon (opt "didLog" meta) = canon (opt "didLog" e)
+              && canon (opt "didWitness" meta) = canon (opt "didWitness" e))
+              name)
+        (arr (get "cases" (read (dir ^ "resolution/" ^ file)))))
+    resolution;
+  (* Generation: a created DID resolves, and plain VH-Log is unchanged by the hook. *)
+  let created =
+    Didvh.create
+      (Object
+         [
+           ("document", Object [ ("id", String "did:vh:{SCID}") ]);
+           ("parameters", Object [ ("updateKeys", Array [ String mk ]) ]);
+           ("versionTime", String "2026-01-01T00:00:00Z");
+           ("signers", Array [ String seed ]);
+         ])
+  in
+  let did = get "did" created in
+  expect (get "parameters" (Json.parse (String.trim (str (get "log" created)))) |> get "method" = String "did:vh:1.0") "didvh-create method";
+  let resolved =
+    Didvh.resolve ~now:(String "2026-01-02T00:00:00Z") did (Object [ ("didLog", get "log" created) ])
+  in
+  expect (get "id" (get "didDocument" resolved) = did) "didvh created DID resolves";
   print_endline "OCaml library tests passed"
