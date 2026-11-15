@@ -18,6 +18,13 @@ export interface Specialisation {
   /** Accepted values of the version parameter, oldest first. */
   versions: string[];
   /**
+   * Syntax of a version value. When set, a missing or malformed value fails
+   * with `invalid-parameter`, and only a well-formed value this library does
+   * not support fails with `unsupported-log-version`. Without it, every
+   * unaccepted value is `unsupported-log-version` (plain VH-Log).
+   */
+  versionSyntax?: RegExp;
+  /**
    * Parameters the specialisation adds to the VH-Log set. With `null`, any
    * unknown parameter is ignored (plain VH-Log); otherwise the set is closed
    * and an unknown parameter fails with `invalid-parameter`.
@@ -154,11 +161,15 @@ function applyParameters(
     }
   }
   const vp = spec.versionParameter;
+  const syntax = spec.versionSyntax;
   if (previous === null) {
-    if (!(vp in raw)) throw new VHLogError("unsupported-log-version", `${vp} missing from first entry`, 1);
+    if (!(vp in raw)) throw new VHLogError(syntax ? "invalid-parameter" : "unsupported-log-version", `${vp} missing from first entry`, 1);
   }
   if (vp in raw) {
     const value = raw[vp];
+    if (syntax && (typeof value !== "string" || !syntax.test(value))) {
+      throw invalid(`malformed ${vp} ${JSON.stringify(value)}`);
+    }
     if (typeof value !== "string" || !spec.versions.includes(value)) {
       throw new VHLogError("unsupported-log-version", `unsupported ${vp} ${JSON.stringify(value)}`, version);
     }

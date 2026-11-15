@@ -111,39 +111,44 @@ Section links point at the pinned
 ## did:vh
 
 Issues found in did:vh
-[`didvh-old@6c2e753`](https://github.com/swcurran/didvh-old/blob/6c2e753/spec/specification.md)
-while writing [`didvh-profile.md`](didvh-profile.md). Section links point at
-that file.
+[`decentralized-identity/didvh@cc2eff6`](https://github.com/decentralized-identity/didvh/blob/cc2eff6/spec/specification.md)
+(v0.1 Editors Draft) while writing [`didvh-profile.md`](didvh-profile.md).
 
 22. **IDNA conversion in every resolver.** *Web Locations* requires converting
     an internationalised host to A-labels (IDNA2008), and treating a host that
     can't be converted as `invalidOptions`. Validation alone would then need an
-    IDNA2008 library in every language. **Profile:** `src` must be printable
-    ASCII, so internationalised hosts must already be punycode (§3), the same
-    way `profile.md` treats `watchers` URLs.
-23. **"Any trailing `/`".** It isn't clear whether one trailing slash or all
-    of them are removed. With "all", `https://example.com/dids//` is valid;
-    with "one", it has an empty segment and is invalid. **Profile:** one.
+    IDNA2008 library in every language. **Profile:** references must be
+    printable ASCII, so internationalised hosts must already be punycode
+    (§3.1). `profile.md` treats `watchers` URLs the same way.
+23. **"Removing any trailing `/`".** For the `src` DID URL parameter, it
+    isn't clear whether one trailing slash or all of them are removed. With
+    "all", `https://example.com/dids//` is valid; with "one", it has an empty
+    segment and is invalid. **Profile:** one.
 24. **Selecting the deactivating entry.** *Deactivate* forbids returning the
-    document of a deactivated DID but says "prior versions MAY be resolved".
+    document of a deactivated DID, and lets a client resolve "a prior version".
     It doesn't say whether the deactivating entry's own document is returned
     when a version selector names it. **Profile:** it is not.
-25. **`watchers` with none active.** The metadata MUST list the active
-    watchers, but it isn't said whether the field is omitted or `[]` when there
-    are none. **Profile:** always present.
-26. **Unknown resolution options and DID URL query parameters.** Neither is
-    covered. DID Resolution defines `accept`, and DID URLs commonly carry
-    `service`/`relativeRef`. **Profile:** both are ignored.
-27. **User information in `src`.** `https://user@example.com/` is not
+25. **`watchers` with none active.** The metadata lists the active watchers,
+    but it isn't said whether the field is omitted or `[]` when there are
+    none. **Profile:** always present.
+26. **Unknown resolution options.** "A Resolver given an option it does not
+    support MUST return the `featureNotSupported` error rather than ignore the
+    option" reads as covering the did:vh options. But it could also cover
+    options the resolver doesn't know at all, such as DID Resolution's
+    `accept`. Unknown DID URL query parameters (`service`, `relativeRef`)
+    aren't covered either. **Profile:** both are ignored.
+27. **User information in references.** `https://user@example.com/…` is not
     addressed. **Profile:** rejected.
-28. **Order of the state check.** *Resolution Algorithm* step 6 (state) maps
-    to VH-Log Read step 6, but the order relative to the other per-entry
-    checks (and so which error is reported when several fail) isn't fixed.
-    **Profile:** it runs last, after the SCID check (§1).
-29. **`versionTime` precision now comes from the specialisation.** VH-Log
-    (since `3770b57`) lets a specialisation set `versionTime` precision. did:vh
-    still says it inherits VH-Log's whole-second requirement, so it should now
-    state that requirement itself.
-30. **DID URL paths.** `did:vh:<SCID>/path` is legal DID URL syntax, but did:vh
-    defines no path handling and no implicit services. **Profile:**
-    `invalidDidUrl`.
+28. **DID URL paths.** `did:vh:<SCID>/path` is legal DID URL syntax, but did:vh
+    defines no path handling. **Profile:** `invalidDidUrl`.
+29. **Form of the returned `didLog`.** With `includeDidLog`, `didLog` is "a
+    JSON Lines string in the same form as the `didLog` resolution option". It
+    isn't said whether that is the lines as received or re-serialised entries.
+    Those can differ, because JSON allows more than one spelling of the same
+    value. **Profile:** the original lines of the valid entries.
+30. **Path rules differ between `srcLog` and `src`.** A `srcLog` or
+    `srcWitness` web or file reference may have empty path segments and
+    segments with leading or trailing whitespace. A `src` value may not.
+    `https://example.com/` is a valid `srcLog`, since its path `/` is
+    non-empty, though it names no file. **Profile:** follows the spec as
+    written (§3).

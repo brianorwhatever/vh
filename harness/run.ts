@@ -314,6 +314,9 @@ function compareDidResolution(expect: Json, got: Json): string | null {
     }
     const warnings = (meta.warnings ?? []).map((w: Json) => w.code).sort();
     if (!same(warnings, expect.warnings ?? [])) problems.push(`warnings: expected ${show(expect.warnings)}, got ${show(warnings)}`);
+    for (const key of ["didLog", "didWitness"]) {
+      if (!same(expect[key] ?? null, meta[key] ?? null)) problems.push(`didResolutionMetadata.${key}: expected ${show(expect[key])}, got ${show(meta[key])}`);
+    }
   }
   return problems.length ? problems.join("\n     ") : null;
 }
@@ -325,7 +328,7 @@ interface DidGenerated {
   witnessFile: Json[] | undefined;
 }
 
-/** did:vh conformance: src references, DID URLs, resolution vectors and generation. */
+/** did:vh conformance: srcLog/srcWitness references, src and DID URLs, resolution vectors and generation. */
 async function didvh(d: Driver): Promise<DidGenerated[]> {
   const name = d.impl.name;
   const simple = async (file: string, op: string, field: string) => {
@@ -337,6 +340,7 @@ async function didvh(d: Driver): Promise<DidGenerated[]> {
       else record(name, "didvh", test, same(res.result, c.expect) ? null : `expected ${show(c.expect)}\n     got ${show(res.result)}`);
     }
   };
+  await simple("ref.json", "didvh-ref", "ref");
   await simple("src.json", "didvh-src", "src");
   await simple("did-url.json", "didvh-did-url", "didUrl");
 

@@ -5,8 +5,8 @@
       "name": "genesis",
       "description": "A one-entry did:vh log, passed directly.",
       "spec": [
-        "https://github.com/swcurran/didvh-old/blob/6c2e753/spec/specification.md#read-resolve",
-        "https://github.com/swcurran/didvh-old/blob/6c2e753/spec/specification.md#did-resolution-metadata"
+        "https://github.com/decentralized-identity/didvh/blob/cc2eff6/spec/specification.md#read-resolve",
+        "https://github.com/decentralized-identity/didvh/blob/cc2eff6/spec/specification.md#did-resolution-metadata"
       ],
       "input": {
         "now": "2026-06-01T00:00:00Z",
@@ -41,7 +41,7 @@
           "updated": "2026-01-01T00:00:00Z",
           "scid": "QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4",
           "deactivated": false,
-          "ttl": "3600",
+          "ttl": 3600,
           "watchers": []
         },
         "warnings": []
@@ -51,8 +51,8 @@
       "name": "latest",
       "description": "Three entries; the latest DID document is returned.",
       "spec": [
-        "https://github.com/swcurran/didvh-old/blob/6c2e753/spec/specification.md#read-resolve",
-        "https://github.com/swcurran/didvh-old/blob/6c2e753/spec/specification.md#did-resolution-metadata"
+        "https://github.com/decentralized-identity/didvh/blob/cc2eff6/spec/specification.md#read-resolve",
+        "https://github.com/decentralized-identity/didvh/blob/cc2eff6/spec/specification.md#did-resolution-metadata"
       ],
       "input": {
         "now": "2026-06-01T00:00:00Z",
@@ -94,7 +94,7 @@
           "updated": "2026-01-03T00:00:00Z",
           "scid": "QmNb6puEoqqHmJYjwzJh1YSXYKeusdQZsy9vTe7atLRUFG",
           "deactivated": false,
-          "ttl": "300",
+          "ttl": 300,
           "watchers": [
             "https://watcher.example/QmNb6puEoqqHmJYjwzJh1YSXYKeusdQZsy9vTe7atLRUFG"
           ]
@@ -106,8 +106,8 @@
       "name": "version-number",
       "description": "versionNumber selects an earlier version; updated still reflects the log.",
       "spec": [
-        "https://github.com/swcurran/didvh-old/blob/6c2e753/spec/specification.md#read-resolve",
-        "https://github.com/swcurran/didvh-old/blob/6c2e753/spec/specification.md#did-resolution-metadata"
+        "https://github.com/decentralized-identity/didvh/blob/cc2eff6/spec/specification.md#read-resolve",
+        "https://github.com/decentralized-identity/didvh/blob/cc2eff6/spec/specification.md#did-resolution-metadata"
       ],
       "input": {
         "now": "2026-06-01T00:00:00Z",
@@ -150,7 +150,7 @@
           "updated": "2026-01-03T00:00:00Z",
           "scid": "QmNb6puEoqqHmJYjwzJh1YSXYKeusdQZsy9vTe7atLRUFG",
           "deactivated": false,
-          "ttl": "300",
+          "ttl": 300,
           "watchers": [
             "https://watcher.example/QmNb6puEoqqHmJYjwzJh1YSXYKeusdQZsy9vTe7atLRUFG"
           ]
@@ -162,7 +162,7 @@
       "name": "version-id",
       "description": "versionId selects the first version.",
       "spec": [
-        "https://github.com/swcurran/didvh-old/blob/6c2e753/spec/specification.md#read-resolve"
+        "https://github.com/decentralized-identity/didvh/blob/cc2eff6/spec/specification.md#read-resolve"
       ],
       "input": {
         "now": "2026-06-01T00:00:00Z",
@@ -198,7 +198,7 @@
           "updated": "2026-01-03T00:00:00Z",
           "scid": "QmNb6puEoqqHmJYjwzJh1YSXYKeusdQZsy9vTe7atLRUFG",
           "deactivated": false,
-          "ttl": "300",
+          "ttl": 300,
           "watchers": [
             "https://watcher.example/QmNb6puEoqqHmJYjwzJh1YSXYKeusdQZsy9vTe7atLRUFG"
           ]
@@ -210,7 +210,7 @@
       "name": "version-time",
       "description": "versionTime selects the version active at that time.",
       "spec": [
-        "https://github.com/swcurran/didvh-old/blob/6c2e753/spec/specification.md#read-resolve"
+        "https://github.com/decentralized-identity/didvh/blob/cc2eff6/spec/specification.md#read-resolve"
       ],
       "input": {
         "now": "2026-06-01T00:00:00Z",
@@ -253,7 +253,7 @@
           "updated": "2026-01-03T00:00:00Z",
           "scid": "QmNb6puEoqqHmJYjwzJh1YSXYKeusdQZsy9vTe7atLRUFG",
           "deactivated": false,
-          "ttl": "300",
+          "ttl": 300,
           "watchers": [
             "https://watcher.example/QmNb6puEoqqHmJYjwzJh1YSXYKeusdQZsy9vTe7atLRUFG"
           ]
@@ -265,7 +265,7 @@
       "name": "version-number-not-found",
       "description": "A versionNumber past the end of the log.",
       "spec": [
-        "https://github.com/swcurran/didvh-old/blob/6c2e753/spec/specification.md#did-resolution-metadata"
+        "https://github.com/decentralized-identity/didvh/blob/cc2eff6/spec/specification.md#did-resolution-metadata"
       ],
       "input": {
         "now": "2026-06-01T00:00:00Z",
@@ -284,7 +284,7 @@
       "name": "version-id-not-found",
       "description": "A versionId not in the log.",
       "spec": [
-        "https://github.com/swcurran/didvh-old/blob/6c2e753/spec/specification.md#did-resolution-metadata"
+        "https://github.com/decentralized-identity/didvh/blob/cc2eff6/spec/specification.md#did-resolution-metadata"
       ],
       "input": {
         "now": "2026-06-01T00:00:00Z",
@@ -303,7 +303,7 @@
       "name": "version-time-before-creation",
       "description": "A versionTime before the first entry.",
       "spec": [
-        "https://github.com/swcurran/didvh-old/blob/6c2e753/spec/specification.md#did-resolution-metadata"
+        "https://github.com/decentralized-identity/didvh/blob/cc2eff6/spec/specification.md#did-resolution-metadata"
       ],
       "input": {
         "now": "2026-06-01T00:00:00Z",
@@ -365,7 +365,7 @@
           "updated": "2026-01-03T00:00:00Z",
           "scid": "QmNb6puEoqqHmJYjwzJh1YSXYKeusdQZsy9vTe7atLRUFG",
           "deactivated": false,
-          "ttl": "300",
+          "ttl": 300,
           "watchers": [
             "https://watcher.example/QmNb6puEoqqHmJYjwzJh1YSXYKeusdQZsy9vTe7atLRUFG"
           ]
@@ -377,7 +377,7 @@
       "name": "min-copies-one",
       "description": "minCopies 1 is met by the log passed directly.",
       "spec": [
-        "https://github.com/swcurran/didvh-old/blob/6c2e753/spec/specification.md#didvh-resolution-options"
+        "https://github.com/decentralized-identity/didvh/blob/cc2eff6/spec/specification.md#didvh-resolution-options"
       ],
       "input": {
         "now": "2026-06-01T00:00:00Z",
@@ -420,7 +420,7 @@
           "updated": "2026-01-03T00:00:00Z",
           "scid": "QmNb6puEoqqHmJYjwzJh1YSXYKeusdQZsy9vTe7atLRUFG",
           "deactivated": false,
-          "ttl": "300",
+          "ttl": 300,
           "watchers": [
             "https://watcher.example/QmNb6puEoqqHmJYjwzJh1YSXYKeusdQZsy9vTe7atLRUFG"
           ]
@@ -432,7 +432,7 @@
       "name": "min-copies-two",
       "description": "minCopies 2 cannot be met without watchers.",
       "spec": [
-        "https://github.com/swcurran/didvh-old/blob/6c2e753/spec/specification.md#did-resolution-metadata"
+        "https://github.com/decentralized-identity/didvh/blob/cc2eff6/spec/specification.md#did-resolution-metadata"
       ],
       "input": {
         "now": "2026-06-01T00:00:00Z",
@@ -451,7 +451,7 @@
       "name": "trailing-newline-optional",
       "description": "A log without its final newline.",
       "spec": [
-        "https://github.com/swcurran/didvh-old/blob/6c2e753/spec/specification.md#the-did-log-file"
+        "https://github.com/decentralized-identity/didvh/blob/cc2eff6/spec/specification.md#the-did-log-file"
       ],
       "input": {
         "now": "2026-06-01T00:00:00Z",
@@ -493,7 +493,7 @@
           "updated": "2026-01-03T00:00:00Z",
           "scid": "QmNb6puEoqqHmJYjwzJh1YSXYKeusdQZsy9vTe7atLRUFG",
           "deactivated": false,
-          "ttl": "300",
+          "ttl": 300,
           "watchers": [
             "https://watcher.example/QmNb6puEoqqHmJYjwzJh1YSXYKeusdQZsy9vTe7atLRUFG"
           ]
@@ -505,7 +505,7 @@
       "name": "pre-rotation",
       "description": "Pre-rotation works as in VH-Log.",
       "spec": [
-        "https://github.com/swcurran/didvh-old/blob/6c2e753/spec/specification.md#authorized-keys-and-pre-rotation"
+        "https://github.com/decentralized-identity/didvh/blob/cc2eff6/spec/specification.md#authorized-keys"
       ],
       "input": {
         "now": "2026-06-01T00:00:00Z",
@@ -547,7 +547,7 @@
           "updated": "2026-01-02T00:00:00Z",
           "scid": "QmQZA112CQxG2ZKKJE6hEc5nMtZ1ioNZCMEuG2Y124Xxoj",
           "deactivated": false,
-          "ttl": "3600",
+          "ttl": 3600,
           "watchers": []
         },
         "warnings": []

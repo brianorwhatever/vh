@@ -5,8 +5,8 @@
       "name": "webvh",
       "description": "A did:webvh DID.",
       "spec": [
-        "https://github.com/swcurran/didvh-old/blob/6c2e753/spec/specification.md#method-specific-identifier",
-        "https://github.com/swcurran/didvh-old/blob/6c2e753/spec/specification.md#resolution-algorithm"
+        "https://github.com/decentralized-identity/didvh/blob/cc2eff6/spec/specification.md#method-specific-identifier",
+        "https://github.com/decentralized-identity/didvh/blob/cc2eff6/spec/specification.md#resolution-algorithm"
       ],
       "input": {
         "now": "2026-06-01T00:00:00Z",
@@ -23,8 +23,8 @@
       "name": "uppercase-method",
       "description": "The method name must be lowercase.",
       "spec": [
-        "https://github.com/swcurran/didvh-old/blob/6c2e753/spec/specification.md#method-specific-identifier",
-        "https://github.com/swcurran/didvh-old/blob/6c2e753/spec/specification.md#resolution-algorithm"
+        "https://github.com/decentralized-identity/didvh/blob/cc2eff6/spec/specification.md#method-specific-identifier",
+        "https://github.com/decentralized-identity/didvh/blob/cc2eff6/spec/specification.md#resolution-algorithm"
       ],
       "input": {
         "now": "2026-06-01T00:00:00Z",
@@ -41,8 +41,8 @@
       "name": "short-scid",
       "description": "A 45-character SCID.",
       "spec": [
-        "https://github.com/swcurran/didvh-old/blob/6c2e753/spec/specification.md#method-specific-identifier",
-        "https://github.com/swcurran/didvh-old/blob/6c2e753/spec/specification.md#resolution-algorithm"
+        "https://github.com/decentralized-identity/didvh/blob/cc2eff6/spec/specification.md#method-specific-identifier",
+        "https://github.com/decentralized-identity/didvh/blob/cc2eff6/spec/specification.md#resolution-algorithm"
       ],
       "input": {
         "now": "2026-06-01T00:00:00Z",
@@ -59,8 +59,8 @@
       "name": "long-scid",
       "description": "A 47-character SCID.",
       "spec": [
-        "https://github.com/swcurran/didvh-old/blob/6c2e753/spec/specification.md#method-specific-identifier",
-        "https://github.com/swcurran/didvh-old/blob/6c2e753/spec/specification.md#resolution-algorithm"
+        "https://github.com/decentralized-identity/didvh/blob/cc2eff6/spec/specification.md#method-specific-identifier",
+        "https://github.com/decentralized-identity/didvh/blob/cc2eff6/spec/specification.md#resolution-algorithm"
       ],
       "input": {
         "now": "2026-06-01T00:00:00Z",
@@ -77,8 +77,8 @@
       "name": "non-base58",
       "description": "0 is not in the base58btc alphabet.",
       "spec": [
-        "https://github.com/swcurran/didvh-old/blob/6c2e753/spec/specification.md#method-specific-identifier",
-        "https://github.com/swcurran/didvh-old/blob/6c2e753/spec/specification.md#resolution-algorithm"
+        "https://github.com/decentralized-identity/didvh/blob/cc2eff6/spec/specification.md#method-specific-identifier",
+        "https://github.com/decentralized-identity/didvh/blob/cc2eff6/spec/specification.md#resolution-algorithm"
       ],
       "input": {
         "now": "2026-06-01T00:00:00Z",
@@ -95,8 +95,8 @@
       "name": "did-url",
       "description": "resolve takes a DID, not a DID URL.",
       "spec": [
-        "https://github.com/swcurran/didvh-old/blob/6c2e753/spec/specification.md#method-specific-identifier",
-        "https://github.com/swcurran/didvh-old/blob/6c2e753/spec/specification.md#resolution-algorithm"
+        "https://github.com/decentralized-identity/didvh/blob/cc2eff6/spec/specification.md#method-specific-identifier",
+        "https://github.com/decentralized-identity/didvh/blob/cc2eff6/spec/specification.md#resolution-algorithm"
       ],
       "input": {
         "now": "2026-06-01T00:00:00Z",
@@ -113,8 +113,8 @@
       "name": "fragment",
       "description": "resolve takes a DID, not a DID URL.",
       "spec": [
-        "https://github.com/swcurran/didvh-old/blob/6c2e753/spec/specification.md#method-specific-identifier",
-        "https://github.com/swcurran/didvh-old/blob/6c2e753/spec/specification.md#resolution-algorithm"
+        "https://github.com/decentralized-identity/didvh/blob/cc2eff6/spec/specification.md#method-specific-identifier",
+        "https://github.com/decentralized-identity/didvh/blob/cc2eff6/spec/specification.md#resolution-algorithm"
       ],
       "input": {
         "now": "2026-06-01T00:00:00Z",
@@ -131,8 +131,8 @@
       "name": "location",
       "description": "did:vh has no location component.",
       "spec": [
-        "https://github.com/swcurran/didvh-old/blob/6c2e753/spec/specification.md#method-specific-identifier",
-        "https://github.com/swcurran/didvh-old/blob/6c2e753/spec/specification.md#resolution-algorithm"
+        "https://github.com/decentralized-identity/didvh/blob/cc2eff6/spec/specification.md#method-specific-identifier",
+        "https://github.com/decentralized-identity/didvh/blob/cc2eff6/spec/specification.md#resolution-algorithm"
       ],
       "input": {
         "now": "2026-06-01T00:00:00Z",
@@ -149,7 +149,7 @@
       "name": "invalid-did-before-options",
       "description": "An invalid DID is reported before invalid options.",
       "spec": [
-        "https://github.com/swcurran/didvh-old/blob/6c2e753/spec/specification.md#resolution-algorithm"
+        "https://github.com/decentralized-identity/didvh/blob/cc2eff6/spec/specification.md#resolution-algorithm"
       ],
       "input": {
         "now": "2026-06-01T00:00:00Z",

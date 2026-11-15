@@ -5,7 +5,7 @@
       "name": "latest",
       "description": "A deactivated DID: no document, deactivated true.",
       "spec": [
-        "https://github.com/swcurran/didvh-old/blob/6c2e753/spec/specification.md#deactivate-revoke"
+        "https://github.com/decentralized-identity/didvh/blob/cc2eff6/spec/specification.md#deactivate-revoke"
       ],
       "input": {
         "now": "2026-06-01T00:00:00Z",
@@ -23,7 +23,7 @@
           "updated": "2026-01-03T00:00:00Z",
           "scid": "QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4",
           "deactivated": true,
-          "ttl": "3600",
+          "ttl": 3600,
           "watchers": []
         },
         "warnings": []
@@ -33,7 +33,7 @@
       "name": "earlier-version",
       "description": "An earlier version of a deactivated DID is returned, with deactivated true.",
       "spec": [
-        "https://github.com/swcurran/didvh-old/blob/6c2e753/spec/specification.md#deactivate-revoke"
+        "https://github.com/decentralized-identity/didvh/blob/cc2eff6/spec/specification.md#deactivate-revoke"
       ],
       "input": {
         "now": "2026-06-01T00:00:00Z",
@@ -76,7 +76,7 @@
           "updated": "2026-01-03T00:00:00Z",
           "scid": "QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4",
           "deactivated": true,
-          "ttl": "3600",
+          "ttl": 3600,
           "watchers": []
         },
         "warnings": []
@@ -86,7 +86,7 @@
       "name": "deactivating-version",
       "description": "Selecting the deactivating entry itself returns no document.",
       "spec": [
-        "https://github.com/swcurran/didvh-old/blob/6c2e753/spec/specification.md#deactivate-revoke",
+        "https://github.com/decentralized-identity/didvh/blob/cc2eff6/spec/specification.md#deactivate-revoke",
         "docs/didvh-profile.md#5-resolution"
       ],
       "input": {
@@ -106,7 +106,7 @@
           "updated": "2026-01-03T00:00:00Z",
           "scid": "QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4",
           "deactivated": true,
-          "ttl": "3600",
+          "ttl": 3600,
           "watchers": []
         },
         "warnings": []
@@ -116,7 +116,7 @@
       "name": "entry-after-deactivation",
       "description": "An entry after deactivation is invalid; the deactivated DID is still reported.",
       "spec": [
-        "https://github.com/swcurran/didvh-old/blob/6c2e753/spec/specification.md#deactivate-revoke"
+        "https://github.com/decentralized-identity/didvh/blob/cc2eff6/spec/specification.md#deactivate-revoke"
       ],
       "input": {
         "now": "2026-06-01T00:00:00Z",
@@ -134,7 +134,7 @@
           "updated": "2026-01-02T00:00:00Z",
           "scid": "QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4",
           "deactivated": true,
-          "ttl": "3600",
+          "ttl": 3600,
           "watchers": []
         },
         "warnings": [

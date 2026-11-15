@@ -156,24 +156,30 @@ for witness proofs.
 // resolve (offline: the log is passed in options.didLog)
 {"op": "didvh-resolve", "input": {
   "did": "did:vh:Qm…",
-  "options": {"didLog": "…", "didWitness"?: […], "versionNumber"?: 2, …},
+  "options": {"didLog": "…", "didWitness"?: […], "versionNumber"?: 2, "includeDidLog"?: true, …},
   "now": "2026-06-01T00:00:00Z",
   "remote"?: false
 }}
-→ {"didResolutionMetadata": {"contentType": "application/did+json", "warnings"?: […]},
+→ {"didResolutionMetadata": {"contentType": "application/did+json", "warnings"?: […],
+                             "didLog"?: "…", "didWitness"?: […]},
    "didDocument": {…} | null,
    "didDocumentMetadata": {"versionId", "versionTime", "created", "updated", "scid",
-                           "deactivated", "ttl": "3600", "witness"?: {…}, "watchers": […]}}
+                           "deactivated", "ttl": 3600, "witness"?: {…}, "watchers": […]}}
 → {"didResolutionMetadata": {"error": "invalidDid",
                              "problemDetails": {"title": "invalidDid", "detail": "…",
                                                 "vhLog"?: {"code": "invalid-proof", "version": 3, "message": "…"}}},
    "didDocument": null, "didDocumentMetadata": {}}
 
-// validate a src reference
-{"op": "didvh-src", "input": {"src": "https://example.com/dids/issuer"}}
-→ {"valid": true, "kind": "web", "didLog": "https://example.com/dids/issuer/did.jsonl",
-   "didWitness": "https://example.com/dids/issuer/did-witness.json"}
+// check a srcLog or srcWitness reference
+{"op": "didvh-ref", "input": {"ref": "https://example.com/dids/issuer/did.jsonl"}}
+→ {"valid": true, "kind": "web"}
 → {"valid": false, "error": "invalidOptions"}
+
+// derive srcLog and srcWitness from a (decoded) src DID URL parameter
+{"op": "didvh-src", "input": {"src": "https://example.com/dids/issuer"}}
+→ {"valid": true, "srcLog": "https://example.com/dids/issuer/did.jsonl",
+   "srcWitness": "https://example.com/dids/issuer/did-witness.json"}
+→ {"valid": false, "error": "invalidDidUrl"}
 
 // parse a DID URL as a dereferencer
 {"op": "didvh-did-url", "input": {"didUrl": "did:vh:Qm…?versionNumber=2#key-1"}}

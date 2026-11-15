@@ -9,12 +9,13 @@ import {
   createDid,
   createLog,
   DidVhError,
-  locateSrc,
+  checkRef,
   parseDid,
   parseDidUrl,
   resolve,
   resolveDid,
   signerFromSeed,
+  srcReferences,
   updateDid,
 } from "../src/index.ts";
 
@@ -36,12 +37,14 @@ test("resolution vectors", () => {
         assert.equal(meta.error, undefined, c.name);
         assert.deepEqual(r.didDocument, c.expect.didDocument, c.name);
         assert.deepEqual(r.didDocumentMetadata, c.expect.didDocumentMetadata, c.name);
+        assert.equal(meta.didLog, c.expect.didLog, c.name);
+        assert.deepEqual(meta.didWitness, c.expect.didWitness, c.name);
       }
     }
   }
 });
 
-test("src and DID URL vectors", () => {
+test("reference, src and DID URL vectors", () => {
   const attempt = (fn: () => object) => {
     try {
       return { valid: true, ...fn() };
@@ -50,7 +53,8 @@ test("src and DID URL vectors", () => {
       return { valid: false, error: e.code };
     }
   };
-  for (const c of read("src.json").cases) assert.deepEqual(attempt(() => locateSrc(c.src)), c.expect, c.name);
+  for (const c of read("ref.json").cases) assert.deepEqual(attempt(() => ({ kind: checkRef(c.ref) })), c.expect, c.name);
+  for (const c of read("src.json").cases) assert.deepEqual(attempt(() => srcReferences(c.src)), c.expect, c.name);
   for (const c of read("did-url.json").cases) assert.deepEqual(attempt(() => parseDidUrl(c.didUrl)), c.expect, c.name);
 });
 

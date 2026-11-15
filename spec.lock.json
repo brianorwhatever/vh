@@ -10,16 +10,15 @@
   "retrieved": "2026-10-08",
   "profile": "docs/profile.md (vh-log-interop-0)",
   "didvh": {
-    "spec": "did:vh DID Method (DID + Verifiable History)",
+    "spec": "The did:vh DID Method",
     "editor": "Stephen Curran",
-    "repository": "https://github.com/swcurran/didvh-old",
-    "commit": "6c2e753",
-    "commitDate": "2026-10-09",
-    "commitMessage": "Update the READ section to remove text that is repeated from VH Log",
-    "rendered": "https://swcurran.github.io/didvh/next/",
-    "version": "did:vh:1.0 (spec status: Pre-Draft — do not implement until Draft)",
-    "retrieved": "2026-11-14",
-    "profile": "docs/didvh-profile.md (didvh-interop-0)",
-    "note": "swcurran/didvh currently holds only a Spec-Up template; the spec text is in swcurran/didvh-old."
+    "repository": "https://github.com/decentralized-identity/didvh",
+    "commit": "cc2eff6",
+    "commitDate": "2026-11-12",
+    "commitMessage": "Merge pull request #2 from swcurran/standalone",
+    "rendered": "https://identity.foundation/didvh/",
+    "version": "did:vh:1.0 (spec status: v0.1 Editors Draft)",
+    "retrieved": "2026-11-15",
+    "profile": "docs/didvh-profile.md (didvh-interop-0)"
   }
 }

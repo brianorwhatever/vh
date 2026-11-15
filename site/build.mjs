@@ -152,7 +152,7 @@ const MOVEMENTS = [
       "cpp": {"ranges": [["cpp/src/vh_log.cpp", 520, 528]], "marks": [[1, "check_hash(sc)"], [2, "without_proof(e)"], [2, "rest[\"versionId\"] = \"{SCID}\""], [3, "replace_all(canonicalize(rest), sc, \"{SCID}\")"], [4, "scid(parse("], [4, "!= sc"]]},
       "c": {"ranges": [["c/src/vh_log.c", 978, 988]], "marks": [[1, "check_hash(c, sc)"], [2, "without_proof(c, e)"], [2, "set(rest, \"versionId\", string(c, \"{SCID}\"))"], [3, "replace(c, jcs(c, rest), sc, \"{SCID}\")"], [4, "strcmp(scid(c, rest), sc)"]]},
       "forth": {"ranges": [["forth/validation.fs", 83, 87]], "marks": [[1, "id hash?"], [2, "entry without-proof"], [2, "placeholder pre s\" versionId\" put"], [3, "id placeholder j-replace"], [4, "scid id j-equal"]]},
-      typescript: { ranges: [["typescript/src/verify.ts", 250, 257]], marks: [[1, "checkSha256Multihash(scid)"], [2, "{ proof: _, ...rest } = entry"], [2, "versionId: SCID_PLACEHOLDER"], [3, ".replaceAll(scid, SCID_PLACEHOLDER)"], [4, "computeScid(JSON.parse(text)) !== scid"]] },
+      typescript: { ranges: [["typescript/src/verify.ts", 261, 268]], marks: [[1, "checkSha256Multihash(scid)"], [2, "{ proof: _, ...rest } = entry"], [2, "versionId: SCID_PLACEHOLDER"], [3, ".replaceAll(scid, SCID_PLACEHOLDER)"], [4, "computeScid(JSON.parse(text)) !== scid"]] },
       rust: { ranges: [["rust/src/verify.rs", 470, 504]], marks: [[1, "check_sha256_multihash(scid)"], [2, "rest.remove(\"proof\");"], [2, "rest.insert(\"versionId\".into(), Value::String(SCID_PLACEHOLDER.into()));"], [3, ".replace(scid, SCID_PLACEHOLDER)"], [4, "compute_scid(&preliminary) != scid"]] },
       python: { ranges: [["python/src/vh_log/verify.py", 355, 364]], marks: [[1, "check_sha256_multihash(scid)"], [2, "k != \"proof\""], [2, "\"versionId\": SCID_PLACEHOLDER"], [3, ".replace(scid, SCID_PLACEHOLDER)"], [4, "compute_scid(parse_json(text)) != scid"]] },
       elixir: { ranges: [["elixir/lib/vh_log/verifier.ex", 258, 283]], marks: [[1, "Hash.check_sha256(scid)"], [2, "Map.delete(\"proof\")"], [2, "Map.put(\"versionId\", placeholder)"], [3, "Log.replace_text(scid, placeholder)"], [4, "Log.scid(preliminary) == scid"]] },
@@ -185,7 +185,7 @@ const MOVEMENTS = [
       "cpp": {"ranges": [["cpp/src/vh_log.cpp", 452, 459]], "marks": [[1, "!previous.at(\"nextKeyHashes\").empty()"], [2, "has(raw, \"updateKeys\")"], [2, "has(raw, \"nextKeyHashes\")"], [3, "hash(str(key))"], [4, "std::find(hs.begin(), hs.end(), h) == hs.end()"]]},
       "c": {"ranges": [["c/src/vh_log.c", 917, 923]], "marks": [[1, "len(get(previous, \"nextKeyHashes\"))"], [2, "has(raw, \"updateKeys\")"], [2, "has(raw, \"nextKeyHashes\")"], [3, "hash(c, s(at(keys2, i)))"], [4, "!contains("]]},
       "forth": {"ranges": [["forth/validation.fs", 53, 58]], "marks": [[1, "old s\" nextKeyHashes\" j-get j-size 0>"], [2, "p s\" updateKeys\" j-has"], [2, "p s\" nextKeyHashes\" j-has"], [3, "keys i j-at multihash"], [4, "contains?"]]},
-      typescript: { ranges: [["typescript/src/verify.ts", 199, 206]], marks: [[1, "previous && previous.nextKeyHashes.length > 0"], [2, "!(\"updateKeys\" in raw)"], [2, "!(\"nextKeyHashes\" in raw)"], [3, "keyHash(key)"], [4, "previous.nextKeyHashes.includes("]] },
+      typescript: { ranges: [["typescript/src/verify.ts", 210, 217]], marks: [[1, "previous && previous.nextKeyHashes.length > 0"], [2, "!(\"updateKeys\" in raw)"], [2, "!(\"nextKeyHashes\" in raw)"], [3, "keyHash(key)"], [4, "previous.nextKeyHashes.includes("]] },
       rust: { ranges: [["rust/src/verify.rs", 334, 352]], marks: [[1, "previous.filter(|p| !p.next_key_hashes.is_empty())"], [2, "let Some(keys) = &update_keys else"], [2, "next_key_hashes.is_none()"], [3, "key_hash(k)"], [4, "!prev.next_key_hashes.contains("]] },
       python: { ranges: [["python/src/vh_log/verify.py", 282, 293]], marks: [[1, "previous is not None and previous.next_key_hashes"], [2, "\"updateKeys\" not in raw"], [2, "\"nextKeyHashes\" not in raw"], [3, "key_hash(key)"], [4, "not in previous.next_key_hashes"]] },
       elixir: { ranges: [["elixir/lib/vh_log/parameters.ex", 210, 232]], marks: [[1, "%__MODULE__{next_key_hashes: []}"], [2, "not Map.has_key?(raw, \"updateKeys\")"], [2, "not Map.has_key?(raw, \"nextKeyHashes\")"], [3, "Hash.key_hash(&1)"], [4, "not in committed"]] },
@@ -389,7 +389,7 @@ const SUITE_TEXT = {
   Generation: "entries that must match the reference exactly",
   Cross: `logs and witness files from all ${N} producers`,
   "didwebvh-ts": "logs from the independent did:webvh implementation",
-  "did:vh": "the did:vh DID layer: resolution, src references, DID URLs and generated DID logs",
+  "did:vh": "the did:vh DID layer: resolution, references, DID URLs and generated DID logs",
 };
 
 const okPairings = Object.values(matrix.cross).flat().filter((c) => c.ok && c.n === logsPerPairing).length;

@@ -1,7 +1,7 @@
 {
   "description": "did:vh DID URLs as parsed by a dereferencer (didvh-did-url).",
   "spec": [
-    "https://github.com/swcurran/didvh-old/blob/6c2e753/spec/specification.md#reading-didvh-did-urls",
+    "https://github.com/decentralized-identity/didvh/blob/cc2eff6/spec/specification.md#reading-didvh-did-urls",
     "docs/didvh-profile.md#4-did-urls"
   ],
   "cases": [
@@ -41,7 +41,8 @@
         "valid": true,
         "did": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ",
         "options": {
-          "src": "https://example.com/dids/issuer"
+          "srcLog": "https://example.com/dids/issuer/did.jsonl",
+          "srcWitness": "https://example.com/dids/issuer/did-witness.json"
         }
       }
     },
@@ -52,7 +53,8 @@
         "valid": true,
         "did": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ",
         "options": {
-          "src": "https://example.com/dids/issuer"
+          "srcLog": "https://example.com/dids/issuer/did.jsonl",
+          "srcWitness": "https://example.com/dids/issuer/did-witness.json"
         }
       }
     },
@@ -63,7 +65,8 @@
         "valid": true,
         "did": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ",
         "options": {
-          "src": "https://example.com/a%20b"
+          "srcLog": "https://example.com/a%20b/did.jsonl",
+          "srcWitness": "https://example.com/a%20b/did-witness.json"
         }
       }
     },
@@ -118,7 +121,8 @@
         "valid": true,
         "did": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ",
         "options": {
-          "src": "https://example.com",
+          "srcLog": "https://example.com/did.jsonl",
+          "srcWitness": "https://example.com/did-witness.json",
           "versionNumber": 2
         },
         "fragment": "key-1"
@@ -201,6 +205,50 @@
       "expect": {
         "valid": false,
         "error": "invalidDidUrl"
+      }
+    },
+    {
+      "name": "src-log",
+      "didUrl": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ?srcLog=https://example.com/did.jsonl",
+      "expect": {
+        "valid": false,
+        "error": "invalidDidUrl"
+      }
+    },
+    {
+      "name": "src-witness",
+      "didUrl": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ?srcWitness=https://example.com/did-witness.json",
+      "expect": {
+        "valid": false,
+        "error": "invalidDidUrl"
+      }
+    },
+    {
+      "name": "check-watchers",
+      "didUrl": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ?checkWatchers=1",
+      "expect": {
+        "valid": false,
+        "error": "invalidDidUrl"
+      }
+    },
+    {
+      "name": "include-did-log",
+      "didUrl": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ?includeDidLog=true",
+      "expect": {
+        "valid": false,
+        "error": "invalidDidUrl"
+      }
+    },
+    {
+      "name": "src-ipns",
+      "didUrl": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ?src=ipns://k51qzi5uqu5d/dids",
+      "expect": {
+        "valid": true,
+        "did": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ",
+        "options": {
+          "srcLog": "ipns://k51qzi5uqu5d/dids/did.jsonl",
+          "srcWitness": "ipns://k51qzi5uqu5d/dids/did-witness.json"
+        }
       }
     },
     {

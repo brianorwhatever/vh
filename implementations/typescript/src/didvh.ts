@@ -1,15 +1,16 @@
-// did:vh: the DID method specialisation of VH-Log (docs/didvh-profile.md).
-//
-// Everything about the log itself (hashing, proofs, witnesses, pre-rotation,
-// version selection) is VH-Log, run with the DID_VH specialisation. This module
-// adds the DID syntax, the `src` and DID URL rules, the resolution options, and
-// the mapping to DID Resolution metadata and error codes.
+// did:vh (docs/didvh-profile.md). A did:vh DID log has the same format and
+// verification as a VH-Log log (did:vh and VH-Log are both derived from
+// did:webvh), so the log is verified by the VH-Log code with the DID_VH
+// specialisation. This module adds the DID syntax, the srcLog/srcWitness and
+// DID URL rules, the resolution options, and DID Resolution metadata and errors.
 import { VHLogError, type ErrorReport } from "./errors.ts";
-import { createLog, SCID_PLACEHOLDER, updateLog, type UpdateInput } from "./log.ts";
+import { createLog, parseLogLines, SCID_PLACEHOLDER, updateLog, type UpdateInput } from "./log.ts";
 import { resolve } from "./resolve.ts";
-import { isWatcherUrl, parseVersionTime, type Specialisation, type WitnessConfig } from "./verify.ts";
+import { isWatcherUrl, parseVersionTime, verifyLog, type Specialisation, type WitnessConfig } from "./verify.ts";
 
 export const DID_VH_METHOD = "did:vh:1.0";
+/** A well-formed `method` value: `did:vh:<major>.<minor>`, no leading zeros. */
+const METHOD_SYNTAX = /^did:vh:(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$/;
 export const DID_PREFIX = "did:vh:";
 
 /** did:vh error codes (DID Resolution, plus the did:vh-specific ones). */
@@ -53,6 +54,7 @@ export function didVhSpecialisation(expectedScid?: string): Specialisation {
   return {
     versionParameter: "method",
     versions: [DID_VH_METHOD],
+    versionSyntax: METHOD_SYNTAX,
     extraParameters: [],
     checkState(state, scid, version) {
       if (expectedScid !== undefined && scid !== expectedScid) {
@@ -108,19 +110,9 @@ export function updateDid(input: UpdateDidInput): { log: string; versionId: stri
   return updateLog(update);
 }
 
-// ---------------------------------------------------------------- src references
+// ---------------------------------------------------------------- shared URL checks
 
-export type SrcKind = "web" | "loopback" | "file" | "other";
-
-export interface SrcLocation {
-  kind: SrcKind;
-  /** Where the DID log is retrieved from. */
-  didLog: string;
-  /** Where the witness proofs file is retrieved from. */
-  didWitness: string;
-}
-
-/** Unicode White_Space (profile §3.4). */
+/** Unicode White_Space (profile §3). */
 const WHITESPACE = new RegExp("^[\\t\\n\\v\\f\\r \\u0085\\u00a0\\u1680\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000]$", "u");
 
 /** Percent-decodes `s` to a UTF-8 string, or null if an escape or the UTF-8 is malformed. */
@@ -143,10 +135,6 @@ export function percentDecode(s: string): string | null {
   }
 }
 
-function isPortOk(port: string): boolean {
-  return /^[0-9]{1,5}$/.test(port) && Number(port) <= 65535;
-}
-
 const isOctet = (s: string) => /^(0|[1-9][0-9]{0,2})$/.test(s) && Number(s) <= 255;
 
 function isLoopbackHost(host: string): boolean {
@@ -159,74 +147,93 @@ function isDomainName(host: string): boolean {
   const name = host.endsWith(".") ? host.slice(0, -1) : host;
   if (name.length === 0 || name.length > 253) return false;
   const labels = name.split(".");
-  if (/^[0-9]+$/.test(labels.at(-1)!)) return false; // IPv4 literal (or ends in a number)
+  if (/^[0-9]+$/.test(labels.at(-1)!)) return false; // an IPv4 literal, or ends in a number
   return labels.every((l) => /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/.test(l));
 }
 
-function checkWebPath(path: string): boolean {
-  if (path === "") return true;
+/** Splits `scheme:rest` (profile §3 steps 1–2); null if `value` is not printable ASCII with a scheme. */
+function splitScheme(value: unknown): { scheme: string; rest: string } | null {
+  if (typeof value !== "string" || !/^[\x21-\x7e]+$/.test(value)) return null;
+  const m = /^([A-Za-z][A-Za-z0-9+.-]*):(.*)$/s.exec(value);
+  return m ? { scheme: m[1].toLowerCase(), rest: m[2] } : null;
+}
+
+/** Checks an `http(s)` authority (profile §3); returns the lowercased host, or null. */
+function checkAuthority(authority: string, scheme: "https" | "http"): string | null {
+  if (authority.includes("@")) return null;
+  let host: string;
+  let port: string | null = null;
+  if (authority.startsWith("[")) {
+    const close = authority.indexOf("]");
+    if (close === -1) return null;
+    host = authority.slice(0, close + 1);
+    const after = authority.slice(close + 1);
+    if (after !== "") {
+      if (!after.startsWith(":")) return null;
+      port = after.slice(1);
+    }
+  } else {
+    const colon = authority.indexOf(":");
+    host = colon === -1 ? authority : authority.slice(0, colon);
+    if (colon !== -1) port = authority.slice(colon + 1);
+  }
+  host = host.toLowerCase();
+  if (port !== null && !(/^[0-9]{1,5}$/.test(port) && Number(port) <= 65535)) return null;
+  if (scheme === "http") return isLoopbackHost(host) ? host : null;
+  return !host.startsWith("[") && isDomainName(host) ? host : null;
+}
+
+/**
+ * Checks the segments of a path that starts with `/` (profile §3). Each is
+ * percent-decoded and must not be `.` or `..` or contain `/`, `\` or NUL.
+ * With `strict` (the `src` DID URL parameter), it must also be non-empty and
+ * not start or end with whitespace.
+ */
+function checkSegments(path: string, strict: boolean): boolean {
   for (const raw of path.slice(1).split("/")) {
     const segment = percentDecode(raw);
-    if (segment === null || segment === "" || segment === "." || segment === "..") return false;
-    if (/[/\\\0]/.test(segment)) return false;
-    const chars = [...segment];
-    if (WHITESPACE.test(chars[0]) || WHITESPACE.test(chars.at(-1)!)) return false;
+    if (segment === null || segment === "." || segment === ".." || /[/\\\0]/.test(segment)) return false;
+    if (strict) {
+      if (segment === "") return false;
+      const chars = [...segment];
+      if (WHITESPACE.test(chars[0]) || WHITESPACE.test(chars.at(-1)!)) return false;
+    }
   }
   return true;
 }
 
-/** Strips one trailing `/`. */
-const stripSlash = (path: string) => (path.endsWith("/") ? path.slice(0, -1) : path);
+// ---------------------------------------------------------------- srcLog / srcWitness references
+
+export type RefKind = "web" | "loopback" | "file" | "other";
 
 /**
- * Validates a `src` reference and works out where its files are (profile §3).
- * Throws `invalidOptions` for a value that is not a valid reference.
+ * Validates a `srcLog` or `srcWitness` reference, which names a file
+ * (profile §3.1), and returns its kind. Throws `invalidOptions`.
  */
-export function locateSrc(src: unknown): SrcLocation {
-  const invalid = (why: string) => new DidVhError("invalidOptions", `src ${JSON.stringify(src)}: ${why}`);
-  if (typeof src !== "string" || !/^[\x21-\x7e]+$/.test(src)) throw invalid("must be printable ASCII");
-  const m = /^([A-Za-z][A-Za-z0-9+.-]*):(.*)$/s.exec(src);
-  if (!m) throw invalid("not an absolute URL");
-  const scheme = m[1].toLowerCase();
-  const rest = m[2];
-  if (rest.includes("?") || rest.includes("#")) throw invalid("must not have a query or fragment");
-  const files = (base: string): [string, string] => [`${base}/did.jsonl`, `${base}/did-witness.json`];
+export function checkRef(ref: unknown): RefKind {
+  const invalid = (why: string) => new DidVhError("invalidOptions", `reference ${JSON.stringify(ref)}: ${why}`);
+  const parts = splitScheme(ref);
+  if (!parts) throw invalid("not a printable-ASCII absolute URL");
+  const { scheme, rest } = parts;
+  if (rest.includes("#")) throw invalid("must not have a fragment");
 
   if (scheme === "https" || scheme === "http") {
     if (!rest.startsWith("//")) throw invalid("missing authority");
-    const slash = rest.indexOf("/", 2);
-    const authority = slash === -1 ? rest.slice(2) : rest.slice(2, slash);
-    const path = stripSlash(slash === -1 ? "" : rest.slice(slash));
-    if (authority.includes("@")) throw invalid("must not have user information");
-    let host: string;
-    let port: string | null = null;
-    if (authority.startsWith("[")) {
-      const close = authority.indexOf("]");
-      if (close === -1) throw invalid("malformed IP literal");
-      host = authority.slice(0, close + 1);
-      const after = authority.slice(close + 1);
-      if (after !== "") {
-        if (!after.startsWith(":")) throw invalid("malformed authority");
-        port = after.slice(1);
-      }
-    } else {
-      const colon = authority.indexOf(":");
-      host = colon === -1 ? authority : authority.slice(0, colon);
-      if (colon !== -1) port = authority.slice(colon + 1);
+    const end = rest.slice(2).search(/[/?]/);
+    const authority = end === -1 ? rest.slice(2) : rest.slice(2, end + 2);
+    const afterAuthority = end === -1 ? "" : rest.slice(end + 2);
+    const q = afterAuthority.indexOf("?");
+    const path = q === -1 ? afterAuthority : afterAuthority.slice(0, q);
+    if (checkAuthority(authority, scheme) === null) {
+      throw invalid(scheme === "http" ? "http is only allowed with a loopback host" : "invalid https host");
     }
-    host = host.toLowerCase();
-    if (port !== null && !isPortOk(port)) throw invalid("malformed port");
-    const loopback = scheme === "http";
-    if (loopback ? !isLoopbackHost(host) : host.startsWith("[") || !isDomainName(host)) {
-      throw invalid(loopback ? "http is only allowed with a loopback host" : "https host must be a domain name");
-    }
-    if (!checkWebPath(path)) throw invalid("invalid path segment");
-    const base = `${scheme}://${rest.slice(2, slash === -1 ? undefined : slash)}`;
-    const [didLog, didWitness] = path === "" ? [`${base}/.well-known/did.jsonl`, `${base}/.well-known/did-witness.json`] : files(base + path);
-    return { kind: loopback ? "loopback" : "web", didLog, didWitness };
+    if (path === "") throw invalid("must have a path");
+    if (!checkSegments(path, false)) throw invalid("invalid path segment");
+    return scheme === "http" ? "loopback" : "web";
   }
 
   if (scheme === "file") {
+    if (rest.includes("?")) throw invalid("must not have a query");
     let path: string;
     if (rest.startsWith("//")) {
       const slash = rest.indexOf("/", 2);
@@ -238,29 +245,57 @@ export function locateSrc(src: unknown): SrcLocation {
       if (!rest.startsWith("/")) throw invalid("file URL needs an absolute path");
       path = rest;
     }
-    const [didLog, didWitness] = files(`file://${stripSlash(path)}`);
-    return { kind: "file", didLog, didWitness };
+    if (!checkSegments(path, false)) throw invalid("invalid path segment");
+    return "file";
   }
 
+  if (rest === "") throw invalid("empty URL");
+  return "other";
+}
+
+// ---------------------------------------------------------------- the src DID URL parameter
+
+/**
+ * Validates a (percent-decoded) `src` DID URL parameter and derives the
+ * `srcLog` and `srcWitness` references from it (profile §3.2). Throws
+ * `invalidDidUrl`.
+ */
+export function srcReferences(src: unknown): { srcLog: string; srcWitness: string } {
+  const invalid = (why: string) => new DidVhError("invalidDidUrl", `src ${JSON.stringify(src)}: ${why}`);
+  const parts = splitScheme(src);
+  if (!parts) throw invalid("not a printable-ASCII absolute URL");
+  const { scheme, rest } = parts;
+  if (rest.includes("?") || rest.includes("#")) throw invalid("must not have a query or fragment");
+  if (scheme === "http" || scheme === "file") throw invalid(`${scheme} is not allowed in a DID URL`);
   if (!rest.startsWith("//") || rest.length === 2 || rest[2] === "/") throw invalid("not a hierarchical URL with an authority");
-  const [didLog, didWitness] = files(`${scheme}:${stripSlash(rest)}`);
-  return { kind: "other", didLog, didWitness };
+  const base = rest.endsWith("/") ? rest.slice(0, -1) : rest;
+  if (scheme === "https") {
+    const slash = base.indexOf("/", 2);
+    const authority = slash === -1 ? base.slice(2) : base.slice(2, slash);
+    const path = slash === -1 ? "" : base.slice(slash);
+    if (checkAuthority(authority, "https") === null) throw invalid("invalid https host");
+    if (path !== "" && !checkSegments(path, true)) throw invalid("invalid path segment");
+  }
+  const location = `${scheme}:${base}`;
+  return { srcLog: `${location}/did.jsonl`, srcWitness: `${location}/did-witness.json` };
 }
 
 // ---------------------------------------------------------------- DID URLs
 
 export interface DidUrl {
   did: string;
-  /** Resolution options taken from the query: src, versionId, versionTime, versionNumber. */
+  /** Resolution options from the query: srcLog and srcWitness (from src), versionId, versionTime, versionNumber. */
   options: DidResolutionOptions;
   fragment?: string;
 }
 
-const URL_OPTIONS = ["src", "versionId", "versionTime", "versionNumber"];
+const URL_PARAMETERS = ["src", "versionId", "versionTime", "versionNumber"];
+const OPTION_ONLY = ["didLog", "didWitness", "srcLog", "srcWitness", "checkWatchers", "extraWatchers", "minCopies", "includeDidLog"];
 
 /**
- * Parses a did:vh DID URL as a dereferencer does (profile §4): the version
- * parameters and `src` become resolution options. Throws `invalidDidUrl`.
+ * Parses a did:vh DID URL as a dereferencer does (profile §4): `src` becomes
+ * the `srcLog` and `srcWitness` options, and the version parameters become
+ * the options of the same name. Throws `invalidDidUrl`.
  */
 export function parseDidUrl(didUrl: unknown): DidUrl {
   const invalid = (why: string) => new DidVhError("invalidDidUrl", `${JSON.stringify(didUrl)}: ${why}`);
@@ -271,6 +306,7 @@ export function parseDidUrl(didUrl: unknown): DidUrl {
   const q = beforeFragment.indexOf("?");
   const did = q === -1 ? beforeFragment : beforeFragment.slice(0, q);
   if (parseDid(did) === null) throw invalid("not a did:vh DID");
+  const seen = new Set<string>();
   const options: DidResolutionOptions = {};
   if (q !== -1) {
     for (const pair of beforeFragment.slice(q + 1).split("&")) {
@@ -279,20 +315,12 @@ export function parseDidUrl(didUrl: unknown): DidUrl {
       const key = percentDecode(pair.slice(0, eq));
       const value = percentDecode(pair.slice(eq + 1));
       if (key === null || value === null) throw invalid("malformed percent-encoding");
-      if (key === "didLog" || key === "didWitness") throw invalid(`${key} is not allowed in a DID URL`);
-      if (!URL_OPTIONS.includes(key)) continue;
-      if (key in options) throw invalid(`${key} given more than once`);
+      if (OPTION_ONLY.includes(key)) throw invalid(`${key} is a resolution option, not a DID URL parameter`);
+      if (!URL_PARAMETERS.includes(key)) continue;
+      if (seen.has(key)) throw invalid(`${key} given more than once`);
+      seen.add(key);
       if (key === "src") {
-        let location: SrcLocation;
-        try {
-          location = locateSrc(value);
-        } catch {
-          throw invalid("src is not a valid reference");
-        }
-        if (location.kind === "file" || location.kind === "loopback") {
-          throw invalid("src in a DID URL must not be a local directory or loopback reference");
-        }
-        options.src = value;
+        Object.assign(options, srcReferences(value));
       } else if (key === "versionNumber") {
         if (!/^[1-9][0-9]{0,15}$/.test(value)) throw invalid("versionNumber must be a positive integer");
         options.versionNumber = Number(value);
@@ -309,13 +337,15 @@ export function parseDidUrl(didUrl: unknown): DidUrl {
 export interface DidResolutionOptions {
   didLog?: string;
   didWitness?: unknown;
-  src?: string;
+  srcLog?: string;
+  srcWitness?: string;
   versionId?: string;
   versionTime?: string;
   versionNumber?: number;
-  checkWatchers?: boolean;
+  checkWatchers?: number | "all";
   extraWatchers?: string[];
   minCopies?: number;
+  includeDidLog?: boolean;
   [other: string]: unknown;
 }
 
@@ -346,14 +376,21 @@ export interface DidDocumentMetadata {
   updated: string;
   scid: string;
   deactivated: boolean;
-  ttl: string;
-  witness?: { threshold: string; witnesses: { id: string }[] };
+  ttl: number;
+  witness?: WitnessConfig;
   watchers: string[];
+}
+
+export interface DidResolutionSuccessMetadata {
+  contentType: "application/did+json";
+  warnings?: Warning[];
+  didLog?: string;
+  didWitness?: unknown[];
 }
 
 export type DidResolutionResult =
   | {
-      didResolutionMetadata: { contentType: "application/did+json"; warnings?: Warning[] };
+      didResolutionMetadata: DidResolutionSuccessMetadata;
       didDocument: Record<string, unknown> | null;
       didDocumentMetadata: DidDocumentMetadata;
     }
@@ -366,16 +403,21 @@ export type DidResolutionResult =
 const isObject = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
 const isPositiveInteger = (v: unknown) => typeof v === "number" && Number.isInteger(v) && v >= 1;
 
-/** did:vh Resolution Options validation (profile §5). */
+/** did:vh Resolution Options validation (profile §5, step 2). */
 function validateOptions(options: unknown, remote: boolean): DidResolutionOptions {
   const invalid = (why: string) => new DidVhError("invalidOptions", why);
   if (!isObject(options)) throw invalid("resolution options must be an object");
   const o = options as DidResolutionOptions;
-  if (("didLog" in o) === ("src" in o)) throw invalid("exactly one of didLog and src must be given");
+  if (("didLog" in o) === ("srcLog" in o)) throw invalid("exactly one of didLog and srcLog must be given");
+  if ("didWitness" in o && "srcWitness" in o) throw invalid("at most one of didWitness and srcWitness may be given");
   if ("didLog" in o && typeof o.didLog !== "string") throw invalid("didLog must be a string");
-  if ("didWitness" in o) {
-    if (!("didLog" in o)) throw invalid("didWitness may only be given with didLog");
-    if (!Array.isArray(o.didWitness)) throw invalid("didWitness must be an array");
+  if ("didWitness" in o && !Array.isArray(o.didWitness)) throw invalid("didWitness must be an array");
+  for (const key of ["srcLog", "srcWitness"] as const) {
+    if (!(key in o)) continue;
+    const kind = checkRef(o[key]);
+    if (remote && (kind === "file" || kind === "loopback")) {
+      throw invalid(`${key}: a resolver that serves other systems must not use local file or loopback references`);
+    }
   }
   const selectors = ["versionId", "versionTime", "versionNumber"].filter((k) => k in o);
   if (selectors.length > 1) throw invalid("at most one of versionId, versionTime and versionNumber may be given");
@@ -384,20 +426,20 @@ function validateOptions(options: unknown, remote: boolean): DidResolutionOption
     throw invalid("versionTime must be a whole-second UTC ISO 8601 time");
   }
   if ("versionNumber" in o && !isPositiveInteger(o.versionNumber)) throw invalid("versionNumber must be a positive integer");
-  if ("minCopies" in o && !isPositiveInteger(o.minCopies)) throw invalid("minCopies must be a positive integer");
-  if ("checkWatchers" in o && typeof o.checkWatchers !== "boolean") throw invalid("checkWatchers must be a boolean");
+  if ("checkWatchers" in o) {
+    const c = o.checkWatchers;
+    if (c !== "all" && !(typeof c === "number" && Number.isInteger(c) && c >= 0)) {
+      throw invalid('checkWatchers must be a non-negative integer or "all"');
+    }
+  }
   if ("extraWatchers" in o) {
     const w = o.extraWatchers;
     if (!Array.isArray(w) || !w.every((u) => typeof u === "string" && u.startsWith("https://") && isWatcherUrl(u))) {
       throw invalid("extraWatchers must be an array of https URLs");
     }
   }
-  if ("src" in o) {
-    const { kind } = locateSrc(o.src);
-    if (remote && (kind === "file" || kind === "loopback")) {
-      throw invalid("a resolver that serves other systems must not use local directory or loopback references");
-    }
-  }
+  if ("minCopies" in o && !isPositiveInteger(o.minCopies)) throw invalid("minCopies must be a positive integer");
+  if ("includeDidLog" in o && typeof o.includeDidLog !== "boolean") throw invalid("includeDidLog must be a boolean");
   return o;
 }
 
@@ -406,6 +448,7 @@ const ERROR_MAP: Partial<Record<string, DidVhErrorCode>> = {
   "invalid-option": "invalidOptions",
   "fork-detected": "logForked",
   "min-copies-not-met": "insufficientCopies",
+  "unsupported-log-version": "featureNotSupported",
 };
 
 function failure(error: DidVhError): DidResolutionResult {
@@ -414,39 +457,45 @@ function failure(error: DidVhError): DidResolutionResult {
   return { didResolutionMetadata: { error: error.code, problemDetails }, didDocument: null, didDocumentMetadata: {} };
 }
 
-/** Converts the VH-Log `witness` parameter to DID metadata form (threshold as a string). */
-const witnessMetadata = (w: WitnessConfig) => ({ threshold: String(w.threshold), witnesses: w.witnesses });
+const currentTime = () => new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
 
 /**
  * did:vh `resolve(did, resolutionOptions)` (profile §5). This resolver is
- * offline: it verifies a log passed in `didLog`/`didWitness`, and returns
- * `featureNotSupported` for `src`, `checkWatchers` and `extraWatchers`.
+ * offline: it verifies a log passed in `didLog` (and `didWitness`), and
+ * returns `featureNotSupported` when it would have to retrieve anything.
  */
 export function resolveDid(did: string, resolutionOptions: unknown = {}, context: ResolverContext = {}): DidResolutionResult {
   try {
     const scid = parseDid(did);
     if (scid === null) throw new DidVhError("invalidDid", `${JSON.stringify(did)} is not a did:vh DID`);
     const options = validateOptions(resolutionOptions, context.remote ?? false);
-    if ("src" in options) throw new DidVhError("featureNotSupported", "this resolver does not retrieve from src references");
-    if (options.checkWatchers === true || (options.extraWatchers?.length ?? 0) > 0) {
+    if ("srcLog" in options) throw new DidVhError("featureNotSupported", "this resolver does not retrieve srcLog references");
+    if ((options.checkWatchers ?? 0) !== 0 || (options.extraWatchers?.length ?? 0) > 0) {
       throw new DidVhError("featureNotSupported", "this resolver does not retrieve copies from watchers");
+    }
+    const spec = didVhSpecialisation(scid);
+    const now = context.now ?? currentTime();
+    const log = options.didLog!;
+    // Whether the log needs witnessing does not depend on the witness file. Without
+    // one, the first entry that needs it fails, which cuts it from `entries`.
+    const unwitnessed = verifyLog(log, undefined, parseVersionTime(now) ?? Date.now(), spec);
+    const witnessed =
+      unwitnessed.failure?.code === "witness-threshold-not-met" || unwitnessed.entries.some((e) => e.witnessRule !== null);
+    if (witnessed && "srcWitness" in options) {
+      throw new DidVhError("featureNotSupported", "this resolver does not retrieve srcWitness references");
     }
     const vhOptions: Record<string, unknown> = {};
     for (const key of ["versionId", "versionTime", "versionNumber", "minCopies"]) {
       if (key in options) vhOptions[key] = options[key];
     }
-    const result = resolve(
-      {
-        log: options.didLog!,
-        witness: options.didWitness,
-        now: context.now ?? new Date().toISOString().replace(/\.\d{3}Z$/, "Z"),
-        options: vhOptions,
-      },
-      didVhSpecialisation(scid),
-    );
+    const result = resolve({ log, witness: options.didWitness, now, options: vhOptions }, spec);
     if (!result.valid) {
-      const code = ERROR_MAP[result.error.code] ?? "invalidDid";
-      throw new DidVhError(code, result.error.message, result.error);
+      throw new DidVhError(ERROR_MAP[result.error.code] ?? "invalidDid", result.error.message, result.error);
+    }
+    const selected = ["versionId", "versionTime", "versionNumber"].some((k) => k in options);
+    if (!selected && result.error?.code === "unsupported-log-version") {
+      // Entries after the last valid one may change the document or its keys (profile §5).
+      throw new DidVhError("featureNotSupported", result.error.message, result.error);
     }
     const m = result.metadata;
     // A deactivated DID's document is not returned; earlier versions still are (profile §5).
@@ -458,13 +507,20 @@ export function resolveDid(did: string, resolutionOptions: unknown = {}, context
       updated: m.updated,
       scid: m.scid,
       deactivated: m.deactivated,
-      ttl: String(m.ttl),
-      ...(m.witness ? { witness: witnessMetadata(m.witness) } : {}),
+      ttl: m.ttl,
+      ...(m.witness ? { witness: m.witness } : {}),
       watchers: m.watchers,
     };
-    const warnings = m.warnings;
+    const meta: DidResolutionSuccessMetadata = { contentType: "application/did+json" };
+    if (m.warnings.length) meta.warnings = m.warnings;
+    if (options.includeDidLog === true) {
+      const lines = parseLogLines(log);
+      const valid = result.firstInvalidVersion === null ? lines.length : result.firstInvalidVersion - 1;
+      meta.didLog = lines.slice(0, valid).map((l) => l + "\n").join("");
+      if (witnessed) meta.didWitness = Array.isArray(options.didWitness) ? options.didWitness : [];
+    }
     return {
-      didResolutionMetadata: { contentType: "application/did+json", ...(warnings.length ? { warnings } : {}) },
+      didResolutionMetadata: meta,
       didDocument: m.deactivated && isLast ? null : result.state,
       didDocumentMetadata,
     };

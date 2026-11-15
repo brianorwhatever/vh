@@ -13,7 +13,8 @@ import {
   createProof,
   DID_VH_METHOD,
   keyHash,
-  locateSrc,
+  checkRef,
+  srcReferences,
   parseDidUrl,
   resolveDid,
   SCID_PLACEHOLDER,
@@ -29,7 +30,7 @@ import type { SealOptions } from "../implementations/typescript/src/log.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const OUT = join(ROOT, "vectors", "didvh");
-const SPEC = "https://github.com/swcurran/didvh-old/blob/6c2e753/spec/specification.md";
+const SPEC = "https://github.com/decentralized-identity/didvh/blob/cc2eff6/spec/specification.md";
 const PROFILE = "docs/didvh-profile.md";
 
 // ---------------------------------------------------------------- fixtures (same keys as vectors/keys.json)
@@ -135,6 +136,9 @@ interface Expect {
   didDocumentMetadata?: Json;
   /** Sorted warning codes. */
   warnings?: string[];
+  /** didResolutionMetadata.didLog / didWitness, when includeDidLog returned them. */
+  didLog?: string;
+  didWitness?: unknown[];
 }
 
 interface Case {
@@ -182,6 +186,8 @@ function vector(name: string, description: string, spec: string[], input: { did:
     final.didDocument = result.didDocument;
     final.didDocumentMetadata = result.didDocumentMetadata;
     final.warnings = warnings;
+    if ("didLog" in meta) final.didLog = meta.didLog as string;
+    if ("didWitness" in meta) final.didWitness = meta.didWitness as unknown[];
   }
   current.push({ name, description, spec: spec.map((s) => (s.startsWith("#") ? SPEC + s : s)), input: fullInput, expect: final });
 }
@@ -191,23 +197,25 @@ const S = {
   file: "#the-did-log-file",
   read: "#read-resolve",
   options: "#didvh-resolution-options",
-  src: "#the-src-option",
+  refs: "#the-srclog-and-srcwitness-options",
+  src: "#the-src-did-url-parameter",
+  results: "#results-of-processing-the-log",
   algo: "#resolution-algorithm",
   meta: "#did-resolution-metadata",
   deact: "#deactivate-revoke",
   params: "#didvh-did-method-parameters",
-  witnesses: "#witnesses",
+  witnesses: "#did-witnesses",
 };
 
 group("basic", () => {
   const b = new DidLog().genesis();
   vector("genesis", "A one-entry did:vh log, passed directly.", [S.read, S.meta], { did: b.did, options: { didLog: b.log } },
-    { didDocument: b.state(1), didDocumentMetadata: { versionId: b.vid(1), deactivated: false, ttl: "3600", watchers: [] } });
+    { didDocument: b.state(1), didDocumentMetadata: { versionId: b.vid(1), deactivated: false, ttl: 3600, watchers: [] } });
 
   const u = new DidLog().genesis({ ttl: 300, watchers: ["https://watcher.example/{SCID}"] }).update().update();
   const opts = { didLog: u.log };
   vector("latest", "Three entries; the latest DID document is returned.", [S.read, S.meta], { did: u.did, options: opts },
-    { didDocument: u.state(3), didDocumentMetadata: { versionId: u.vid(3), created: t(1), updated: t(3), ttl: "300" } });
+    { didDocument: u.state(3), didDocumentMetadata: { versionId: u.vid(3), created: t(1), updated: t(3), ttl: 300 } });
   vector("version-number", "versionNumber selects an earlier version; updated still reflects the log.", [S.read, S.meta],
     { did: u.did, options: { ...opts, versionNumber: 2 } }, { didDocument: u.state(2), didDocumentMetadata: { versionId: u.vid(2), updated: t(3) } });
   vector("version-id", "versionId selects the first version.", [S.read], { did: u.did, options: { ...opts, versionId: u.vid(1) } },
@@ -231,7 +239,7 @@ group("basic", () => {
 
   const r = new DidLog().genesis({ nextKeyHashes: [kh("k2")] })
     .update({ updateKeys: [mk("k2")], nextKeyHashes: [kh("k3")] }, { signers: ["k2"] });
-  vector("pre-rotation", "Pre-rotation works as in VH-Log.", ["#authorized-keys-and-pre-rotation"], { did: r.did, options: { didLog: r.log } },
+  vector("pre-rotation", "Pre-rotation works as in VH-Log.", ["#authorized-keys"], { did: r.did, options: { didLog: r.log } },
     { didDocument: r.state(2) });
 });
 
@@ -254,7 +262,7 @@ group("witnesses", () => {
   const file = witnessFile([b.vid(2), "wA", "wC"]);
   vector("witnessed", "Witnessed log with didWitness; threshold is a string in the metadata.", [S.witnesses, S.meta],
     { did: b.did, options: { didLog: b.log, didWitness: file } },
-    { didDocument: b.state(2), didDocumentMetadata: { witness: { threshold: "2", witnesses: witnessConfig(2, "wA", "wB", "wC").witnesses } } });
+    { didDocument: b.state(2), didDocumentMetadata: { witness: { threshold: 2, witnesses: witnessConfig(2, "wA", "wB", "wC").witnesses } } });
   vector("missing-witness-file", "Witnesses are required but no didWitness is given.", [S.witnesses], { did: b.did, options: { didLog: b.log } },
     { error: "invalidDid", vhLogError: "witness-threshold-not-met" });
   vector("below-threshold", "Only one of two required witness approvals.", [S.witnesses],
@@ -274,10 +282,29 @@ group("log", () => {
     { did: asVhLog.did, options: { didLog: asVhLog.log } }, { error: "invalidDid", vhLogError: "invalid-parameter" });
   const noMethod = new DidLog().genesis({ scid: SCID_PLACEHOLDER, updateKeys: [mk("k1")] }, { raw: true });
   vector("method-missing", "The first entry has no method parameter.", [S.params], { did: noMethod.did, options: { didLog: noMethod.log } },
-    { error: "invalidDid", vhLogError: "unsupported-log-version" });
+    { error: "invalidDid", vhLogError: "invalid-parameter" });
   const webvh = new DidLog().genesis({ method: "did:webvh:1.0" });
-  vector("method-webvh", "A did:webvh method value.", [S.file, S.params], { did: webvh.did, options: { didLog: webvh.log } },
-    { error: "invalidDid", vhLogError: "unsupported-log-version" });
+  vector("method-webvh", "A did:webvh method value is malformed for did:vh.", [S.file, S.params], { did: webvh.did, options: { didLog: webvh.log } },
+    { error: "invalidDid", vhLogError: "invalid-parameter" });
+  const leadingZero = new DidLog().genesis({ method: "did:vh:01.0" });
+  vector("method-leading-zero", "A method version with a leading zero is malformed.", [S.params], { did: leadingZero.did, options: { didLog: leadingZero.log } },
+    { error: "invalidDid", vhLogError: "invalid-parameter" });
+  const notString = new DidLog().genesis({ method: 1 });
+  vector("method-not-string", "A method that is not a string is malformed.", [S.params], { did: notString.did, options: { didLog: notString.log } },
+    { error: "invalidDid", vhLogError: "invalid-parameter" });
+  const future = new DidLog().genesis({ method: "did:vh:1.1" });
+  vector("method-unsupported", "A well-formed method this resolver does not support.", [S.params, S.results], { did: future.did, options: { didLog: future.log } },
+    { error: "featureNotSupported", vhLogError: "unsupported-log-version" });
+  const upgrade = new DidLog().genesis().update().update({ method: "did:vh:2.0" });
+  vector("method-unsupported-later", "An unsupported method in entry 3: the latest version is not returned.", [S.results],
+    { did: upgrade.did, options: { didLog: upgrade.log } }, { error: "featureNotSupported", vhLogError: "unsupported-log-version" });
+  vector("method-unsupported-earlier-version", "An earlier version before the unsupported entry is still returned.", [S.results],
+    { did: upgrade.did, options: { didLog: upgrade.log, versionNumber: 2 } }, { didDocument: upgrade.state(2), warnings: ["invalid-entries"] });
+  vector("method-unsupported-selected", "Selecting the unsupported entry.", [S.results],
+    { did: upgrade.did, options: { didLog: upgrade.log, versionNumber: 3 } }, { error: "featureNotSupported", vhLogError: "unsupported-log-version" });
+  const malformedLater = new DidLog().genesis().update({ method: "did:vh:x" });
+  vector("method-malformed-later", "A malformed method in entry 2 invalidates it; entry 1 is returned.", [S.params, S.results],
+    { did: malformedLater.did, options: { didLog: malformedLater.log } }, { didDocument: malformedLater.state(1), warnings: ["invalid-entries"] });
   const both = new DidLog().genesis({ logVersion: "vh-log:1.0" });
   vector("method-and-log-version", "method plus a logVersion parameter.", [S.params], { did: both.did, options: { didLog: both.log } },
     { error: "invalidDid", vhLogError: "invalid-parameter" });
@@ -344,9 +371,9 @@ group("options", () => {
   const base = { did: b.did };
   const invalid = (name: string, options: Json, description: string, remote?: boolean) =>
     vector(name, description, [S.options], { ...base, options, ...(remote === undefined ? {} : { remote }) }, { error: "invalidOptions" });
-  invalid("no-log", {}, "Neither didLog nor src.");
-  invalid("log-and-src", { didLog: b.log, src: "https://example.com" }, "Both didLog and src.");
-  invalid("witness-without-log", { src: "https://example.com", didWitness: [] }, "didWitness with src.");
+  invalid("no-log", {}, "Neither didLog nor srcLog.");
+  invalid("log-and-src-log", { didLog: b.log, srcLog: "https://example.com/did.jsonl" }, "Both didLog and srcLog.");
+  invalid("witness-and-src-witness", { didLog: b.log, didWitness: [], srcWitness: "https://example.com/did-witness.json" }, "Both didWitness and srcWitness.");
   invalid("log-not-string", { didLog: [b.log] }, "didLog must be a string.");
   invalid("witness-not-array", { didLog: b.log, didWitness: {} }, "didWitness must be an array.");
   invalid("two-selectors", { didLog: b.log, versionNumber: 1, versionId: b.vid(1) }, "More than one version selector.");
@@ -356,104 +383,161 @@ group("options", () => {
   invalid("version-time-fraction", { didLog: b.log, versionTime: "2026-01-01T00:00:00.5Z" }, "versionTime must have whole seconds.");
   invalid("version-id-number", { didLog: b.log, versionId: 1 }, "versionId must be a string.");
   invalid("min-copies-zero", { didLog: b.log, minCopies: 0 }, "minCopies must be positive.");
-  invalid("check-watchers-string", { didLog: b.log, checkWatchers: "yes" }, "checkWatchers must be a boolean.");
+  invalid("check-watchers-boolean", { didLog: b.log, checkWatchers: true }, 'checkWatchers must be a non-negative integer or "all".');
+  invalid("check-watchers-negative", { didLog: b.log, checkWatchers: -1 }, "checkWatchers must not be negative.");
+  invalid("check-watchers-other-string", { didLog: b.log, checkWatchers: "some" }, 'The only string checkWatchers value is "all".');
   invalid("extra-watchers-http", { didLog: b.log, extraWatchers: ["http://watcher.example"] }, "extraWatchers must be https URLs.");
   invalid("extra-watchers-string", { didLog: b.log, extraWatchers: "https://watcher.example" }, "extraWatchers must be an array.");
-  invalid("src-invalid", { src: "http://example.com/dids" }, "src: http is only for loopback hosts.");
-  invalid("src-file-remote", { src: "file:///var/lib/dids/x" }, "A resolver serving other systems refuses local directory references.", true);
-  invalid("src-loopback-remote", { src: "http://localhost:8000/dids" }, "A resolver serving other systems refuses loopback references.", true);
+  invalid("include-did-log-string", { didLog: b.log, includeDidLog: "yes" }, "includeDidLog must be a boolean.");
+  invalid("src-log-invalid", { srcLog: "http://example.com/did.jsonl" }, "srcLog: http is only for loopback hosts.");
+  invalid("src-log-fragment", { srcLog: "https://example.com/did.jsonl#x" }, "srcLog must not have a fragment.");
+  invalid("src-witness-invalid", { didLog: b.log, srcWitness: "https://192.0.2.1/did-witness.json" }, "srcWitness: https needs a domain name.");
+  invalid("src-log-file-remote", { srcLog: "file:///var/lib/dids/did.jsonl" }, "A resolver serving other systems refuses local file references.", true);
+  invalid("src-log-loopback-remote", { srcLog: "http://localhost:8000/did.jsonl" }, "A resolver serving other systems refuses loopback references.", true);
+  invalid("src-witness-file-remote", { didLog: b.log, srcWitness: "file:///var/lib/dids/did-witness.json" }, "The check applies to srcWitness too, even when it is not needed.", true);
 
   const unsupported = (name: string, options: Json, description: string) =>
     vector(name, description, [S.options, PROFILE + "#5-resolution"], { ...base, options }, { error: "featureNotSupported" });
-  unsupported("src-web", { src: "https://example.com/dids/issuer" }, "This resolver does not retrieve from web locations.");
-  unsupported("src-file-local", { src: "file:///var/lib/dids/x" }, "This resolver does not read local directories.");
-  unsupported("src-other-scheme", { src: "ipns://k51qzi5uqu5d/dids/issuer" }, "This resolver does not support other schemes.");
-  unsupported("check-watchers", { didLog: b.log, checkWatchers: true }, "This resolver does not contact watchers.");
+  unsupported("src-log-web", { srcLog: "https://example.com/dids/issuer/did.jsonl" }, "This resolver does not retrieve from web locations.");
+  unsupported("src-log-file-local", { srcLog: "file:///var/lib/dids/did.jsonl" }, "This resolver does not read local files.");
+  unsupported("src-log-other-scheme", { srcLog: "ipfs://bafkreiexample" }, "This resolver does not support other schemes.");
+  unsupported("check-watchers", { didLog: b.log, checkWatchers: 1 }, "This resolver does not contact watchers.");
+  unsupported("check-watchers-all", { didLog: b.log, checkWatchers: "all" }, "This resolver does not contact watchers.");
   unsupported("extra-watchers", { didLog: b.log, extraWatchers: ["https://watcher.example"] }, "This resolver does not contact watchers.");
-  vector("check-watchers-false", "checkWatchers false needs no watchers.", [S.options], { ...base, options: { didLog: b.log, checkWatchers: false, extraWatchers: [] } },
-    { didDocument: b.state(1) });
+  vector("watchers-zero", "checkWatchers 0 and an empty extraWatchers need no watchers.", [S.options],
+    { ...base, options: { didLog: b.log, checkWatchers: 0, extraWatchers: [] } }, { didDocument: b.state(1) });
+  vector("src-witness-unneeded", "srcWitness is not an error when the log needs no witnesses.", [S.refs],
+    { ...base, options: { didLog: b.log, srcWitness: "https://example.com/did-witness.json" } }, { didDocument: b.state(1) });
+  const w = new DidLog().genesis({ witness: witnessConfig(1, "wA") });
+  vector("src-witness-needed", "This resolver does not retrieve a srcWitness the log needs.", [S.refs, PROFILE + "#5-resolution"],
+    { did: w.did, options: { didLog: w.log, srcWitness: "https://example.com/did-witness.json" } }, { error: "featureNotSupported" });
+
+  const u = new DidLog().genesis().update().update().tamper((e) => {
+    (e.proof as Json[])[0].proofValue = createProof({ x: 1 }, KEYS.k1).proofValue;
+  });
+  vector("include-did-log", "includeDidLog returns the valid entries, not shortened to the selected version.", [S.meta],
+    { did: u.did, options: { didLog: u.log, includeDidLog: true, versionNumber: 1 } }, { didDocument: u.state(1) });
+  vector("include-did-log-false", "includeDidLog false returns nothing extra.", [S.meta],
+    { did: u.did, options: { didLog: u.log, includeDidLog: false } }, { didDocument: u.state(2), warnings: ["invalid-entries"] });
+  const wf = witnessFile([w.vid(1), "wA"]);
+  vector("include-did-log-witness", "includeDidLog also returns the witness proofs file when witnesses are required.", [S.meta],
+    { did: w.did, options: { didLog: w.log, didWitness: wf, includeDidLog: true } }, { didDocument: w.state(1) });
+  vector("include-did-log-on-error", "Nothing is returned when resolution fails.", [S.meta],
+    { did: u.did, options: { didLog: u.log, includeDidLog: true, versionNumber: 3 } }, { error: "invalidDid", vhLogError: "invalid-proof" });
 });
 
-// ---------------------------------------------------------------- src references
+// ---------------------------------------------------------------- srcLog / srcWitness references
 
-interface SrcCase {
-  name: string;
-  src: unknown;
-  expect: { valid: true; kind: string; didLog: string; didWitness: string } | { valid: false; error: "invalidOptions" };
-}
-
-function srcCases(): SrcCase[] {
+function refCases() {
   const cases: [string, unknown][] = [
     // web locations
+    ["web", "https://example.com/dids/issuer/did.jsonl"],
+    ["web-port", "https://example.com:3000/dids/did.jsonl"],
+    ["web-query", "https://storage.example.com/did.jsonl?X-Sig=abc&exp=1"],
+    ["web-watcher-operation", "https://watcher.example.org/log?scid=QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ"],
+    ["web-root-path", "https://example.com/"],
+    ["web-empty-segment", "https://example.com/a//did.jsonl"],
+    ["web-trailing-slash", "https://example.com/dids/"],
+    ["web-space-segment", "https://example.com/%20/did.jsonl"],
+    ["web-uppercase", "HTTPS://Example.COM/did.jsonl"],
+    ["web-punycode", "https://xn--bcher-kva.example/did.jsonl"],
+    ["web-trailing-dot-host", "https://example.com./did.jsonl"],
+    ["web-no-path", "https://example.com"],
+    ["web-fragment", "https://example.com/did.jsonl#x"],
+    ["web-dot-dot", "https://example.com/a/../did.jsonl"],
+    ["web-encoded-dot-dot", "https://example.com/a/%2e%2e/did.jsonl"],
+    ["web-encoded-slash", "https://example.com/a%2Fb/did.jsonl"],
+    ["web-encoded-backslash", "https://example.com/a%5Cb/did.jsonl"],
+    ["web-encoded-nul", "https://example.com/a%00/did.jsonl"],
+    ["web-bad-percent", "https://example.com/a%zz/did.jsonl"],
+    ["web-bad-utf8", "https://example.com/a%FF/did.jsonl"],
+    ["web-dot-dot-in-query", "https://example.com/did.jsonl?p=../x"],
+    ["web-userinfo", "https://user@example.com/did.jsonl"],
+    ["web-ipv4", "https://192.0.2.1/did.jsonl"],
+    ["web-ipv6", "https://[2001:db8::1]/did.jsonl"],
+    ["web-numeric-tld", "https://example.123/did.jsonl"],
+    ["web-empty-host", "https:///did.jsonl"],
+    ["web-bad-port", "https://example.com:99999/did.jsonl"],
+    ["web-underscore-host", "https://ex_ample.com/did.jsonl"],
+    ["web-no-authority", "https:example.com/did.jsonl"],
+    ["web-unicode-host", "https://bücher.example/did.jsonl"],
+    ["web-space", "https://example.com/a b/did.jsonl"],
+    // loopback
+    ["localhost", "http://localhost:8000/dids/did.jsonl"],
+    ["loopback-ipv4", "http://127.0.0.1/did.jsonl"],
+    ["loopback-ipv6", "http://[::1]:8000/did.jsonl"],
+    ["loopback-no-path", "http://localhost:8000"],
+    ["http-public", "http://example.com/did.jsonl"],
+    ["http-private", "http://10.0.0.1/did.jsonl"],
+    ["http-leading-zero", "http://127.0.0.01/did.jsonl"],
+    // local files
+    ["file-empty-host", "file:///var/lib/wallet/dids/QmfGEU/did.jsonl"],
+    ["file-localhost", "file://LOCALHOST/home/alice/did-witness.json"],
+    ["file-no-authority", "file:/var/lib/dids/did.jsonl"],
+    ["file-dot-dot", "file:///var/lib/../etc/did.jsonl"],
+    ["file-encoded-dot-dot", "file:///var/%2E%2E/did.jsonl"],
+    ["file-other-host", "file://server/share/did.jsonl"],
+    ["file-relative", "file:did.jsonl"],
+    ["file-query", "file:///var/lib/did.jsonl?x"],
+    // other schemes
+    ["ipns", "ipns://k51qzi5uqu5d/dids/issuer/did.jsonl"],
+    ["ipfs-content-hash", "ipfs://bafkreiexample"],
+    ["urn", "urn:example:did-log"],
+    ["other-fragment", "ipfs://bafkreiexample#x"],
+    ["other-empty", "ipfs:"],
+    // not URLs
+    ["relative", "/dids/did.jsonl"],
+    ["empty", ""],
+    ["number", 42],
+  ];
+  return cases.map(([name, ref]) => {
+    try {
+      return { name, ref, expect: { valid: true, kind: checkRef(ref) } };
+    } catch (e) {
+      if (!(e instanceof DidVhError)) throw e;
+      return { name, ref, expect: { valid: false, error: "invalidOptions" } };
+    }
+  });
+}
+
+// ---------------------------------------------------------------- the src DID URL parameter
+
+function srcCases() {
+  const cases: [string, unknown][] = [
     ["root", "https://example.com"],
     ["root-slash", "https://example.com/"],
+    ["well-known", "https://example.com/.well-known"],
     ["path", "https://example.com/dids/issuer"],
     ["path-slash", "https://example.com/dids/issuer/"],
     ["port", "https://example.com:3000/dids/issuer"],
     ["scid-path", "https://example.com/users/QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ"],
-    ["uppercase-scheme-and-host", "HTTPS://Example.COM/Dids"],
+    ["uppercase-scheme", "HTTPS://example.com/dids"],
     ["percent-encoded-segment", "https://example.com/a%20b"],
-    ["trailing-dot-host", "https://example.com./dids"],
-    ["punycode-host", "https://xn--bcher-kva.example/dids"],
+    ["ipns", "ipns://k51qzi5uqu5d/dids/issuer"],
+    ["ipfs-slash", "ipfs://bafybeigdyrzt/"],
     ["double-trailing-slash", "https://example.com/dids//"],
     ["empty-segment", "https://example.com/a//b"],
-    ["dot-segment", "https://example.com/a/./b"],
-    ["dot-dot-segment", "https://example.com/a/../b"],
-    ["encoded-dot-dot", "https://example.com/a/%2E%2E/b"],
+    ["dot-dot", "https://example.com/a/../b"],
     ["encoded-slash", "https://example.com/a%2Fb"],
-    ["encoded-backslash", "https://example.com/a%5Cb"],
-    ["encoded-nul", "https://example.com/a%00b"],
     ["leading-space", "https://example.com/%20a"],
     ["trailing-nbsp", "https://example.com/a%C2%A0"],
-    ["inner-space", "https://example.com/a%20b/c"],
-    ["bad-percent", "https://example.com/a%zz"],
-    ["bad-utf8", "https://example.com/a%FF"],
     ["query", "https://example.com/dids?x=1"],
     ["fragment", "https://example.com/dids#x"],
-    ["userinfo", "https://user@example.com/dids"],
-    ["ipv4-host", "https://192.0.2.1/dids"],
-    ["ipv6-host", "https://[2001:db8::1]/dids"],
-    ["numeric-tld", "https://example.123/dids"],
-    ["empty-host", "https:///dids"],
-    ["bad-port", "https://example.com:99999/dids"],
-    ["empty-port", "https://example.com:/dids"],
-    ["underscore-host", "https://ex_ample.com/dids"],
-    ["no-authority", "https:example.com/dids"],
-    ["unicode-host", "https://bücher.example/dids"],
-    ["space", "https://example.com/a b"],
-    // loopback
-    ["localhost", "http://localhost:8000/dids/issuer"],
-    ["loopback-ipv4", "http://127.0.0.1/dids"],
-    ["loopback-ipv4-other", "http://127.10.20.30:8080"],
-    ["loopback-ipv6", "http://[::1]:8000/dids"],
+    ["http-loopback", "http://localhost:8000/dids"],
     ["http-public", "http://example.com/dids"],
-    ["http-private", "http://10.0.0.1/dids"],
-    ["http-leading-zero", "http://127.0.0.01/dids"],
-    // local directories
-    ["file-empty-host", "file:///var/lib/wallet/dids/QmfGEU"],
-    ["file-localhost", "file://localhost/home/alice/dids/QmfGEU/"],
-    ["file-no-authority", "file:/var/lib/dids"],
-    ["file-root", "file:///"],
-    ["file-other-host", "file://server/share/dids"],
-    ["file-relative", "file:dids"],
-    ["file-query", "file:///var/lib/dids?x"],
-    // other schemes
-    ["ipns", "ipns://k51qzi5uqu5d/dids/issuer"],
-    ["ipfs", "ipfs://bafybeigdyrzt/"],
+    ["file", "file:///var/lib/dids"],
+    ["ipv4-host", "https://192.0.2.1/dids"],
+    ["userinfo", "https://user@example.com/dids"],
     ["urn", "urn:example:dids"],
-    ["did", "did:web:example.com"],
     ["other-empty-authority", "ipfs:///x"],
-    // not URLs
-    ["relative", "/dids/issuer"],
-    ["empty", ""],
-    ["number", 42],
+    ["relative", "/dids"],
   ];
   return cases.map(([name, src]) => {
     try {
-      return { name, src, expect: { valid: true, ...locateSrc(src) } };
+      return { name, src, expect: { valid: true, ...srcReferences(src) } };
     } catch (e) {
       if (!(e instanceof DidVhError)) throw e;
-      return { name, src, expect: { valid: false, error: "invalidOptions" } };
+      return { name, src, expect: { valid: false, error: "invalidDidUrl" } };
     }
   });
 }
@@ -484,6 +568,11 @@ function didUrlCases() {
     ["version-number-text", `${d}?versionNumber=two`],
     ["did-log", `${d}?didLog=x`],
     ["did-witness", `${d}?didWitness=x`],
+    ["src-log", `${d}?srcLog=https://example.com/did.jsonl`],
+    ["src-witness", `${d}?srcWitness=https://example.com/did-witness.json`],
+    ["check-watchers", `${d}?checkWatchers=1`],
+    ["include-did-log", `${d}?includeDidLog=true`],
+    ["src-ipns", `${d}?src=ipns://k51qzi5uqu5d/dids`],
     ["no-value", `${d}?versionNumber`],
     ["bad-percent", `${d}?versionId=%zz`],
     ["src-file", `${d}?src=file:///var/lib/dids`],
@@ -591,9 +680,11 @@ for (const [name, cases] of Object.entries(groups)) {
   write(`resolution/${name}.json`, { description: `did:vh resolution vectors: ${name}. Call didvh-resolve with input; compare didResolutionMetadata.error and problemDetails.vhLog.code, or the document, metadata and sorted warning codes.`, cases });
   total += cases.length;
 }
+const refs = refCases();
+write("ref.json", { description: "did:vh srcLog and srcWitness references (didvh-ref). A valid reference gives its kind (web, loopback, file or other); an invalid one gives invalidOptions.", spec: [SPEC + S.refs, PROFILE + "#31-srclog-and-srcwitness"], cases: refs });
 const src = srcCases();
-write("src.json", { description: "did:vh src references (didvh-src). Valid references give the kind and the URLs of did.jsonl and did-witness.json; invalid ones give invalidOptions.", spec: [SPEC + S.src, PROFILE + "#3-src-references"], cases: src });
+write("src.json", { description: "The did:vh src DID URL parameter (didvh-src): a valid value gives the srcLog and srcWitness references derived from it; an invalid one gives invalidDidUrl.", spec: [SPEC + S.src, PROFILE + "#32-the-src-did-url-parameter"], cases: src });
 const urls = didUrlCases();
 write("did-url.json", { description: "did:vh DID URLs as parsed by a dereferencer (didvh-did-url).", spec: [SPEC + "#reading-didvh-did-urls", PROFILE + "#4-did-urls"], cases: urls });
 write("generation.json", generation());
-console.log(`wrote ${total} did:vh resolution vectors, ${src.length} src cases, ${urls.length} DID URL cases`);
+console.log(`wrote ${total} did:vh resolution vectors, ${refs.length} reference cases, ${src.length} src cases, ${urls.length} DID URL cases`);

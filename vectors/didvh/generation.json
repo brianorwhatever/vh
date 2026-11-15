@@ -240,7 +240,7 @@
           "updated": "2026-01-03T00:00:00Z",
           "scid": "QmeezVX1uU8kMyM9TEQuvz9hBYgKAt44ThjHvbkopuZMM4",
           "deactivated": true,
-          "ttl": "3600",
+          "ttl": 3600,
           "watchers": []
         }
       }
@@ -500,9 +500,9 @@
           "updated": "2026-01-02T00:00:00Z",
           "scid": "QmTK8VDunEWpsEWXE9wxadfjANF8G37HtKB9N7yyKhsJsD",
           "deactivated": false,
-          "ttl": "60",
+          "ttl": 60,
           "witness": {
-            "threshold": "1",
+            "threshold": 1,
             "witnesses": [
               {
                 "id": "did:key:z6MkfZM53uaGQVNUuaxQB1rtcErHoHVuQrm5WfJmFtNaXPv3"
@@ -660,7 +660,7 @@
           "updated": "2026-01-01T00:00:00Z",
           "scid": "QmPtvsb2q5ukoydUgW4Xe5dxFc229Xnghju4wu26qGfeh1",
           "deactivated": false,
-          "ttl": "3600",
+          "ttl": 3600,
           "watchers": []
         }
       }

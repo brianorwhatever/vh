@@ -3,7 +3,7 @@ import { signerFromSeed } from "./ed25519.ts";
 import { hashB58, keyHash } from "./hash.ts";
 import { lines } from "./lines.ts";
 import { canonicalize } from "./jcs.ts";
-import { createDid, DidVhError, locateSrc, parseDidUrl, resolveDid, updateDid } from "./didvh.ts";
+import { checkRef, createDid, DidVhError, parseDidUrl, resolveDid, srcReferences, updateDid } from "./didvh.ts";
 import { computeEntryHash, computeScid, createLog, updateLog, witnessProof } from "./log.ts";
 import { createProof, verifyProof } from "./proof.ts";
 import { resolve } from "./resolve.ts";
@@ -32,7 +32,8 @@ const ops: Record<string, (input: Input) => unknown> = {
   "didvh-update": (i) =>
     updateDid({ log: i.log, document: i.document, parameters: i.parameters, versionTime: i.versionTime, signers: i.signers }),
   "didvh-resolve": (i) => resolveDid(i.did, i.options, { now: i.now, remote: i.remote ?? false }),
-  "didvh-src": (i) => rejected(() => ({ valid: true, ...locateSrc(i.src) })),
+  "didvh-ref": (i) => rejected(() => ({ valid: true, kind: checkRef(i.ref) })),
+  "didvh-src": (i) => rejected(() => ({ valid: true, ...srcReferences(i.src) })),
   "didvh-did-url": (i) => rejected(() => ({ valid: true, ...parseDidUrl(i.didUrl) })),
 };
 
