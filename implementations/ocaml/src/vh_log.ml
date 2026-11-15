@@ -282,7 +282,7 @@ let parameters spec version before p =
 type snapshot = { entry : t; params : t; witness : t }
 type checked = { all : t list; valid : snapshot list; error : error option }
 
-let check ?(spec = vh_log_spec) ?(prefix = []) log witness now =
+let check ?(spec = vh_log_spec) ?(prefix = []) ?(witnesses = true) log witness now =
   let raw_lines = String.split_on_char '\n' log in
   let raw_lines =
     if String.ends_with ~suffix:"\n" log then List.rev (List.tl (List.rev raw_lines))
@@ -384,7 +384,7 @@ let check ?(spec = vh_log_spec) ?(prefix = []) log witness now =
         | Failure e -> error := Some e
         | _ -> error := Some { code = "invalid-entry"; version = Some v; fork = None })
     entries;
-  if !error = None && List.exists (fun sn -> sn.witness <> o []) !valid then (
+  if witnesses && !error = None && List.exists (fun sn -> sn.witness <> o []) !valid then (
     let records =
       match witness with
       | None -> Some []
@@ -957,3 +957,12 @@ let update_json = update
 let resolve_json = resolve
 let valid_time text = try ignore (timestamp text); true with _ -> false
 let valid_watcher_url = valid_url
+
+(* did:vh profile §5 step 4: the witness list that applies to some entry before
+   the first one failing a per-entry check is not {}. The witness pass is
+   skipped, so no witness file is involved. *)
+let needs_witnessing ?(spec = vh_log_spec) ~now log =
+  try
+    let checked = check ~spec ~witnesses:false log None (timestamp now) in
+    List.exists (fun (sn : snapshot) -> sn.witness <> o []) checked.valid
+  with _ -> false
