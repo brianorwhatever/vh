@@ -580,6 +580,8 @@ function didUrlCases() {
     ["src-invalid", `${d}?src=https://example.com/a/../b`],
     ["src-http-public", `${d}?src=http://example.com`],
     ["plus-not-space", `${d}?versionId=a+b`],
+    ["raw-non-ascii", `${d}?versionId=1-é😀`],
+    ["raw-and-encoded-non-ascii", `${d}?versionId=😀%F0%9F%98%80`],
     ["not-did-vh", `did:webvh:${scid}:example.com`],
     ["bad-scid", "did:vh:Qm1?versionNumber=1"],
     ["path", `${d}/whois`],

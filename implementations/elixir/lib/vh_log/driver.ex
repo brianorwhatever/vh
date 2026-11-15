@@ -10,7 +10,7 @@ defmodule VHLog.Driver do
       mix run --no-compile -e "VHLog.Driver.main()"
   """
 
-  alias VHLog.{Hash, JCS, JSON, Log, Multikey, Proof, Resolution, Resolver}
+  alias VHLog.{DidVh, Hash, JCS, JSON, Log, Multikey, Proof, Resolution, Resolver}
 
   @doc "Runs the driver until EOF on stdin."
   @spec main() :: :ok
@@ -126,8 +126,62 @@ defmodule VHLog.Driver do
 
   def handle("resolve", input), do: input |> Resolver.resolve() |> Resolution.to_json()
 
+  # did:vh (docs/interop-protocol.md, "did:vh operations")
+  def handle("didvh-create", input) do
+    result =
+      DidVh.create(
+        input["document"],
+        input["parameters"] || %{},
+        input["versionTime"],
+        input["signers"]
+      )
+
+    %{
+      "log" => result.log,
+      "did" => result.did,
+      "scid" => result.scid,
+      "versionId" => result.version_id
+    }
+  end
+
+  def handle("didvh-update", input) do
+    result =
+      DidVh.update(
+        input["log"],
+        input["document"],
+        input["parameters"] || %{},
+        input["versionTime"],
+        input["signers"]
+      )
+
+    %{"log" => result.log, "versionId" => result.version_id}
+  end
+
+  def handle("didvh-resolve", input),
+    do:
+      DidVh.resolve(input["did"], input["options"],
+        now: input["now"],
+        remote: input["remote"] || false
+      )
+
+  def handle("didvh-ref", %{"ref" => ref}),
+    do: rejected(DidVh.check_ref(ref), &%{"kind" => &1})
+
+  def handle("didvh-src", %{"src" => src}), do: rejected(DidVh.src_references(src), & &1)
+
+  def handle("didvh-did-url", %{"didUrl" => did_url}) do
+    rejected(DidVh.parse_did_url(did_url), fn url ->
+      result = %{"did" => url.did, "options" => url.options}
+      if url.fragment, do: Map.put(result, "fragment", url.fragment), else: result
+    end)
+  end
+
   def handle(op, _input) when is_binary(op),
     do: raise(ArgumentError, "unknown op #{op} or missing input")
 
   def handle(op, _input), do: raise(ArgumentError, "unknown op #{inspect(op)}")
+
+  # A did:vh check's result: `{valid: true, ...}` or `{valid: false, error}`.
+  defp rejected({:ok, value}, fields), do: Map.put(fields.(value), "valid", true)
+  defp rejected({:error, code, _message}, _fields), do: %{"valid" => false, "error" => code}
 end

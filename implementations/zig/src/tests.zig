@@ -8,6 +8,7 @@ const proof = @import("proof.zig");
 const log = @import("log.zig");
 const resolver = @import("resolve.zig");
 const ops = @import("ops.zig");
+const didvh = @import("didvh.zig");
 const Value = json.Value;
 const testing = std.testing;
 const Allocator = std.mem.Allocator;
@@ -412,4 +413,153 @@ test "vectors: didwebvh-ts external logs" {
             }
         }
     }
+}
+
+// ------------------------------------------------------------------ did:vh
+
+const didvh_dir = vectors_dir ++ "/didvh";
+
+test "vectors: did:vh references, src and DID URLs" {
+    var arena: std.heap.ArenaAllocator = .init(testing.allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+    const files = [_]struct { []const u8, []const u8, []const u8 }{
+        .{ "ref.json", "didvh-ref", "ref" },
+        .{ "src.json", "didvh-src", "src" },
+        .{ "did-url.json", "didvh-did-url", "didUrl" },
+    };
+    var failures: usize = 0;
+    for (files) |f| {
+        const v = try readVector(a, try std.fmt.allocPrint(a, "{s}/{s}", .{ didvh_dir, f[0] }));
+        for (v.get("cases").?.array) |c| {
+            const got = try call(a, f[1], try obj(a, &.{.{ .key = f[2], .value = c.get(f[2]).? }}));
+            if (!json.eql(c.get("expect").?, got)) {
+                failures += 1;
+                std.debug.print("{s}/{s}: got {s}\n", .{ f[0], c.getString("name").?, try json.stringify(a, got) });
+            }
+        }
+    }
+    try testing.expectEqual(@as(usize, 0), failures);
+}
+
+/// Mirrors compareDidResolution in harness/run.ts.
+fn checkDidResolution(a: Allocator, expect: Value, got: Value) ![]const u8 {
+    const meta = got.get("didResolutionMetadata").?;
+    if (expect.get("error")) |want| {
+        const code = meta.getString("error") orelse return "expected an error";
+        if (!std.mem.eql(u8, code, want.string)) return try std.fmt.allocPrint(a, "error {s}", .{code});
+        if (expect.getString("vhLogError")) |vh| {
+            const vh_log = meta.get("problemDetails").?.get("vhLog") orelse return "no vhLog";
+            if (!std.mem.eql(u8, vh_log.getString("code").?, vh)) return try std.fmt.allocPrint(a, "vhLog {s}", .{vh_log.getString("code").?});
+        }
+        if (got.get("didDocument").? != .null) return "didDocument must be null";
+        return "";
+    }
+    if (meta.get("error")) |e| return try std.fmt.allocPrint(a, "unexpected error {s}", .{e.string});
+    if (!std.mem.eql(u8, meta.getString("contentType").?, "application/did+json")) return "contentType";
+    if (!json.eql(expect.get("didDocument").?, got.get("didDocument").?)) return "didDocument differs";
+    if (!json.eql(expect.get("didDocumentMetadata").?, got.get("didDocumentMetadata").?))
+        return try std.fmt.allocPrint(a, "didDocumentMetadata: {s}", .{try json.stringify(a, got.get("didDocumentMetadata").?)});
+    const want_w = if (expect.get("warnings")) |w| w.array else &[_]Value{};
+    const got_w = if (meta.get("warnings")) |w| w.array else &[_]Value{};
+    if (want_w.len != got_w.len) return "warnings differ";
+    for (want_w, got_w) |w, g| if (!std.mem.eql(u8, w.string, g.getString("code").?)) return "warnings differ";
+    for ([_][]const u8{ "didLog", "didWitness" }) |key| {
+        const want = expect.get(key) orelse Value.null;
+        const have = meta.get(key) orelse Value.null;
+        if (!json.eql(want, have)) return try std.fmt.allocPrint(a, "didResolutionMetadata.{s} differs", .{key});
+    }
+    return "";
+}
+
+test "vectors: did:vh resolution" {
+    var arena: std.heap.ArenaAllocator = .init(testing.allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+    const io = testing.io;
+    var dir = try std.Io.Dir.cwd().openDir(io, didvh_dir ++ "/resolution", .{ .iterate = true });
+    defer dir.close(io);
+    var it = dir.iterate();
+    var total: usize = 0;
+    var failures: usize = 0;
+    while (try it.next(io)) |entry| {
+        if (!std.mem.endsWith(u8, entry.name, ".json")) continue;
+        const v = try readVector(a, try std.fmt.allocPrint(a, "{s}/resolution/{s}", .{ didvh_dir, entry.name }));
+        for (v.get("cases").?.array) |c| {
+            total += 1;
+            const got = try call(a, "didvh-resolve", c.get("input").?);
+            const problem = try checkDidResolution(a, c.get("expect").?, got);
+            if (problem.len > 0) {
+                failures += 1;
+                std.debug.print("didvh {s}/{s}: {s}\n", .{ entry.name, c.getString("name").?, problem });
+            }
+        }
+    }
+    try testing.expectEqual(@as(usize, 0), failures);
+    try testing.expect(total > 0);
+}
+
+test "vectors: did:vh generation" {
+    var arena: std.heap.ArenaAllocator = .init(testing.allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+    const v = try readVector(a, didvh_dir ++ "/generation.json");
+    for (v.get("scenarios").?.array) |sc| {
+        var log_text: []const u8 = "";
+        var scid: []const u8 = "";
+        var version_ids: std.ArrayList([]const u8) = .empty;
+        for (sc.get("steps").?.array) |step| {
+            const op = step.getString("op").?;
+            var input = step.get("input").?;
+            if (!std.mem.eql(u8, op, "didvh-create")) {
+                const text = try log.replaceAll(a, try json.stringify(a, input), "{SCID}", scid);
+                input = try json.with(a, (try json.parse(a, text)).value, "log", .{ .string = log_text });
+            }
+            const r = try call(a, op, input);
+            log_text = r.getString("log").?;
+            if (r.getString("scid")) |s| scid = s;
+            try version_ids.append(a, r.getString("versionId").?);
+            const expect = step.get("expect").?;
+            for ([_][]const u8{ "versionId", "did", "scid" }) |key| if (expect.getString(key)) |want|
+                try testing.expectEqualStrings(want, r.getString(key).?);
+            const last = (try json.parse(a, log.lastLine(log_text).?)).value;
+            try expectSame(expect.get("line").?, last);
+        }
+        var options = try obj(a, &.{.{ .key = "didLog", .value = .{ .string = log_text } }});
+        if (sc.get("witness")) |ws| {
+            var records: std.ArrayList(Value) = .empty;
+            for (ws.array) |w| {
+                const vid = version_ids.items[@intFromFloat(w.get("step").?.number - 1)];
+                var proofs: std.ArrayList(Value) = .empty;
+                for (w.get("seeds").?.array) |seed| {
+                    const p = try call(a, "witness", try obj(a, &.{ .{ .key = "versionId", .value = .{ .string = vid } }, .{ .key = "seed", .value = seed } }));
+                    try proofs.append(a, p.get("proof").?);
+                }
+                try records.append(a, try obj(a, &.{ .{ .key = "versionId", .value = .{ .string = vid } }, .{ .key = "proof", .value = .{ .array = proofs.items } } }));
+            }
+            options = try json.with(a, options, "didWitness", .{ .array = records.items });
+        }
+        const r = sc.get("resolve").?;
+        const got = try didvh.resolve(a, r.get("did").?, options, .{ .now = @import("time.zig").parse(r.getString("now").?).? });
+        const expect = try obj(a, &.{ .{ .key = "didDocument", .value = r.get("didDocument").? }, .{ .key = "didDocumentMetadata", .value = r.get("didDocumentMetadata").? } });
+        const problem = try checkDidResolution(a, expect, got);
+        if (problem.len > 0) std.debug.print("didvh generation {s}: {s}\n", .{ sc.getString("name").?, problem });
+        try testing.expectEqualStrings("", problem);
+    }
+}
+
+test "did:vh specialisation leaves plain VH-Log unchanged" {
+    var arena: std.heap.ArenaAllocator = .init(testing.allocator);
+    defer arena.deinit();
+    const a = arena.allocator();
+    const mk1 = try proof.multikeyFromSeed(a, seedHex(k1));
+    const params = (try json.parse(a, try std.fmt.allocPrint(a, "{{\"updateKeys\":[\"{s}\"],\"custom\":1}}", .{mk1}))).value;
+    const state = (try json.parse(a, "{\"anything\":\"{SCID}\"}")).value;
+    const created = try log.create(a, .{ .state = state, .parameters = params, .version_time = "2026-01-01T00:00:00Z", .signers = &.{seedHex(k1)} });
+    const plain = try resolver.resolve(a, .{ .log = created.log, .now = now_2026_06 });
+    try testing.expect(plain.valid and plain.err == null);
+    const vh = try resolver.resolve(a, .{ .log = created.log, .now = now_2026_06, .specialisation = didvh.specialisation(null) });
+    try testing.expect(!vh.valid);
+    try testing.expectEqual(resolver.ErrorCode.invalid_parameter, vh.err.?.code);
+    try testing.expectEqualStrings("invalid-state", resolver.ErrorCode.invalid_state.name());
 }

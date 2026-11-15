@@ -62,3 +62,21 @@ resolver does not fetch network resources.
 Ed25519 signing uses Bouncy Castle; verification uses NSec/libsodium to enforce
 the uncofactored acceptance rule in [profile §2](../../docs/profile.md#2-entry-proofs-eddsa-jcs-2022).
 The NuGet lockfile pins NSec and its native libsodium runtime package.
+
+## did:vh
+
+`VHLog.DidVh` (`DidVh.cs`) implements the
+[did:vh profile](../../docs/didvh-profile.md). The log is verified by `Log`
+with the did:vh specialisation (`Spec`): `method` instead of `logVersion`, a
+closed parameter set, and the `state.id` check. It adds `Create`, `Update`,
+`ParseDid`, `ParseDidUrl`, `CheckRef`, `SrcReferences` and an offline
+`Resolve`:
+
+```csharp
+var created = DidVh.Create(Log.Obj(
+    "document", Log.Obj("id", "did:vh:{SCID}"),
+    "parameters", Log.Obj("updateKeys", new JsonArray(Log.Multikey(seed))),
+    "versionTime", "2026-01-01T00:00:00Z",
+    "signers", new JsonArray(seed)));
+var result = DidVh.Resolve(created["did"], Log.Obj("didLog", created["log"]), "2026-06-01T00:00:00Z");
+```

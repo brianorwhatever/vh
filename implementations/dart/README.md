@@ -40,3 +40,25 @@ final resolved = vh.resolve({
 JSON to enforce finite binary64 numbers and valid Unicode; `jcs` canonicalizes
 those values. Resolution returns a structured `valid` result, including
 partial validity, witness requirements, selectors, and copy/fork metadata.
+
+## did:vh
+
+`package:vh_log/didvh.dart` implements the
+[did:vh profile](../../docs/didvh-profile.md). The log is verified by
+`vh_log.dart` with the did:vh specialisation (`Spec`): `method` instead of
+`logVersion`, a closed parameter set, and the `state.id` check. It adds
+`createDid`, `updateDid`, `parseDid`, `parseDidUrl`, `checkRef`,
+`srcReferences` and an offline `resolveDid`:
+
+```dart
+import 'package:vh_log/didvh.dart';
+
+final created = createDid({
+  'document': {'id': 'did:vh:{SCID}'},
+  'parameters': {'updateKeys': [multikey(seed)]},
+  'versionTime': '2026-01-01T00:00:00Z',
+  'signers': [seed],
+});
+final result = resolveDid(
+    created['did'], {'didLog': created['log']}, '2026-06-01T00:00:00Z');
+```

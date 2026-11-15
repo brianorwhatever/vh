@@ -33,7 +33,7 @@ object VHLog {
   private def obj(v: Value): Boolean = v.isInstanceOf[Obj]
   private def arr(v: Value): Boolean = v.isInstanceOf[Arr]
   private def string(v: Value): Boolean = v.isInstanceOf[Str]
-  private def integer(v: Value): Boolean =
+  def integer(v: Value): Boolean =
     v.numOpt.exists(d => d.isFinite && d == math.floor(d))
   private def strings(v: Value): Boolean = v.arrOpt.exists(_.forall(string))
   private def copy(v: Value): Obj = Obj.from(v.obj.toSeq)
@@ -219,12 +219,12 @@ object VHLog {
   def entryHash(e: Value, previous: String): String = {
     val d = without(e, "proof"); d("versionId") = Str(previous); hash(jcs(d))
   }
-  private def lines(log: String): Vector[String] = {
+  def lines(log: String): Vector[String] = {
     val a = log.split("\n", -1).toVector
     if (a.last == "") a.dropRight(1) else a
   }
-  def create(input: Value): Value = {
-    val p = Obj("logVersion" -> "vh-log:1.0", "scid" -> "{SCID}");
+  def create(input: Value, vp: String = "logVersion", version: String = "vh-log:1.0"): Value = {
+    val p = Obj(vp -> Str(version), "scid" -> "{SCID}"); // a specialisation passes its own
     input("parameters").obj.foreach { case (k, v) => p(k) = v }
     var e: Value = Obj(
       "versionId" -> "{SCID}",
@@ -264,7 +264,7 @@ object VHLog {
       "versionId" -> e("versionId")
     )
   }
-  private def time(v: Value): Option[Long] = v.strOpt.flatMap { s =>
+  def time(v: Value): Option[Long] = v.strOpt.flatMap { s =>
     if (
       !s.matches(
         "[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(Z|\\+00:00)"
@@ -275,14 +275,19 @@ object VHLog {
         Some(LocalDateTime.parse(s.take(19)).toEpochSecond(ZoneOffset.UTC))
       } catch { case _: Exception => None }
   }
-  private def parameters(raw: Value, previous: Option[Value], n: Int): Value = {
+  private def parameters(raw: Value, previous: Option[Value], n: Int, spec: Spec): Value = {
     if (raw.obj.values.exists(_ == Null)) fail("invalid-parameter", n)
-    if (
-      (previous.isEmpty && !has(raw, "logVersion")) || (has(
-        raw,
-        "logVersion"
-      ) && raw("logVersion") != Str("vh-log:1.0"))
-    ) fail("unsupported-log-version", n)
+    val vp = spec.versionParameter
+    spec.extraParameters.foreach { extra =>
+      if (!raw.obj.keys.forall(k => k == vp || parameterNames.contains(k) || extra.contains(k)))
+        fail("invalid-parameter", n)
+    }
+    if (previous.isEmpty && !has(raw, vp))
+      fail(if (spec.versionSyntax.isDefined) "invalid-parameter" else "unsupported-log-version", n)
+    if (has(raw, vp) && spec.versionSyntax.exists(re => !raw(vp).strOpt.exists(re.matches)))
+      fail("invalid-parameter", n)
+    if (has(raw, vp) && !raw(vp).strOpt.exists(spec.versions.contains))
+      fail("unsupported-log-version", n)
     if (
       if (previous.isDefined) has(raw, "scid")
       else !string(get(raw, "scid")) || !has(raw, "updateKeys")
@@ -307,8 +312,8 @@ object VHLog {
         )
       )
     )
+    if (has(raw, vp)) p("logVersion") = raw(vp)
     Seq(
-      "logVersion",
       "scid",
       "updateKeys",
       "nextKeyHashes",
@@ -361,8 +366,8 @@ object VHLog {
     }
     p
   }
-  private case class Entry(e: Value, p: Value, n: Int, time: Long, rule: Value)
-  private case class Log(
+  case class Entry(e: Value, p: Value, n: Int, time: Long, rule: Value)
+  case class Log(
       entries: Vector[Entry],
       lines: Vector[String],
       failure: Option[ProtocolError]
@@ -370,7 +375,8 @@ object VHLog {
   private def verifyEntry(
       e: Value,
       previous: Option[Entry],
-      now: Long
+      now: Long,
+      spec: Spec
   ): Entry = {
     val n = previous.map(_.n + 1).getOrElse(1)
     if (previous.exists(_.p("deactivated").bool))
@@ -386,7 +392,7 @@ object VHLog {
         e("parameters")
       ) || !obj(e("state")) || !arr(e("proof"))
     ) fail("invalid-entry", n)
-    val p = parameters(e("parameters"), previous.map(_.p), n)
+    val p = parameters(e("parameters"), previous.map(_.p), n, spec)
     val keys =
       if (previous.isEmpty || previous.get.p("nextKeyHashes").arr.nonEmpty)
         p("updateKeys")
@@ -431,9 +437,10 @@ object VHLog {
       val restored = parse(jcs(rest).replace(p("scid").str, "{SCID}"))
       if (scid(restored) != p("scid").str) fail("scid-mismatch", n)
     }
+    spec.checkState.foreach(check => check(e("state"), p("scid").str, n))
     Entry(e, p, n, t, rule)
   }
-  private def verifyLog(log: String, witness: Option[Value], now: Long): Log = {
+  def verifyLog(log: String, witness: Option[Value], now: Long, spec: Spec = VHLogSpec): Log = {
     val ls = lines(log); var entries = Vector.empty[Entry];
     var failure = Option.empty[ProtocolError]
     if (ls.isEmpty) return Log(entries, ls, Some(ProtocolError("invalid-log")))
@@ -443,7 +450,7 @@ object VHLog {
           val e = try { parse(line) }
           catch { case _: Exception => fail("invalid-log", i + 1) }
           if (!obj(e)) fail("invalid-log", i + 1)
-          entries :+= verifyEntry(e, entries.lastOption, now)
+          entries :+= verifyEntry(e, entries.lastOption, now, spec)
         } catch { case error: ProtocolError => failure = Some(error) }
     }
     val verified = entries
@@ -582,7 +589,7 @@ object VHLog {
       "error" -> v.failure.map(_.report).getOrElse(Null)
     )
   }
-  private def resolveCopies(input: Value, now: Long, options: Value): Value = {
+  private def resolveCopies(input: Value, now: Long, options: Value, spec: Spec): Value = {
     val primary = Obj("source" -> "primary", "log" -> input("log"));
     if (has(input, "witness")) primary("witness") = input("witness")
     val all = Vector(primary) ++ default(input, "copies", Arr()).arr.toVector
@@ -591,7 +598,7 @@ object VHLog {
     val cache = scala.collection.mutable.Map.empty[Int, Log]
     def getLog(i: Int): Log = cache.getOrElseUpdate(
       i,
-      verifyLog(all(i)("log").str, all(i).obj.get("witness"), now)
+      verifyLog(all(i)("log").str, all(i).obj.get("witness"), now, spec)
     )
     def invalid(i: Int): Unit = {
       status(i) = "invalid";
@@ -693,7 +700,8 @@ object VHLog {
     ) fail("min-copies-not-met")
     result(r, options, warnings, Some(copies))
   }
-  def resolve(input: Value): Value = {
+  /** Resolves a log as plain VH-Log, or as the given specialisation. */
+  def resolve(input: Value, spec: Spec = VHLogSpec): Value = {
     try {
       val now = time(get(input, "now")).getOrElse(fail("invalid-option"))
       val options =
@@ -717,8 +725,8 @@ object VHLog {
           fail("invalid-option")
       )
       if (has(input, "copies") || default(options, "minCopies", Num(1)).num > 1)
-        return resolveCopies(input, now, options)
-      val v = verifyLog(input("log").str, input.obj.get("witness"), now)
+        return resolveCopies(input, now, options, spec)
+      val v = verifyLog(input("log").str, input.obj.get("witness"), now, spec)
       if (v.entries.isEmpty)
         return Obj("valid" -> false, "error" -> v.failure.get.report)
       val warnings = Arr()
@@ -751,6 +759,25 @@ object VHLog {
     case "create"  => create(input)
     case "update"  => update(input)
     case "resolve" => resolve(input)
-    case _         => throw IllegalArgumentException("unknown operation " + op)
+    case _         => DidVh.dispatch(op, input)
   }
+
+  /**
+   * What a specialisation of VH-Log (such as did:vh) changes in verification: the version
+   * parameter and its accepted values; an optional version syntax (missing or malformed is
+   * invalid-parameter, well-formed but unaccepted is unsupported-log-version); a closed
+   * parameter set when extraParameters is defined; and a state check after the SCID check.
+   */
+  final case class Spec(
+      versionParameter: String,
+      versions: Seq[String],
+      versionSyntax: Option[scala.util.matching.Regex] = None,
+      extraParameters: Option[Seq[String]] = None,
+      checkState: Option[(Value, String, Int) => Unit] = None
+  )
+  /** Plain VH-Log (vh-log:1.0), as specified by profile vh-log-interop-0. */
+  val VHLogSpec: Spec = Spec("logVersion", Seq("vh-log:1.0"))
+  /** The VH-Log parameters, excluding the version parameter. */
+  private val parameterNames =
+    Set("scid", "updateKeys", "nextKeyHashes", "witness", "watchers", "deactivated", "ttl")
 }

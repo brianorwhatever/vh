@@ -8,7 +8,7 @@ let () =
           let req = Json.parse line in
           id := Json.get "id" req;
           match
-            Vh_log.perform (Json.str (Json.get "op" req)) (Json.get "input" req)
+            Didvh.perform (Json.str (Json.get "op" req)) (Json.get "input" req)
           with
           | Ok result ->
               Json.Object [ ("id", !id); ("ok", Json.Bool true); ("result", result) ]

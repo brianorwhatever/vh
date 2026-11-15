@@ -34,6 +34,30 @@ arrays. Use `Log::parse` to normalize numbers to binary64 and `Log::jcs`
 for RFC 8785 output. The driver sets `serialize_precision=-1`; library
 callers should keep PHP's default value of `-1`.
 
+## did:vh
+
+`VHLog\DidVh` (`src/DidVh.php`) implements did:vh as pinned by
+[`docs/didvh-profile.md`](../../docs/didvh-profile.md). The log is verified
+by `Log` with the did:vh specialisation (`method` instead of `logVersion`, a
+closed parameter set, and a `state.id` check on every entry).
+
+```php
+use VHLog\DidVh;
+$did = DidVh::create((object)[
+    'document' => (object)['id' => 'did:vh:{SCID}'],
+    'parameters' => (object)['updateKeys' => [Log::multikey($seed)]],
+    'versionTime' => '2026-01-01T00:00:00Z',
+    'signers' => [$seed],
+]);
+$result = DidVh::resolve($did['did'], (object)['didLog' => $did['log']], '2026-06-01T00:00:00Z');
+DidVh::parseDidUrl($did['did'].'?versionNumber=1#key-1');
+```
+
+The resolver is offline: it verifies the log passed in `didLog` (and
+`didWitness`) and returns `featureNotSupported` where it would have to fetch
+anything. `checkRef` and `srcReferences` check `srcLog`/`srcWitness`
+references and the `src` DID URL parameter.
+
 ## Verification and driver
 
 From the repository root:

@@ -15,9 +15,13 @@ defmodule VHLog.Verifier do
      `entry-hash-mismatch`)
   6. `versionTime` (`invalid-version-time`, `future-version-time`)
   7. entry 1 only: SCID (`invalid-hash-algorithm`, `scid-mismatch`)
+  8. with a specialisation that has one: the state check (`invalid-state`)
+
+  A `VHLog.Specialisation` (such as did:vh) changes the version parameter,
+  closes the parameter set and adds check 8; the default is plain VH-Log.
   """
 
-  alias VHLog.{Error, Hash, JSON, Log, Parameters, Proof, VersionTime}
+  alias VHLog.{Error, Hash, JSON, Log, Parameters, Proof, Specialisation, VersionTime}
 
   @future_tolerance 300
   @entry_keys ~w(versionId versionTime parameters state proof)
@@ -61,10 +65,10 @@ defmodule VHLog.Verifier do
 
   @doc """
   Verifies `log` (JSON Lines text) against `witness` (the decoded witness
-  file, or `:absent`) at Unix time `now`.
+  file, or `:absent`) at Unix time `now`, as plain VH-Log or as `spec`.
   """
-  @spec verify_log(String.t(), term(), integer()) :: Result.t()
-  def verify_log(log, witness, now) do
+  @spec verify_log(String.t(), term(), integer(), Specialisation.t()) :: Result.t()
+  def verify_log(log, witness, now, spec \\ Specialisation.vh_log()) do
     case Log.lines(log) do
       [] ->
         %Result{failure: Error.new(:invalid_log, "log is empty")}
@@ -75,7 +79,7 @@ defmodule VHLog.Verifier do
           |> Enum.with_index(1)
           |> Enum.reduce_while({[], nil}, fn {line, n}, {acc, nil} ->
             with {:ok, raw} <- parse_line(line, n),
-                 {:ok, verified} <- verify_entry(raw, List.first(acc), now) do
+                 {:ok, verified} <- verify_entry(raw, List.first(acc), now, spec) do
               {:cont, {[verified | acc], nil}}
             else
               {:error, error} -> {:halt, {acc, error}}
@@ -106,19 +110,21 @@ defmodule VHLog.Verifier do
   Runs the per-entry checks on one parsed line, given the previous verified
   entry (`nil` for the first).
   """
-  @spec verify_entry(map(), Entry.t() | nil, integer()) :: {:ok, Entry.t()} | {:error, Error.t()}
-  def verify_entry(raw, previous, now) do
+  @spec verify_entry(map(), Entry.t() | nil, integer(), Specialisation.t()) ::
+          {:ok, Entry.t()} | {:error, Error.t()}
+  def verify_entry(raw, previous, now, spec \\ Specialisation.vh_log()) do
     version = if previous, do: previous.version_number + 1, else: 1
 
     with :ok <- check_not_deactivated(previous, version),
          :ok <- check_structure(raw, version),
          {:ok, params} <-
-           Parameters.apply(raw["parameters"], previous && previous.parameters, version),
+           Parameters.apply(raw["parameters"], previous && previous.parameters, version, spec),
          {active_keys, witness_rule} = authority(raw, params, previous),
          :ok <- verify_proofs(raw, active_keys, version),
          :ok <- verify_version_id(raw, version, previous_version_id(previous, params)),
          {:ok, time} <- verify_version_time(raw["versionTime"], previous, now, version),
-         :ok <- verify_scid(raw, params, previous) do
+         :ok <- verify_scid(raw, params, previous),
+         :ok <- check_state(spec, raw["state"], params.scid, version) do
       {:ok,
        %Entry{
          entry: raw,
@@ -281,6 +287,11 @@ defmodule VHLog.Verifier do
           else: {:error, Error.new(:scid_mismatch, "SCID does not match", 1)}
     end
   end
+
+  defp check_state(%Specialisation{check_state: nil}, _state, _scid, _version), do: :ok
+
+  defp check_state(%Specialisation{check_state: check}, state, scid, version),
+    do: check.(state, scid, version)
 
   # ---------------------------------------------------------------- witnesses
 

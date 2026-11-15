@@ -9,7 +9,7 @@ defmodule VHLog.Resolver do
   API.
   """
 
-  alias VHLog.{Error, JSON, Resolution, VersionTime}
+  alias VHLog.{Error, JSON, Resolution, Specialisation, VersionTime}
   alias VHLog.Verifier
   alias VHLog.Verifier.Result
 
@@ -19,24 +19,25 @@ defmodule VHLog.Resolver do
 
   @doc """
   Resolves a log. `input` has `"log"`, `"now"`, and optionally `"witness"`,
-  `"options"`, `"copies"` and `"retainedVersionId"`.
+  `"options"`, `"copies"` and `"retainedVersionId"`. The log is verified as
+  plain VH-Log, or as `spec`.
   """
-  @spec resolve(map()) :: {:ok, Resolution.t()} | {:error, Error.t()}
-  def resolve(input) do
+  @spec resolve(map(), Specialisation.t()) :: {:ok, Resolution.t()} | {:error, Error.t()}
+  def resolve(input, spec \\ Specialisation.vh_log()) do
     options = input["options"] || %{}
 
     with {:ok, now} <- parse_now(input["now"]),
          :ok <- validate_options(options) do
       if Map.has_key?(input, "copies") or Map.get(options, "minCopies", 1) > 1 do
-        resolve_copies(input, now, options)
+        resolve_copies(input, now, options, spec)
       else
-        resolve_single(input, now, options)
+        resolve_single(input, now, options, spec)
       end
     end
   end
 
-  defp resolve_single(input, now, options) do
-    verified = Verifier.verify_log(input["log"], Map.get(input, "witness", :absent), now)
+  defp resolve_single(input, now, options, spec) do
+    verified = Verifier.verify_log(input["log"], Map.get(input, "witness", :absent), now, spec)
 
     with [_ | _] <- verified.entries,
          {:ok, warnings} <- check_retained(input, verified, @primary, []) do
@@ -247,7 +248,7 @@ defmodule VHLog.Resolver do
   # Comparing Copies of a Log, with the copies supplied in the request. The
   # primary copy is tried first as the reference; a copy that extends the
   # reference and verifies becomes the new reference.
-  defp resolve_copies(input, now, options) do
+  defp resolve_copies(input, now, options, spec) do
     primary = %{"source" => @primary, "log" => input["log"]}
 
     primary =
@@ -263,7 +264,7 @@ defmodule VHLog.Resolver do
     verified =
       Map.new(
         for {i, c} <- all, not Map.has_key?(c, "unavailable") do
-          {i, Verifier.verify_log(c["log"], Map.get(c, "witness", :absent), now)}
+          {i, Verifier.verify_log(c["log"], Map.get(c, "witness", :absent), now, spec)}
         end
       )
 

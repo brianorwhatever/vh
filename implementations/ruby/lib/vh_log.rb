@@ -160,8 +160,8 @@ module VHLog
   def lines(log)
     log.split("\n", -1).tap { |a| a.pop if a.last == '' }
   end
-  def create(input)
-    p = {'logVersion'=>'vh-log:1.0', 'scid'=>'{SCID}'}.merge(input['parameters'])
+  def create(input, vp = 'logVersion', version = 'vh-log:1.0') # a specialisation adds its own version parameter after the caller's
+    p = vp == 'logVersion' ? {vp=>version, 'scid'=>'{SCID}'}.merge(input['parameters']) : input['parameters'].merge(vp=>version, 'scid'=>'{SCID}') { |_,given,_| given }
     e = {'versionId'=>'{SCID}', 'versionTime'=>input['versionTime'], 'parameters'=>p, 'state'=>input['state']}
     id = scid(e)
     e = parse(JSON.generate(e).gsub('{SCID}',id))
@@ -191,9 +191,9 @@ module VHLog
   def strings?(v)
     v.is_a?(Array) && v.all? { |x| x.is_a?(String) }
   end
-  def parameters(raw, previous, n)
-    fail!('invalid-parameter',n) if raw.values.any?(&:nil?)
-    fail!('unsupported-log-version',n) if (!previous && !raw.key?('logVersion')) || (raw.key?('logVersion') && raw['logVersion'] != 'vh-log:1.0')
+  def parameters(raw, previous, n, spec = VH_LOG)
+    fail!('invalid-parameter',n) if raw.values.any?(&:nil?) || (spec[:extra] && !(raw.keys - [spec[:param], *PARAMETERS, *spec[:extra]]).empty?)
+    version!(raw, previous, n, spec)
     fail!('invalid-parameter',n) if previous ? raw.key?('scid') : (!raw['scid'].is_a?(String) || !raw.key?('updateKeys'))
     if raw.key?('updateKeys')
       fail!('invalid-parameter',n) unless strings?(raw['updateKeys']) && raw['updateKeys'].all? { |k| public_key(k) }
@@ -201,7 +201,7 @@ module VHLog
     if raw.key?('nextKeyHashes')
       fail!('invalid-parameter',n) unless strings?(raw['nextKeyHashes']) && raw['nextKeyHashes'].all? { |h| check_hash(h) == 'ok' }
     end
-    p = (previous || {'nextKeyHashes'=>[], 'witness'=>nil, 'watchers'=>[], 'ttl'=>3600}).merge(raw.select { |k,_| %w[logVersion scid updateKeys nextKeyHashes witness watchers ttl].include?(k) })
+    p = (previous || {'nextKeyHashes'=>[], 'witness'=>nil, 'watchers'=>[], 'ttl'=>3600}).merge(raw.select { |k,_| %w[logVersion scid updateKeys nextKeyHashes witness watchers ttl].include?(k) }).merge(raw.key?(spec[:param]) ? {'logVersion'=>raw[spec[:param]]} : {})
     p['deactivated'] = raw.fetch('deactivated',false)
     if raw.key?('witness')
       w = raw['witness']
@@ -227,11 +227,11 @@ module VHLog
     end
     p
   end
-  def verify_entry(e, previous, now)
+  def verify_entry(e, previous, now, spec = VH_LOG)
     n = previous ? previous[:n]+1 : 1
     fail!('entry-after-deactivation',n) if previous && previous[:p]['deactivated']
     fail!('invalid-entry',n) unless e.keys.sort == %w[parameters proof state versionId versionTime] && e['versionId'].is_a?(String) && e['versionTime'].is_a?(String) && e['parameters'].is_a?(Hash) && e['state'].is_a?(Hash) && e['proof'].is_a?(Array)
-    p = parameters(e['parameters'], previous && previous[:p],n)
+    p = parameters(e['parameters'], previous && previous[:p],n,spec)
     keys = !previous || !previous[:p]['nextKeyHashes'].empty? ? p['updateKeys'] : previous[:p]['updateKeys']
     rule = !previous || (e['parameters'].key?('witness') && !previous[:p]['witness']) ? p['witness'] : previous[:p]['witness']
     fail!('invalid-proof',n) if e['proof'].empty?
@@ -257,9 +257,10 @@ module VHLog
       restored = parse(JSON.generate(without_proof(e).merge('versionId'=>'{SCID}')).gsub(p['scid'],'{SCID}'))
       fail!('scid-mismatch',n) unless scid(restored) == p['scid']
     end
+    spec[:state]&.call(e['state'], p['scid'], n)
     {e:e, p:p, n:n, time:t, rule:rule}
   end
-  def verify_log(log, witness, now)
+  def verify_log(log, witness, now, spec = VH_LOG)
     ls = lines(log)
     entries = []
     failure = nil
@@ -272,7 +273,7 @@ module VHLog
           fail!('invalid-log',i+1)
         end
         fail!('invalid-log',i+1) unless e.is_a?(Hash)
-        entries << verify_entry(e,entries.last,now)
+        entries << verify_entry(e,entries.last,now,spec)
       rescue Error => error
         failure = error.report
         break
@@ -358,10 +359,10 @@ module VHLog
     meta['copies'] = copies if copies
     {'valid'=>true,'state'=>target[:e]['state'],'metadata'=>meta,'firstInvalidVersion'=>failure ? entries.length+1 : nil,'error'=>failure}
   end
-  def resolve_copies(input, now, options)
+  def resolve_copies(input, now, options, spec)
     all = [{'source'=>'primary','log'=>input['log'],'witness'=>input.fetch('witness',ABSENT)}] + input.fetch('copies',[])
     warnings, status, cache = [], {}, {}
-    get = ->(i) { cache[i] ||= verify_log(all[i]['log'],all[i].fetch('witness',ABSENT),now) }
+    get = ->(i) { cache[i] ||= verify_log(all[i]['log'],all[i].fetch('witness',ABSENT),now,spec) }
     invalid = lambda do |i|
       status[i] = 'invalid'
       warnings << {'code'=>'copy-invalid','source'=>all[i]['source'],'message'=>'copy fails verification'}
@@ -424,7 +425,8 @@ module VHLog
     fail!('min-copies-not-met') if copies.count { |c| %w[current behind].include?(c['status']) } < options.fetch('minCopies',1)
     result(r,options,warnings,copies)
   end
-  def resolve(input)
+  # Resolves a log as plain VH-Log, or as the given specialisation.
+  def resolve(input, spec = VH_LOG)
     now = time(input['now'])
     fail!('invalid-option') unless now
     options = input['options'] || {}
@@ -433,8 +435,8 @@ module VHLog
     fail!('invalid-option') if options.key?('versionId') && !options['versionId'].is_a?(String)
     fail!('invalid-option') if options.key?('versionTime') && !time(options['versionTime'])
     %w[versionNumber minCopies].each { |k| fail!('invalid-option') if options.key?(k) && (!integer?(options[k]) || options[k] < 1) }
-    return resolve_copies(input,now,options) if input.key?('copies') || options.fetch('minCopies',1) > 1
-    v = verify_log(input['log'],input.fetch('witness',ABSENT),now)
+    return resolve_copies(input,now,options,spec) if input.key?('copies') || options.fetch('minCopies',1) > 1
+    v = verify_log(input['log'],input.fetch('witness',ABSENT),now,spec)
     return {'valid'=>false,'error'=>v[:failure]} if v[:entries].empty?
     warnings = []
     retained(v,'primary',input['retainedVersionId'],warnings) if input.key?('retainedVersionId')
@@ -456,7 +458,25 @@ module VHLog
     when 'create' then create(input)
     when 'update' then update(input)
     when 'resolve' then resolve(input)
+    when /\Adidvh-/ then DidVh.dispatch(op, input)
     else raise ArgumentError, "unknown operation #{op}"
     end
   end
+
+  # What a specialisation of VH-Log (such as did:vh) changes in verification:
+  # :param, the version parameter; :versions, its accepted values; :syntax, the
+  # form of a version value (missing or malformed is invalid-parameter, only a
+  # well-formed unaccepted value is unsupported-log-version); :extra, nil for an
+  # open parameter set or the parameters added to a closed one; :state, a check
+  # run on every entry's state after the SCID check.
+  VH_LOG = {param: 'logVersion', versions: ['vh-log:1.0'], syntax: nil, extra: nil, state: nil}.freeze
+  PARAMETERS = %w[scid updateKeys nextKeyHashes witness watchers deactivated ttl].freeze
+  def version!(raw, previous, n, spec)
+    vp, syntax = spec[:param], spec[:syntax]
+    fail!(syntax ? 'invalid-parameter' : 'unsupported-log-version', n) if !previous && !raw.key?(vp)
+    return unless raw.key?(vp)
+    fail!('invalid-parameter', n) if syntax && !(raw[vp].is_a?(String) && syntax.match?(raw[vp]))
+    fail!('unsupported-log-version', n) unless spec[:versions].include?(raw[vp])
+  end
 end
+require_relative 'vh_log/did_vh'

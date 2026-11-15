@@ -1,4 +1,5 @@
 #include "vh_log.hpp"
+#include "didvh.hpp"
 #include <algorithm>
 #include <array>
 #include <charconv>
@@ -14,6 +15,7 @@
 #include <vector>
 
 namespace vhlog {
+const Specialisation VH_LOG{"logVersion", "vh-log:1.0", nullptr, false, nullptr};
 using Bytes = std::vector<unsigned char>;
 static constexpr std::string_view alphabet =
     "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
@@ -310,10 +312,10 @@ static std::vector<std::string> lines(const std::string &s) {
         out.push_back(s.substr(start));
     return out;
 }
-Json create(const Json &input) {
+Json create(const Json &input, const Specialisation &spec) {
     Json p = input.at("parameters");
-    if (!p.contains("logVersion"))
-        p["logVersion"] = "vh-log:1.0";
+    if (!p.contains(spec.version_parameter))
+        p[spec.version_parameter] = spec.version;
     if (!p.contains("scid"))
         p["scid"] = "{SCID}";
     Json e = {{"versionId", "{SCID}"},
@@ -348,7 +350,7 @@ Json update(const Json &input) {
     return {{"log", log + (log.empty() || log.back() != '\n' ? "\n" : "") + canonicalize(e) + "\n"},
             {"versionId", e.at("versionId")}};
 }
-static std::optional<int64_t> time(const Json &v) {
+std::optional<int64_t> parse_time(const Json &v) {
     if (!v.is_string())
         return std::nullopt;
     std::string s = str(v);
@@ -380,13 +382,27 @@ static bool strings(const Json &v) {
     return v.is_array() &&
            std::all_of(v.begin(), v.end(), [](const Json &x) { return x.is_string(); });
 }
-static Json parameters(const Json &raw, const Json &previous, int n) {
+static Json parameters(const Json &raw, const Json &previous, int n, const Specialisation &spec) {
+    const auto &vp = spec.version_parameter;
+    const std::vector<std::string> keys{vp,        "scid",     "updateKeys", "nextKeyHashes",
+                                        "witness", "watchers", "ttl"};
     for (const auto &v : raw)
         if (v.is_null())
             fail("invalid-parameter", n);
-    if ((previous.is_null() && !has(raw, "logVersion")) ||
-        (has(raw, "logVersion") && raw.at("logVersion") != "vh-log:1.0"))
-        fail("unsupported-log-version", n);
+    if (spec.closed)
+        for (auto it = raw.begin(); it != raw.end(); ++it)
+            if (it.key() != "deactivated" &&
+                std::find(keys.begin(), keys.end(), it.key()) == keys.end())
+                fail("invalid-parameter", n);
+    if (previous.is_null() && !has(raw, vp))
+        fail(spec.version_syntax ? "invalid-parameter" : "unsupported-log-version", n);
+    if (has(raw, vp)) {
+        const auto &v = raw.at(vp);
+        if (spec.version_syntax && (!v.is_string() || !spec.version_syntax(str(v))))
+            fail("invalid-parameter", n);
+        if (v != spec.version)
+            fail("unsupported-log-version", n);
+    }
     if (!previous.is_null() ? has(raw, "scid")
                             : !get(raw, "scid").is_string() || !has(raw, "updateKeys"))
         fail("invalid-parameter", n);
@@ -409,8 +425,7 @@ static Json parameters(const Json &raw, const Json &previous, int n) {
                                        {"watchers", Json::array()},
                                        {"ttl", 3600}}
                                 : previous;
-    for (const auto &k :
-         {"logVersion", "scid", "updateKeys", "nextKeyHashes", "witness", "watchers", "ttl"})
+    for (const auto &k : keys)
         if (has(raw, k))
             p[k] = raw.at(k);
     p["deactivated"] = raw.value("deactivated", Json(false));
@@ -472,7 +487,8 @@ struct Verified {
     std::vector<std::string> lines;
     Json failure;
 };
-static Entry verify_entry(const Json &e, const Entry *previous, int64_t now) {
+static Entry verify_entry(const Json &e, const Entry *previous, int64_t now,
+                          const Specialisation &spec) {
     int n = previous ? previous->n + 1 : 1;
     if (previous && previous->p.at("deactivated") == true)
         fail("entry-after-deactivation", n);
@@ -480,7 +496,7 @@ static Entry verify_entry(const Json &e, const Entry *previous, int64_t now) {
         !get(e, "parameters").is_object() || !get(e, "state").is_object() ||
         !get(e, "proof").is_array())
         fail("invalid-entry", n);
-    auto p = parameters(e.at("parameters"), previous ? previous->p : Json(), n);
+    auto p = parameters(e.at("parameters"), previous ? previous->p : Json(), n, spec);
     auto active = !previous || !previous->p.at("nextKeyHashes").empty()
                       ? p.at("updateKeys")
                       : previous->p.at("updateKeys");
@@ -510,7 +526,7 @@ static Entry verify_entry(const Json &e, const Entry *previous, int64_t now) {
         fail("invalid-hash-algorithm", n);
     if (entry_hash(e, str(previous ? previous->e.at("versionId") : p.at("scid"))) != m[2])
         fail("entry-hash-mismatch", n);
-    auto t = time(e.at("versionTime"));
+    auto t = parse_time(e.at("versionTime"));
     if (!t || (previous && *t <= previous->timestamp))
         fail("invalid-version-time", n);
     if (*t > now + 300)
@@ -527,10 +543,12 @@ static Entry verify_entry(const Json &e, const Entry *previous, int64_t now) {
         if (scid(parse(replace_all(canonicalize(rest), sc, "{SCID}"))) != sc)
             fail("scid-mismatch", n);
     }
+    if (spec.check_state && !spec.check_state(e.at("state"), str(p.at("scid"))))
+        fail("invalid-state", n);
     return {e, p, n, *t, rule};
 }
 static Verified verify_log(const std::string &log, const Json &witness, bool has_witness,
-                           int64_t now) {
+                           int64_t now, const Specialisation &spec) {
     Verified v{{}, lines(log), nullptr};
     if (v.lines.empty()) {
         v.failure = Error("invalid-log").report;
@@ -547,7 +565,7 @@ static Verified verify_log(const std::string &log, const Json &witness, bool has
             if (!raw.is_object())
                 fail("invalid-log", i + 1);
             v.entries.push_back(
-                verify_entry(raw, v.entries.empty() ? nullptr : &v.entries.back(), now));
+                verify_entry(raw, v.entries.empty() ? nullptr : &v.entries.back(), now, spec));
         } catch (const Error &e) {
             v.failure = e.report;
             break;
@@ -648,9 +666,9 @@ static Json result(const Verified &v, const Json &options, Json warnings, Json c
         else if (n <= v.lines.size())
             invalid();
     } else if (has(options, "versionTime")) {
-        auto t = *time(options.at("versionTime"));
+        auto t = *parse_time(options.at("versionTime"));
         if (!v.failure.is_null()) {
-            auto it = time(get(line_value(v.lines, v.entries.size()), "versionTime"));
+            auto it = parse_time(get(line_value(v.lines, v.entries.size()), "versionTime"));
             if (it && *it <= t)
                 invalid();
         }
@@ -688,7 +706,8 @@ static Json result(const Verified &v, const Json &options, Json warnings, Json c
             {"firstInvalidVersion", v.failure.is_null() ? Json() : Json(v.entries.size() + 1)},
             {"error", v.failure}};
 }
-static Json resolve_copies(const Json &input, int64_t now, const Json &options) {
+static Json resolve_copies(const Json &input, int64_t now, const Json &options,
+                           const Specialisation &spec) {
     Json primary = {{"source", "primary"}, {"log", input.at("log")}};
     if (has(input, "witness"))
         primary["witness"] = input.at("witness");
@@ -702,8 +721,8 @@ static Json resolve_copies(const Json &input, int64_t now, const Json &options) 
     auto get_copy = [&](size_t i) -> const Verified & {
         if (!cache.count(i)) {
             const auto &c = all[i];
-            cache.emplace(i,
-                          verify_log(str(c.at("log")), get(c, "witness"), has(c, "witness"), now));
+            cache.emplace(i, verify_log(str(c.at("log")), get(c, "witness"), has(c, "witness"),
+                                        now, spec));
         }
         return cache.at(i);
     };
@@ -802,9 +821,18 @@ static Json resolve_copies(const Json &input, int64_t now, const Json &options) 
         fail("min-copies-not-met");
     return result(r, options, warnings, copies);
 }
-Json resolve(const Json &input) {
+bool needs_witnessing(const std::string &log, int64_t now, const Specialisation &spec) {
+    // Without a witness file, the first entry that needs witnessing fails,
+    // which cuts it from the entries.
+    auto v = verify_log(log, nullptr, false, now, spec);
+    if (!v.failure.is_null() && v.failure.at("code") == "witness-threshold-not-met")
+        return true;
+    return std::any_of(v.entries.begin(), v.entries.end(),
+                       [](const Entry &e) { return !e.rule.is_null(); });
+}
+Json resolve(const Json &input, const Specialisation &spec) {
     try {
-        auto now = time(get(input, "now"));
+        auto now = parse_time(get(input, "now"));
         if (!now)
             fail("invalid-option");
         Json options = get(input, "options");
@@ -824,15 +852,15 @@ Json resolve(const Json &input) {
             fail("invalid-option");
         if (has(options, "versionId") && !options.at("versionId").is_string())
             fail("invalid-option");
-        if (has(options, "versionTime") && !time(options.at("versionTime")))
+        if (has(options, "versionTime") && !parse_time(options.at("versionTime")))
             fail("invalid-option");
         for (const auto &k : {"versionNumber", "minCopies"})
             if (has(options, k) && (!integer(options.at(k)) || options.at(k).get<double>() < 1))
                 fail("invalid-option");
         if (has(input, "copies") || options.value("minCopies", 1.0) > 1)
-            return resolve_copies(input, *now, options);
-        auto v =
-            verify_log(str(input.at("log")), get(input, "witness"), has(input, "witness"), *now);
+            return resolve_copies(input, *now, options, spec);
+        auto v = verify_log(str(input.at("log")), get(input, "witness"), has(input, "witness"),
+                            *now, spec);
         if (v.entries.empty())
             return {{"valid", false}, {"error", v.failure}};
         Json warnings = Json::array();
@@ -869,6 +897,8 @@ Json dispatch(const std::string &op, const Json &input) {
         return update(input);
     if (op == "resolve")
         return resolve(input);
+    if (op.rfind("didvh-", 0) == 0)
+        return didvh::dispatch(op.substr(6), input);
     throw std::invalid_argument("unknown operation " + op);
 }
 } // namespace vhlog

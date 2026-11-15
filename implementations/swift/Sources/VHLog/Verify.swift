@@ -16,8 +16,45 @@ public struct WitnessConfig: Sendable, Equatable {
     }
 }
 
+/// What a specialisation of VH-Log (such as did:vh) changes in verification.
+/// Everything else (hashing, proofs, witnesses, pre-rotation) is shared.
+public struct Specialisation: Sendable {
+    /// Name of the parameter that carries the log version (`logVersion` in plain VH-Log).
+    public var versionParameter: String
+    /// Accepted values of the version parameter, oldest first.
+    public var versions: [String]
+    /// Syntax of a version value. When set, a missing or malformed value fails
+    /// with `invalid-parameter`, and only a well-formed value that is not
+    /// accepted fails with `unsupported-log-version`. Without it, every
+    /// unaccepted value is `unsupported-log-version` (plain VH-Log).
+    public var versionSyntax: (@Sendable (String) -> Bool)?
+    /// Parameters the specialisation adds to the VH-Log set. With `nil`, any
+    /// unknown parameter is ignored (plain VH-Log); otherwise the set is closed
+    /// and an unknown parameter fails with `invalid-parameter`.
+    public var extraParameters: [String]?
+    /// Checks every entry's `state` (with the SCID and version number) after the SCID check.
+    public var checkState: (@Sendable (JSONObject, String, Int) throws(VHLogError) -> Void)?
+
+    public init(versionParameter: String, versions: [String], versionSyntax: (@Sendable (String) -> Bool)? = nil,
+                extraParameters: [String]? = nil,
+                checkState: (@Sendable (JSONObject, String, Int) throws(VHLogError) -> Void)? = nil) {
+        self.versionParameter = versionParameter
+        self.versions = versions
+        self.versionSyntax = versionSyntax
+        self.extraParameters = extraParameters
+        self.checkState = checkState
+    }
+
+    /// Plain VH-Log (`vh-log:1.0`), as specified by profile vh-log-interop-0.
+    public static let vhLog = Specialisation(versionParameter: "logVersion", versions: [logVersion])
+}
+
+/// The VH-Log parameters, excluding the version parameter.
+private let vhLogParameters = ["scid", "updateKeys", "nextKeyHashes", "witness", "watchers", "deactivated", "ttl"]
+
 /// The parameters active after an entry.
 public struct Parameters: Sendable, Equatable {
+    /// Value of the specialisation's version parameter (`logVersion` for plain VH-Log).
     public var logVersion: String
     public var scid: String
     public var updateKeys: [String]
@@ -116,7 +153,6 @@ public func isWatcherURL(_ value: String) -> Bool {
 }
 
 private let entryKeys = ["versionId", "versionTime", "parameters", "state", "proof"]
-private let supportedLogVersions = [logVersion]
 
 private func bytesEqual(_ a: String, _ b: String) -> Bool { a.utf8.elementsEqual(b.utf8) }
 private func containsExactly(_ list: [String], _ value: String) -> Bool { list.contains { bytesEqual($0, value) } }
@@ -155,18 +191,29 @@ private func validateWitness(_ value: JSONValue, version: Int) throws(VHLogError
 
 /// Applies an entry's `parameters` to the previously active set (Read step 1
 /// and the pre-rotation rule of step 7).
-private func applyParameters(_ raw: JSONObject, previous: Parameters?, version: Int) throws(VHLogError) -> Parameters {
+private func applyParameters(_ raw: JSONObject, previous: Parameters?, version: Int,
+                             spec: Specialisation) throws(VHLogError) -> Parameters {
     func invalid(_ message: String) -> VHLogError { VHLogError(.invalidParameter, message, version: version) }
     for m in raw.members where m.value.isNull { throw invalid("\(m.key) must not be null") }
-    if previous == nil, !raw.contains("logVersion") {
-        throw VHLogError(.unsupportedLogVersion, "logVersion missing from first entry", version: 1)
-    }
-    if let value = raw["logVersion"] {
-        guard let v = value.stringValue, let index = supportedLogVersions.firstIndex(where: { bytesEqual($0, v) }) else {
-            throw VHLogError(.unsupportedLogVersion, "unsupported logVersion", version: version)
+    let vp = spec.versionParameter
+    if let extra = spec.extraParameters {
+        for key in raw.keys where !containsExactly([vp] + vhLogParameters + extra, key) {
+            throw invalid("\(key) is not a parameter of this log type")
         }
-        if let previous, let old = supportedLogVersions.firstIndex(where: { bytesEqual($0, previous.logVersion) }), index < old {
-            throw VHLogError(.unsupportedLogVersion, "logVersion may not be lowered", version: version)
+    }
+    if previous == nil, !raw.contains(vp) {
+        throw VHLogError(spec.versionSyntax == nil ? .unsupportedLogVersion : .invalidParameter,
+                         "\(vp) missing from first entry", version: 1)
+    }
+    if let value = raw[vp] {
+        if let syntax = spec.versionSyntax, !(value.stringValue.map(syntax) ?? false) {
+            throw invalid("malformed \(vp)")
+        }
+        guard let v = value.stringValue, let index = spec.versions.firstIndex(where: { bytesEqual($0, v) }) else {
+            throw VHLogError(.unsupportedLogVersion, "unsupported \(vp)", version: version)
+        }
+        if let previous, let old = spec.versions.firstIndex(where: { bytesEqual($0, previous.logVersion) }), index < old {
+            throw VHLogError(.unsupportedLogVersion, "\(vp) may not be lowered", version: version)
         }
     }
     if previous == nil {
@@ -221,7 +268,7 @@ private func applyParameters(_ raw: JSONObject, previous: Parameters?, version: 
     }
 
     return Parameters(
-        logVersion: raw["logVersion"]?.stringValue ?? previous!.logVersion,
+        logVersion: raw[vp]?.stringValue ?? previous!.logVersion,
         scid: raw["scid"]?.stringValue ?? previous!.scid,
         updateKeys: updateKeys ?? previous!.updateKeys,
         nextKeyHashes: nextKeyHashes ?? previous?.nextKeyHashes ?? [],
@@ -286,7 +333,8 @@ private func verifyScid(_ entry: JSONObject, scid: String) throws(VHLogError) {
 }
 
 /// Runs the per-entry checks (profile §4, steps 1–7) on one parsed line.
-private func verifyEntry(_ raw: JSONObject, previous: VerifiedEntry?, now: Int64) throws(VHLogError) -> VerifiedEntry {
+private func verifyEntry(_ raw: JSONObject, previous: VerifiedEntry?, now: Int64,
+                         spec: Specialisation) throws(VHLogError) -> VerifiedEntry {
     let version = (previous?.versionNumber ?? 0) + 1
     if previous?.parameters.deactivated == true {
         throw VHLogError(.entryAfterDeactivation, "entry follows a deactivating entry", version: version)
@@ -297,7 +345,7 @@ private func verifyEntry(_ raw: JSONObject, previous: VerifiedEntry?, now: Int64
         raw["proof"]?.arrayValue != nil
     else { throw VHLogError(.invalidEntry, "entry does not have the required properties and types", version: version) }
 
-    let parameters = try applyParameters(rawParameters, previous: previous?.parameters, version: version)
+    let parameters = try applyParameters(rawParameters, previous: previous?.parameters, version: version, spec: spec)
     let activeKeys: [String]
     let witnessRule: WitnessConfig?
     if let previous {
@@ -321,6 +369,7 @@ private func verifyEntry(_ raw: JSONObject, previous: VerifiedEntry?, now: Int64
         throw VHLogError(.futureVersionTime, "versionTime is in the future", version: version)
     }
     if previous == nil { try verifyScid(raw, scid: parameters.scid) }
+    try spec.checkState?(raw["state"]?.objectValue ?? [:], parameters.scid, version)
     return VerifiedEntry(entry: raw, versionNumber: version, time: time, parameters: parameters, witnessRule: witnessRule)
 }
 
@@ -389,7 +438,9 @@ private func checkWitnesses(_ entries: [VerifiedEntry], witness: JSONValue?) -> 
 ///   - witness: The parsed witness file, or `nil` if none was found. An
 ///     explicit `.null` is a malformed file.
 ///   - now: The resolver's clock, in seconds since the Unix epoch.
-public func verifyLog(_ log: String, witness: JSONValue?, now: Int64) -> VerifiedLog {
+///   - specialisation: A specialisation of VH-Log, such as did:vh.
+public func verifyLog(_ log: String, witness: JSONValue?, now: Int64,
+                      specialisation: Specialisation = .vhLog) -> VerifiedLog {
     let lines = parseLogLines(log)
     var entries: [VerifiedEntry] = []
     var failure: VHLogError?
@@ -414,7 +465,7 @@ public func verifyLog(_ log: String, witness: JSONValue?, now: Int64) -> Verifie
             break
         }
         do {
-            entries.append(try verifyEntry(raw, previous: entries.last, now: now))
+            entries.append(try verifyEntry(raw, previous: entries.last, now: now, spec: specialisation))
         } catch {
             failure = error
             break

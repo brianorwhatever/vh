@@ -21,7 +21,13 @@ node harness/run.ts --impl haskell --impl typescript
 VH_TEST_IMPLS=haskell node --test harness/driver-regressions.test.ts
 ```
 
-The Cabal library exposes `VHLog`, `Json`, and `Crypto`:
+It also implements [did:vh](../../docs/didvh-profile.md) in `DidVh`: a did:vh
+log is verified by `VHLog` with a `Specialisation` (`method`, a closed parameter
+set and the `state.id` check), and `DidVh` adds DID creation and update,
+`srcLog`/`srcWitness` and `src` checks, DID URL parsing and offline DID
+resolution (`resolveDid`, which takes the resolver's clock as an argument).
+
+The Cabal library exposes `VHLog`, `DidVh`, `Json`, and `Crypto`:
 
 ```haskell
 import Json

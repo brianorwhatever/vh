@@ -87,9 +87,12 @@ public struct ResolveInput: Sendable {
     public var copies: [LogCopy]?
     /// A `versionId` the client retained from an earlier resolution.
     public var retainedVersionId: String?
+    /// Resolves the log as a specialisation of VH-Log, such as did:vh.
+    public var specialisation: Specialisation
 
     public init(log: String, witness: JSONValue? = nil, now: String, options: ResolveOptions = .init(),
-                copies: [LogCopy]? = nil, retainedVersionId: String? = nil) {
+                copies: [LogCopy]? = nil, retainedVersionId: String? = nil, specialisation: Specialisation = .vhLog) {
+        self.specialisation = specialisation
         self.log = log
         self.witness = witness
         self.now = now
@@ -296,7 +299,7 @@ private func resolveCopies(_ input: ResolveInput, now: Int64) throws(VHLogError)
     func verify(_ i: Int) -> VerifiedLog {
         if let v = cache[i] { return v }
         guard case .available(_, let log, let witness) = all[i] else { preconditionFailure("unavailable copy") }
-        let v = verifyLog(log, witness: witness, now: now)
+        let v = verifyLog(log, witness: witness, now: now, specialisation: input.specialisation)
         cache[i] = v
         return v
     }
@@ -410,7 +413,7 @@ public func resolve(_ input: ResolveInput) -> ResolveResult {
         if input.copies != nil || (input.options.minCopies ?? 1) > 1 {
             return try resolveCopies(input, now: now)
         }
-        let verified = verifyLog(input.log, witness: input.witness, now: now)
+        let verified = verifyLog(input.log, witness: input.witness, now: now, specialisation: input.specialisation)
         if verified.entries.isEmpty { return .failed(verified.failure!) }
         var warnings: [Warning] = []
         if let retained = input.retainedVersionId {

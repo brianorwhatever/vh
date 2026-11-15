@@ -95,10 +95,13 @@ func signDocument(_ document: JSONObject, signers: [any VHLogSigner]) throws -> 
 /// replacement, computes the entry hash and signs with every signer.
 ///
 /// Inputs are not validated beyond what's needed to produce an entry (profile §5).
+/// A specialisation passes its own version parameter and value (did:vh uses
+/// `method` / `did:vh:1.0`); either way it is added only if absent.
 public func createLog(state: JSONValue, parameters: JSONObject, versionTime: String,
-                      signers: [any VHLogSigner]) throws -> CreatedLog {
+                      signers: [any VHLogSigner], versionParameter: String = "logVersion",
+                      version: String = logVersion) throws -> CreatedLog {
     var parameters = parameters
-    if !parameters.contains("logVersion") { parameters["logVersion"] = .string(logVersion) }
+    if !parameters.contains(versionParameter) { parameters[versionParameter] = .string(version) }
     if !parameters.contains("scid") { parameters["scid"] = .string(scidPlaceholder) }
     let preliminary: JSONObject = [
         "versionId": .string(scidPlaceholder), "versionTime": .string(versionTime),

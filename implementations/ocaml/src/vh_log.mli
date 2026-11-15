@@ -43,6 +43,36 @@ val resolve_log : resolution_request -> (resolution, string) result
 val scid : Json.t -> string
 val entry_hash : Json.t -> string -> string
 
+type spec = {
+  version_param : string;  (** [logVersion] for VH-Log, [method] for did:vh *)
+  accepted : string list;  (** accepted values; others are [unsupported-log-version] *)
+  version_syntax : (string -> bool) option;
+      (** when set, a missing (entry 1) or malformed value is [invalid-parameter] *)
+  closed : string list option;  (** when set, any other parameter is [invalid-parameter] *)
+  state_check : (string -> Json.t -> bool) option;
+      (** run on every entry after the SCID check with the log's SCID and the entry's
+          state; [false] fails the entry with [invalid-state] *)
+}
+(** A specialisation of the VH-Log verifier. Plain VH-Log is [vh_log_spec]. *)
+
+val vh_log_spec : spec
+
+val create_json : ?defaults:(string * string) list -> Json.t -> Json.t
+(** Protocol [create]; [defaults] are parameters added, in order, when absent
+    (VH-Log: [scid] then [logVersion]). Raises on malformed input. *)
+
+val update_json : Json.t -> Json.t
+(** Protocol [update]. Raises on malformed input. *)
+
+val resolve_json : ?spec:spec -> Json.t -> Json.t
+(** Protocol [resolve] under a specialisation. *)
+
+val valid_time : string -> bool
+(** The profile's [versionTime] format. *)
+
+val valid_watcher_url : string -> bool
+(** The profile's [watchers] URL rule. *)
+
 val perform : string -> Json.t -> (Json.t, string) result
 (** JSON Lines protocol adapter. An invalid log is a successful call whose result has
     [valid = false]; malformed operations return [Error]. *)

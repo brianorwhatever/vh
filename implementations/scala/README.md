@@ -41,3 +41,22 @@ Use `parse` for untrusted JSON: it rejects non-finite numbers and lone Unicode
 surrogates. Resolution results follow the shared
 [driver protocol](../../docs/interop-protocol.md), including partial validity,
 witnesses, version selectors, and copy/fork handling.
+
+## did:vh
+
+`vhlog.DidVh` (`src/DidVh.scala`) implements the
+[did:vh profile](../../docs/didvh-profile.md). The log is verified by `VHLog`
+with the did:vh specialisation (`VHLog.Spec`): `method` instead of
+`logVersion`, a closed parameter set, and the `state.id` check. It adds
+`create`, `update`, `parseDid`, `parseDidUrl`, `checkRef`, `srcReferences` and
+an offline `resolve`:
+
+```scala
+val created = DidVh.create(Obj(
+  "document" -> Obj("id" -> "did:vh:{SCID}"),
+  "parameters" -> Obj("updateKeys" -> Arr(VHLog.multikey(seed))),
+  "versionTime" -> "2026-01-01T00:00:00Z",
+  "signers" -> Arr(seed)
+))
+val result = DidVh.resolve(created("did"), Obj("didLog" -> created("log")), Some("2026-06-01T00:00:00Z"))
+```

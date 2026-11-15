@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 typedef json_object J;
 typedef struct allocation {
@@ -33,6 +34,19 @@ typedef struct {
     int number;
     int64_t time;
 } Entry;
+/* A specialisation of VH-Log (docs/didvh-profile.md §1). Hashing, proofs,
+ * witnesses and pre-rotation are shared; these are what it changes. */
+typedef struct {
+    const char *version_parameter; /* "logVersion" in plain VH-Log */
+    const char *version;           /* the accepted value */
+    /* With a syntax check, a missing or malformed version is invalid-parameter
+     * and only a well-formed, unaccepted one is unsupported-log-version. */
+    int (*version_syntax)(const char *value, size_t n);
+    int closed;                /* unknown parameters are invalid-parameter */
+    const char *state_prefix;  /* when set, state.id must be prefix + SCID */
+    const char *expected_scid; /* when set, the log's SCID must equal it */
+} Spec;
+static const Spec VH_LOG = {"logVersion", "vh-log:1.0", NULL, 0, NULL, NULL};
 typedef struct {
     Entry *entries;
     size_t count;
@@ -714,10 +728,12 @@ static J *lines(vh_context *c, const char *log) {
         push(out, string(c, p));
     return out;
 }
-static J *create(vh_context *c, J *input) {
+/* A specialisation passes its own version parameter and value (did:vh uses
+ * method / did:vh:1.0); either way it is added only if absent. */
+static J *create(vh_context *c, J *input, const Spec *spec) {
     J *p = clone_object(c, get(input, "parameters"));
-    if (!has(p, "logVersion"))
-        set(p, "logVersion", string(c, "vh-log:1.0"));
+    if (!has(p, spec->version_parameter))
+        set(p, spec->version_parameter, string(c, spec->version));
     if (!has(p, "scid"))
         set(p, "scid", string(c, "{SCID}"));
     J *e = object(c);
@@ -828,15 +844,34 @@ static int contains(J *a, J *v) {
             return 1;
     return 0;
 }
-static J *parameters(vh_context *c, J *raw, J *previous, int n) {
+static J *parameters(vh_context *c, J *raw, J *previous, int n, const Spec *spec) {
+    const char *vp = spec->version_parameter;
+    const char *keys[] = {vp, "scid", "updateKeys", "nextKeyHashes", "witness", "watchers", "ttl"};
     json_object_object_foreach(raw, key, value) {
         (void)key;
         if (!value)
             fail(c, "invalid-parameter", n);
     }
-    if ((!previous && !has(raw, "logVersion")) ||
-        (has(raw, "logVersion") && strcmp(s(get(raw, "logVersion")), "vh-log:1.0")))
-        fail(c, "unsupported-log-version", n);
+    if (spec->closed) {
+        json_object_object_foreach(raw, name, v) {
+            (void)v;
+            int known = !strcmp(name, "deactivated");
+            for (size_t i = 0; i < 7; i++)
+                known |= !strcmp(name, keys[i]);
+            if (!known)
+                fail(c, "invalid-parameter", n);
+        }
+    }
+    if (!previous && !has(raw, vp))
+        fail(c, spec->version_syntax ? "invalid-parameter" : "unsupported-log-version", n);
+    if (has(raw, vp)) {
+        J *v = get(raw, vp);
+        if (spec->version_syntax &&
+            (!type(v, json_type_string) || !spec->version_syntax(s(v), slen(v))))
+            fail(c, "invalid-parameter", n);
+        if (!type(v, json_type_string) || strcmp(s(v), spec->version))
+            fail(c, "unsupported-log-version", n);
+    }
     if (previous ? has(raw, "scid")
                  : !type(get(raw, "scid"), json_type_string) || !has(raw, "updateKeys"))
         fail(c, "invalid-parameter", n);
@@ -863,8 +898,6 @@ static J *parameters(vh_context *c, J *raw, J *previous, int n) {
         set(p, "watchers", array(c));
         set(p, "ttl", number(c, 3600));
     }
-    const char *keys[] = {"logVersion", "scid",     "updateKeys", "nextKeyHashes",
-                          "witness",    "watchers", "ttl"};
     for (size_t i = 0; i < 7; i++)
         if (has(raw, keys[i]))
             set(p, keys[i], get(raw, keys[i]));
@@ -924,7 +957,8 @@ static J *parameters(vh_context *c, J *raw, J *previous, int n) {
     }
     return p;
 }
-static Entry verify_entry(vh_context *c, J *e, const Entry *previous, int64_t now) {
+static Entry verify_entry(vh_context *c, J *e, const Entry *previous, int64_t now,
+                          const Spec *spec) {
     int n = previous ? previous->number + 1 : 1;
     if (previous && json_object_get_boolean(get(previous->parameters, "deactivated")))
         fail(c, "entry-after-deactivation", n);
@@ -933,7 +967,7 @@ static Entry verify_entry(vh_context *c, J *e, const Entry *previous, int64_t no
         !type(get(e, "parameters"), json_type_object) || !type(get(e, "state"), json_type_object) ||
         !type(get(e, "proof"), json_type_array))
         fail(c, "invalid-entry", n);
-    J *p = parameters(c, get(e, "parameters"), previous ? previous->parameters : NULL, n);
+    J *p = parameters(c, get(e, "parameters"), previous ? previous->parameters : NULL, n, spec);
     J *active = !previous || len(get(previous->parameters, "nextKeyHashes"))
                     ? get(p, "updateKeys")
                     : get(previous->parameters, "updateKeys");
@@ -987,11 +1021,21 @@ static Entry verify_entry(vh_context *c, J *e, const Entry *previous, int64_t no
         if (!valid || strcmp(scid(c, rest), sc))
             fail(c, "scid-mismatch", n);
     }
+    if (spec->state_prefix) {
+        const char *sc = s(get(p, "scid"));
+        if (spec->expected_scid && strcmp(sc, spec->expected_scid))
+            fail(c, "invalid-state", n);
+        J *id = get(get(e, "state"), "id");
+        size_t k = strlen(spec->state_prefix);
+        if (!type(id, json_type_string) || slen(id) != k + strlen(sc) ||
+            strncmp(s(id), spec->state_prefix, k) || strcmp(s(id) + k, sc))
+            fail(c, "invalid-state", n);
+    }
     Entry out = {e, p, rule, n, t};
     return out;
 }
 static Verified *verify_log(vh_context *c, const char *log, J *witness, int has_witness,
-                            int64_t now) {
+                            int64_t now, const Spec *spec) {
     Verified *v = alloc(c, sizeof(*v));
     v->lines = lines(c, log);
     v->entries = alloc(c, len(v->lines) * sizeof(*v->entries));
@@ -1009,7 +1053,8 @@ static Verified *verify_log(vh_context *c, const char *log, J *witness, int has_
             J *raw = parse(c, s(at(v->lines, v->count)), &valid);
             if (!valid || !type(raw, json_type_object))
                 fail(c, "invalid-log", (int)v->count + 1);
-            Entry e = verify_entry(c, raw, v->count ? &v->entries[v->count - 1] : NULL, now);
+            Entry e =
+                verify_entry(c, raw, v->count ? &v->entries[v->count - 1] : NULL, now, spec);
             v->entries[v->count++] = e;
         }
     } else
@@ -1185,10 +1230,11 @@ static J *result(vh_context *c, Verified *v, J *options, J *warnings, J *copies)
     set(out, "error", v->failure);
     return out;
 }
-static Verified *copy_verify(vh_context *c, J *all, Verified **cache, size_t i, int64_t now) {
+static Verified *copy_verify(vh_context *c, J *all, Verified **cache, size_t i, int64_t now,
+                             const Spec *spec) {
     if (!cache[i]) {
         J *v = at(all, i);
-        cache[i] = verify_log(c, s(get(v, "log")), get(v, "witness"), has(v, "witness"), now);
+        cache[i] = verify_log(c, s(get(v, "log")), get(v, "witness"), has(v, "witness"), now, spec);
     }
     return cache[i];
 }
@@ -1196,7 +1242,7 @@ static void mark_invalid(vh_context *c, J *all, int *status, size_t i, J *warnin
     status[i] = 1;
     warning(c, warnings, "copy-invalid", get(at(all, i), "source"));
 }
-static J *resolve_copies(vh_context *c, J *input, int64_t now, J *options) {
+static J *resolve_copies(vh_context *c, J *input, int64_t now, J *options, const Spec *spec) {
     J *primary = object(c);
     set(primary, "source", string(c, "primary"));
     set(primary, "log", get(input, "log"));
@@ -1221,7 +1267,7 @@ static J *resolve_copies(vh_context *c, J *input, int64_t now, J *options) {
     for (size_t i = 0; i < count; i++) {
         if (status[i])
             continue;
-        if (!copy_verify(c, all, cache, i, now)->failure) {
+        if (!copy_verify(c, all, cache, i, now, spec)->failure) {
             ref = i;
             break;
         }
@@ -1230,14 +1276,14 @@ static J *resolve_copies(vh_context *c, J *input, int64_t now, J *options) {
     if (ref == count) {
         J *out = object(c);
         set(out, "valid", boolean(c, 0));
-        set(out, "error", copy_verify(c, all, cache, 0, now)->failure);
+        set(out, "error", copy_verify(c, all, cache, 0, now, spec)->failure);
         return out;
     }
     matched[ref] = 1;
     for (size_t i = 0; i < count; i++) {
         if (status[i] || matched[i])
             continue;
-        Verified *r = copy_verify(c, all, cache, ref, now), *v = copy_verify(c, all, cache, i, now);
+        Verified *r = copy_verify(c, all, cache, ref, now, spec), *v = copy_verify(c, all, cache, i, now, spec);
         J *rl = r->lines, *cl = v->lines;
         if (!len(cl)) {
             mark_invalid(c, all, status, i, warnings);
@@ -1264,7 +1310,7 @@ static J *resolve_copies(vh_context *c, J *input, int64_t now, J *options) {
             fork_error(c, (int)k + 1, copies);
         }
     }
-    Verified *r = copy_verify(c, all, cache, ref, now);
+    Verified *r = copy_verify(c, all, cache, ref, now, spec);
     if (has(input, "retainedVersionId"))
         retained(c, r, get(at(all, ref), "source"), get(input, "retainedVersionId"), warnings);
     J *copies = array(c);
@@ -1275,13 +1321,13 @@ static J *resolve_copies(vh_context *c, J *input, int64_t now, J *options) {
         if (status[i]) {
             set(record, "status", string(c, status[i] == 2 ? "unavailable" : "invalid"));
             if (status[i] != 2) {
-                J *ls = copy_verify(c, all, cache, i, now)->lines,
+                J *ls = copy_verify(c, all, cache, i, now, spec)->lines,
                   *id = line_id(c, ls, len(ls) - 1);
                 if (id)
                     set(record, "versionId", id);
             }
         } else {
-            J *ls = copy_verify(c, all, cache, i, now)->lines;
+            J *ls = copy_verify(c, all, cache, i, now, spec)->lines;
             int behind = len(ls) < len(r->lines);
             set(record, "status", string(c, behind ? "behind" : "current"));
             set(record, "versionId", line_id(c, ls, len(ls) - 1));
@@ -1295,7 +1341,7 @@ static J *resolve_copies(vh_context *c, J *input, int64_t now, J *options) {
         fail(c, "min-copies-not-met", 0);
     return result(c, r, options, warnings, copies);
 }
-static J *resolve_inner(vh_context *c, J *input) {
+static J *resolve_inner(vh_context *c, J *input, const Spec *spec) {
     int64_t now = 0;
     if (!parse_time(get(input, "now"), &now))
         fail(c, "invalid-option", 0);
@@ -1326,9 +1372,9 @@ static J *resolve_inner(vh_context *c, J *input) {
             (!integer(get(options, keys[i])) || num(get(options, keys[i])) < 1))
             fail(c, "invalid-option", 0);
     if (has(input, "copies") || num(get(options, "minCopies")) > 1)
-        return resolve_copies(c, input, now, options);
-    Verified *v =
-        verify_log(c, s(get(input, "log")), get(input, "witness"), has(input, "witness"), now);
+        return resolve_copies(c, input, now, options, spec);
+    Verified *v = verify_log(c, s(get(input, "log")), get(input, "witness"), has(input, "witness"),
+                             now, spec);
     if (!v->count) {
         J *out = object(c);
         set(out, "valid", boolean(c, 0));
@@ -1340,19 +1386,639 @@ static J *resolve_inner(vh_context *c, J *input) {
         retained(c, v, string(c, "primary"), get(input, "retainedVersionId"), warnings);
     return result(c, v, options, warnings, NULL);
 }
-static J *resolve(vh_context *c, J *input) {
+/* Resolves a log as plain VH-Log, or as the given specialisation. */
+static J *resolve(vh_context *c, J *input, const Spec *spec) {
     jmp_buf trap;
     jmp_buf *outer = c->trap;
     c->trap = &trap;
     J *out;
     if (setjmp(trap) == 0)
-        out = resolve_inner(c, input);
+        out = resolve_inner(c, input, spec);
     else {
         out = object(c);
         set(out, "valid", boolean(c, 0));
         set(out, "error", c->error);
     }
     c->trap = outer;
+    return out;
+}
+/* ---------------------------------------------------------------- did:vh
+ * did:vh (docs/didvh-profile.md). A did:vh DID log is verified by the VH-Log
+ * code above with the did:vh specialisation. This section adds the DID
+ * syntax, the srcLog/srcWitness and DID URL rules, the resolution options,
+ * and DID Resolution metadata and errors. */
+#define DID_PREFIX "did:vh:"
+#define DID_VH_METHOD "did:vh:1.0"
+static int is_digit(char ch) { return ch >= '0' && ch <= '9'; }
+/* Length of the natural number (no leading zeros) at p, or 0 if there is none. */
+static size_t natural(const char *p, size_t n) {
+    size_t i = 0;
+    while (i < n && is_digit(p[i]))
+        i++;
+    return i == 0 || (i > 1 && p[0] == '0') ? 0 : i;
+}
+/* A well-formed `method` value: did:vh:<major>.<minor>. */
+static int method_syntax(const char *p, size_t n) {
+    size_t k = strlen(DID_PREFIX);
+    if (n <= k || memcmp(p, DID_PREFIX, k))
+        return 0;
+    p += k, n -= k;
+    size_t major = natural(p, n);
+    if (!major || major + 1 >= n || p[major] != '.')
+        return 0;
+    return natural(p + major + 1, n - major - 1) == n - major - 1;
+}
+/* The SCID of a did:vh DID, or NULL if it does not match the ABNF. */
+static char *parse_did(vh_context *c, const char *p, size_t n) {
+    size_t k = strlen(DID_PREFIX);
+    if (n != k + 46 || memcmp(p, DID_PREFIX, k))
+        return NULL;
+    for (size_t i = k; i < n; i++)
+        if (!p[i] || !strchr(alphabet, p[i]))
+            return NULL;
+    return copy(c, p + k, 46);
+}
+/* The did:vh specialisation of VH-Log: `method` instead of `logVersion`, a
+ * closed parameter set, and state.id = did:vh:<SCID> in every entry. With
+ * expected_scid, the log's SCID must also be that of the DID being resolved. */
+static Spec didvh_spec(const char *expected_scid) {
+    Spec spec = {"method", DID_VH_METHOD, method_syntax, 1, DID_PREFIX, expected_scid};
+    return spec;
+}
+static int keyeq(const char *p, size_t n, const char *name) {
+    return n == strlen(name) && !memcmp(p, name, n);
+}
+static int printable(const char *p, size_t n) {
+    for (size_t i = 0; i < n; i++)
+        if ((unsigned char)p[i] < 0x21 || (unsigned char)p[i] > 0x7e)
+            return 0;
+    return 1;
+}
+static int valid_utf8_n(const unsigned char *p, size_t n) {
+    size_t i = 0;
+    while (i < n) {
+        unsigned char b = p[i];
+        size_t extra;
+        uint32_t cp, min;
+        if (b < 0x80) {
+            i++;
+            continue;
+        } else if ((b & 0xE0) == 0xC0)
+            extra = 1, cp = b & 0x1F, min = 0x80;
+        else if ((b & 0xF0) == 0xE0)
+            extra = 2, cp = b & 0x0F, min = 0x800;
+        else if ((b & 0xF8) == 0xF0)
+            extra = 3, cp = b & 0x07, min = 0x10000;
+        else
+            return 0;
+        if (n - i <= extra)
+            return 0;
+        for (size_t j = 1; j <= extra; j++) {
+            if ((p[i + j] & 0xC0) != 0x80)
+                return 0;
+            cp = (cp << 6) | (p[i + j] & 0x3F);
+        }
+        if (cp < min || cp > 0x10FFFF || (cp >= 0xD800 && cp <= 0xDFFF))
+            return 0;
+        i += extra + 1;
+    }
+    return 1;
+}
+static int hexval(char ch) {
+    return is_digit(ch) ? ch - '0' : isxdigit((unsigned char)ch) ? tolower((unsigned char)ch) - 'a' + 10 : -1;
+}
+/* Percent-decodes p[0..n) as UTF-8 into *out (length *out_n); 0 if an escape
+ * or the UTF-8 is malformed. */
+static int percent_decode(vh_context *c, const char *p, size_t n, char **out, size_t *out_n) {
+    char *d = alloc(c, n + 1);
+    size_t k = 0;
+    for (size_t i = 0; i < n; i++) {
+        if (p[i] == '%') {
+            if (n - i < 3 || hexval(p[i + 1]) < 0 || hexval(p[i + 2]) < 0)
+                return 0;
+            d[k++] = (char)(hexval(p[i + 1]) * 16 + hexval(p[i + 2]));
+            i += 2;
+        } else
+            d[k++] = p[i];
+    }
+    if (!valid_utf8_n((const unsigned char *)d, k))
+        return 0;
+    *out = d;
+    *out_n = k;
+    return 1;
+}
+/* Unicode White_Space (profile §3.2). */
+static int whitespace(uint32_t cp) {
+    return (cp >= 0x09 && cp <= 0x0d) || cp == 0x20 || cp == 0x85 || cp == 0xa0 ||
+           cp == 0x1680 || (cp >= 0x2000 && cp <= 0x200a) || cp == 0x2028 || cp == 0x2029 ||
+           cp == 0x202f || cp == 0x205f || cp == 0x3000;
+}
+/* The last code point of valid UTF-8 p[0..n), n > 0. */
+static uint32_t last_code_point(const char *p, size_t n) {
+    size_t i = n - 1;
+    while (i > 0 && ((unsigned char)p[i] & 0xC0) == 0x80)
+        i--;
+    const unsigned char *q = (const unsigned char *)p + i;
+    return next_utf8(&q);
+}
+/* An all-decimal octet 0–255 with no leading zeros. */
+static int is_octet(const char *p, size_t n) {
+    if (n > 3 || natural(p, n) != n)
+        return 0;
+    int v = 0;
+    for (size_t i = 0; i < n; i++)
+        v = v * 10 + (p[i] - '0');
+    return v <= 255;
+}
+static int is_loopback_host(const char *host) {
+    if (!strcmp(host, "localhost") || !strcmp(host, "[::1]"))
+        return 1;
+    const char *p = host;
+    for (int part = 0; part < 4; part++) {
+        size_t n = strcspn(p, ".");
+        if (!is_octet(p, n) || (part == 0 && !keyeq(p, n, "127")))
+            return 0;
+        p += n;
+        if (part < 3) {
+            if (*p != '.')
+                return 0;
+            p++;
+        }
+    }
+    return *p == 0;
+}
+static int is_domain_name(const char *host) {
+    size_t n = strlen(host);
+    if (n && host[n - 1] == '.')
+        n--;
+    if (n == 0 || n > 253)
+        return 0;
+    const char *p = host, *end = host + n;
+    while (1) {
+        const char *dot = memchr(p, '.', (size_t)(end - p));
+        size_t len = dot ? (size_t)(dot - p) : (size_t)(end - p);
+        if (len == 0 || len > 63 || p[0] == '-' || p[len - 1] == '-')
+            return 0;
+        int digits = 1;
+        for (size_t i = 0; i < len; i++) {
+            if (!(is_digit(p[i]) || (p[i] >= 'a' && p[i] <= 'z') || p[i] == '-'))
+                return 0;
+            digits &= is_digit(p[i]);
+        }
+        if (!dot)
+            return !digits; /* an IPv4 literal, or ends in a number */
+        p = dot + 1;
+    }
+}
+/* Splits scheme:rest (profile §3.1 steps 1–2); 0 unless value is printable ASCII
+ * with a scheme. The scheme is lowercased. */
+static int split_scheme(vh_context *c, const char *p, size_t n, char **scheme, const char **rest) {
+    if (n == 0 || !printable(p, n) || !isalpha((unsigned char)p[0]))
+        return 0;
+    size_t i = 1;
+    while (i < n && (isalnum((unsigned char)p[i]) || strchr("+.-", p[i])))
+        i++;
+    if (i >= n || p[i] != ':')
+        return 0;
+    *scheme = copy(c, p, i);
+    for (char *q = *scheme; *q; q++)
+        *q = (char)tolower((unsigned char)*q);
+    *rest = p + i + 1;
+    return 1;
+}
+/* Checks an http(s) authority (profile §3.1 step 4). */
+static int check_authority(vh_context *c, const char *a, size_t n, int http) {
+    if (memchr(a, '@', n))
+        return 0;
+    char *host;
+    const char *port = NULL;
+    size_t port_n = 0;
+    if (n && a[0] == '[') {
+        const char *close = memchr(a, ']', n);
+        if (!close)
+            return 0;
+        host = copy(c, a, (size_t)(close - a) + 1);
+        const char *after = close + 1;
+        size_t after_n = n - (size_t)(after - a);
+        if (after_n) {
+            if (after[0] != ':')
+                return 0;
+            port = after + 1, port_n = after_n - 1;
+        }
+    } else {
+        const char *colon = memchr(a, ':', n);
+        host = copy(c, a, colon ? (size_t)(colon - a) : n);
+        if (colon)
+            port = colon + 1, port_n = n - (size_t)(colon - a) - 1;
+    }
+    for (char *q = host; *q; q++)
+        *q = (char)tolower((unsigned char)*q);
+    if (port) {
+        if (port_n < 1 || port_n > 5)
+            return 0;
+        long v = 0;
+        for (size_t i = 0; i < port_n; i++) {
+            if (!is_digit(port[i]))
+                return 0;
+            v = v * 10 + (port[i] - '0');
+        }
+        if (v > 65535)
+            return 0;
+    }
+    if (http)
+        return is_loopback_host(host);
+    return host[0] != '[' && is_domain_name(host);
+}
+/* Checks the segments of a path starting with '/' (profile §3). Each is
+ * percent-decoded and must not be . or .. or contain /, \ or NUL. With strict
+ * (the src DID URL parameter) it must also be non-empty and not start or end
+ * with whitespace. */
+static int check_segments(vh_context *c, const char *path, size_t n, int strict) {
+    const char *p = path + 1, *end = path + n;
+    while (1) {
+        const char *slash = memchr(p, '/', (size_t)(end - p));
+        size_t len = slash ? (size_t)(slash - p) : (size_t)(end - p);
+        char *seg;
+        size_t sn;
+        if (!percent_decode(c, p, len, &seg, &sn) || keyeq(seg, sn, ".") || keyeq(seg, sn, ".."))
+            return 0;
+        for (size_t i = 0; i < sn; i++)
+            if (seg[i] == '/' || seg[i] == '\\' || seg[i] == 0)
+                return 0;
+        if (strict) {
+            const unsigned char *q = (const unsigned char *)seg;
+            if (sn == 0 || whitespace(next_utf8(&q)) || whitespace(last_code_point(seg, sn)))
+                return 0;
+        }
+        if (!slash)
+            return 1;
+        p = slash + 1;
+    }
+}
+/* Validates a srcLog or srcWitness reference, which names a file (profile
+ * §3.1), and returns its kind: web, loopback, file or other. NULL is
+ * invalidOptions. */
+static const char *check_ref(vh_context *c, J *ref) {
+    char *scheme;
+    const char *rest;
+    if (!type(ref, json_type_string) || !split_scheme(c, s(ref), slen(ref), &scheme, &rest))
+        return NULL;
+    if (strchr(rest, '#'))
+        return NULL;
+    int http = !strcmp(scheme, "http");
+    if (http || !strcmp(scheme, "https")) {
+        if (strncmp(rest, "//", 2))
+            return NULL;
+        const char *a = rest + 2;
+        size_t an = strcspn(a, "/?");
+        const char *after = a + an;
+        size_t path_n = strcspn(after, "?");
+        if (!check_authority(c, a, an, http) || path_n == 0 ||
+            !check_segments(c, after, path_n, 0))
+            return NULL;
+        return http ? "loopback" : "web";
+    }
+    if (!strcmp(scheme, "file")) {
+        if (strchr(rest, '?'))
+            return NULL;
+        const char *path = rest;
+        if (!strncmp(rest, "//", 2)) {
+            path = strchr(rest + 2, '/');
+            if (!path)
+                return NULL;
+            char *host = copy(c, rest + 2, (size_t)(path - rest - 2));
+            for (char *q = host; *q; q++)
+                *q = (char)tolower((unsigned char)*q);
+            if (*host && strcmp(host, "localhost"))
+                return NULL;
+        } else if (rest[0] != '/')
+            return NULL;
+        return check_segments(c, path, strlen(path), 0) ? "file" : NULL;
+    }
+    return *rest ? "other" : NULL;
+}
+/* Validates a (percent-decoded) src DID URL parameter and derives srcLog and
+ * srcWitness from it (profile §3.2); 0 is invalidDidUrl. */
+static int src_references(vh_context *c, const char *p, size_t n, char **log, char **witness) {
+    char *scheme;
+    const char *rest;
+    if (!split_scheme(c, p, n, &scheme, &rest) || strpbrk(rest, "?#") ||
+        !strcmp(scheme, "http") || !strcmp(scheme, "file"))
+        return 0;
+    size_t rn = strlen(rest);
+    if (strncmp(rest, "//", 2) || rn == 2 || rest[2] == '/')
+        return 0;
+    if (rest[rn - 1] == '/')
+        rn--;
+    char *base = copy(c, rest, rn);
+    if (!strcmp(scheme, "https")) {
+        const char *slash = strchr(base + 2, '/');
+        size_t an = slash ? (size_t)(slash - base - 2) : rn - 2;
+        if (!check_authority(c, base + 2, an, 0) ||
+            (slash && !check_segments(c, slash, strlen(slash), 1)))
+            return 0;
+    }
+    Buffer b = {0};
+    adds(c, &b, scheme);
+    addc(c, &b, ':');
+    adds(c, &b, base);
+    Buffer w = b;
+    w.data = text(c, b.data);
+    w.capacity = w.size + 1;
+    adds(c, &b, "/did.jsonl");
+    adds(c, &w, "/did-witness.json");
+    *log = b.data;
+    *witness = w.data;
+    return 1;
+}
+/* Parses a did:vh DID URL as a dereferencer does (profile §4): src becomes
+ * the srcLog and srcWitness options, and the version parameters become the
+ * options of the same name. NULL is invalidDidUrl. */
+static J *parse_did_url(vh_context *c, J *url) {
+    static const char *option_only[] = {"didLog",        "didWitness",    "srcLog",
+                                        "srcWitness",    "checkWatchers", "extraWatchers",
+                                        "minCopies",     "includeDidLog"};
+    static const char *parameters[] = {"src", "versionId", "versionTime", "versionNumber"};
+    if (!type(url, json_type_string))
+        return NULL;
+    const char *p = s(url);
+    size_t n = slen(url);
+    const char *hash = memchr(p, '#', n);
+    size_t before = hash ? (size_t)(hash - p) : n;
+    const char *q = memchr(p, '?', before);
+    if (!parse_did(c, p, q ? (size_t)(q - p) : before))
+        return NULL;
+    J *out = object(c), *options = object(c);
+    set(out, "valid", boolean(c, 1));
+    set(out, "did", string_n(c, p, q ? (size_t)(q - p) : before));
+    set(out, "options", options);
+    if (hash)
+        set(out, "fragment", string_n(c, hash + 1, n - before - 1));
+    int seen[4] = {0};
+    for (const char *pair = q ? q + 1 : NULL, *end = p + before; pair;) {
+        const char *amp = memchr(pair, '&', (size_t)(end - pair));
+        size_t len = amp ? (size_t)(amp - pair) : (size_t)(end - pair);
+        const char *eq = memchr(pair, '=', len);
+        char *key, *value;
+        size_t kn, vn;
+        if (!eq || !percent_decode(c, pair, (size_t)(eq - pair), &key, &kn) ||
+            !percent_decode(c, eq + 1, len - (size_t)(eq - pair) - 1, &value, &vn))
+            return NULL;
+        for (size_t i = 0; i < 8; i++)
+            if (keyeq(key, kn, option_only[i]))
+                return NULL;
+        for (size_t i = 0; i < 4; i++) {
+            if (!keyeq(key, kn, parameters[i]))
+                continue;
+            if (seen[i]++)
+                return NULL;
+            if (i == 0) {
+                char *log, *witness;
+                if (!src_references(c, value, vn, &log, &witness))
+                    return NULL;
+                set(options, "srcLog", string(c, log));
+                set(options, "srcWitness", string(c, witness));
+            } else if (i == 3) {
+                if (vn < 1 || vn > 16 || natural(value, vn) != vn || value[0] == '0')
+                    return NULL;
+                set(options, "versionNumber", track(c, json_object_new_int64(strtoll(value, NULL, 10))));
+            } else
+                set(options, parameters[i], string_n(c, value, vn));
+        }
+        pair = amp ? amp + 1 : NULL;
+    }
+    return out;
+}
+static int positive_integer(J *v) { return integer(v) && num(v) >= 1; }
+/* An http or https URL of printable ASCII with a non-empty authority (profile.md §4). */
+static int watcher_url(J *v) {
+    if (!type(v, json_type_string) || !printable(s(v), slen(v)))
+        return 0;
+    const char *u = s(v);
+    const char *rest = !strncmp(u, "https://", 8) ? u + 8 : !strncmp(u, "http://", 7) ? u + 7 : NULL;
+    return rest && *rest && !strchr("/?#", *rest);
+}
+/* did:vh resolution options validation (profile §5 step 2): NULL if valid,
+ * otherwise why they are invalidOptions. */
+static const char *validate_options(vh_context *c, J *o, int remote) {
+    if (!type(o, json_type_object))
+        return "resolution options must be an object";
+    if (has(o, "didLog") == has(o, "srcLog"))
+        return "exactly one of didLog and srcLog must be given";
+    if (has(o, "didWitness") && has(o, "srcWitness"))
+        return "at most one of didWitness and srcWitness may be given";
+    if (has(o, "didLog") && !type(get(o, "didLog"), json_type_string))
+        return "didLog must be a string";
+    if (has(o, "didWitness") && !type(get(o, "didWitness"), json_type_array))
+        return "didWitness must be an array";
+    const char *refs[] = {"srcLog", "srcWitness"};
+    for (size_t i = 0; i < 2; i++) {
+        if (!has(o, refs[i]))
+            continue;
+        const char *kind = check_ref(c, get(o, refs[i]));
+        if (!kind)
+            return "invalid srcLog or srcWitness reference";
+        if (remote && (!strcmp(kind, "file") || !strcmp(kind, "loopback")))
+            return "a resolver that serves other systems must not use local file or loopback references";
+    }
+    if (has(o, "versionId") + has(o, "versionTime") + has(o, "versionNumber") > 1)
+        return "at most one of versionId, versionTime and versionNumber may be given";
+    int64_t t;
+    if (has(o, "versionId") && !type(get(o, "versionId"), json_type_string))
+        return "versionId must be a string";
+    if (has(o, "versionTime") && !parse_time(get(o, "versionTime"), &t))
+        return "versionTime must be a whole-second UTC ISO 8601 time";
+    if (has(o, "versionNumber") && !positive_integer(get(o, "versionNumber")))
+        return "versionNumber must be a positive integer";
+    J *cw = get(o, "checkWatchers");
+    if (has(o, "checkWatchers") && strcmp(s(cw), "all") && !(integer(cw) && num(cw) >= 0))
+        return "checkWatchers must be a non-negative integer or \"all\"";
+    if (has(o, "extraWatchers")) {
+        J *w = get(o, "extraWatchers");
+        if (!type(w, json_type_array))
+            return "extraWatchers must be an array of https URLs";
+        for (size_t i = 0; i < len(w); i++)
+            if (!watcher_url(at(w, i)) || strncmp(s(at(w, i)), "https://", 8))
+                return "extraWatchers must be an array of https URLs";
+    }
+    if (has(o, "minCopies") && !positive_integer(get(o, "minCopies")))
+        return "minCopies must be a positive integer";
+    if (has(o, "includeDidLog") && !type(get(o, "includeDidLog"), json_type_boolean))
+        return "includeDidLog must be a boolean";
+    return NULL;
+}
+static J *did_failure(vh_context *c, const char *code, const char *detail, J *vh_log) {
+    J *problem = object(c), *meta = object(c), *out = object(c);
+    set(problem, "title", string(c, code));
+    set(problem, "detail", string(c, detail));
+    if (vh_log)
+        set(problem, "vhLog", vh_log);
+    set(meta, "error", string(c, code));
+    set(meta, "problemDetails", problem);
+    set(out, "didResolutionMetadata", meta);
+    set(out, "didDocument", NULL);
+    set(out, "didDocumentMetadata", object(c));
+    return out;
+}
+static const char *did_error(const char *vh_code) {
+    static const char *map[][2] = {{"not-found", "notFound"},
+                                   {"invalid-option", "invalidOptions"},
+                                   {"fork-detected", "logForked"},
+                                   {"min-copies-not-met", "insufficientCopies"},
+                                   {"unsupported-log-version", "featureNotSupported"}};
+    for (size_t i = 0; i < 5; i++)
+        if (!strcmp(vh_code, map[i][0]))
+            return map[i][1];
+    return "invalidDid";
+}
+static char *current_time(vh_context *c) {
+    int64_t now = (int64_t)time(NULL), days = now / 86400, secs = now % 86400;
+    /* civil_from_days (Howard Hinnant) */
+    days += 719468;
+    int64_t era = days / 146097, doe = days - era * 146097,
+            yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365,
+            doy = doe - (365 * yoe + yoe / 4 - yoe / 100), mp = (5 * doy + 2) / 153,
+            d = doy - (153 * mp + 2) / 5 + 1, m = mp < 10 ? mp + 3 : mp - 9,
+            y = yoe + era * 400 + (m <= 2);
+    char out[32];
+    snprintf(out, sizeof out, "%04lld-%02lld-%02lldT%02lld:%02lld:%02lldZ", (long long)y,
+             (long long)m, (long long)d, (long long)(secs / 3600), (long long)(secs / 60 % 60),
+             (long long)(secs % 60));
+    return text(c, out);
+}
+/* did:vh resolve(did, resolutionOptions) (profile §5). This resolver is
+ * offline: it verifies a log passed in didLog (and didWitness), and returns
+ * featureNotSupported when it would have to retrieve anything. */
+static J *resolve_did(vh_context *c, J *did, J *options, J *now, int remote) {
+    char *scid = type(did, json_type_string) ? parse_did(c, s(did), slen(did)) : NULL;
+    if (!scid)
+        return did_failure(c, "invalidDid", "not a did:vh DID", NULL);
+    const char *why = validate_options(c, options, remote);
+    if (why)
+        return did_failure(c, "invalidOptions", why, NULL);
+    if (has(options, "srcLog"))
+        return did_failure(c, "featureNotSupported", "this resolver does not retrieve srcLog references", NULL);
+    J *cw = get(options, "checkWatchers");
+    if ((has(options, "checkWatchers") && !(is_number(cw) && num(cw) == 0)) ||
+        len(get(options, "extraWatchers")))
+        return did_failure(c, "featureNotSupported", "this resolver does not retrieve copies from watchers", NULL);
+    Spec spec = didvh_spec(scid);
+    if (!now)
+        now = string(c, current_time(c));
+    int64_t clock = 0;
+    if (!parse_time(now, &clock))
+        clock = (int64_t)time(NULL);
+    const char *log = s(get(options, "didLog"));
+    /* Whether the log needs witnessing does not depend on the witness file.
+     * Without one, the first entry that needs it fails, which cuts it from the entries. */
+    Verified *unwitnessed = verify_log(c, log, NULL, 0, clock, &spec);
+    int witnessed = unwitnessed->failure &&
+                    !strcmp(s(get(unwitnessed->failure, "code")), "witness-threshold-not-met");
+    for (size_t i = 0; i < unwitnessed->count; i++)
+        witnessed |= unwitnessed->entries[i].rule != NULL;
+    if (witnessed && has(options, "srcWitness"))
+        return did_failure(c, "featureNotSupported", "this resolver does not retrieve srcWitness references", NULL);
+    J *input = object(c), *vh_options = object(c);
+    set(input, "log", get(options, "didLog"));
+    if (has(options, "didWitness"))
+        set(input, "witness", get(options, "didWitness"));
+    set(input, "now", now);
+    const char *keys[] = {"versionId", "versionTime", "versionNumber", "minCopies"};
+    for (size_t i = 0; i < 4; i++)
+        if (has(options, keys[i]))
+            set(vh_options, keys[i], get(options, keys[i]));
+    set(input, "options", vh_options);
+    J *result = resolve(c, input, &spec);
+    J *error = get(result, "error");
+    if (!json_object_get_boolean(get(result, "valid")))
+        return did_failure(c, did_error(s(get(error, "code"))), s(get(error, "message")), error);
+    int selected = has(options, "versionId") || has(options, "versionTime") || has(options, "versionNumber");
+    if (!selected && error && !strcmp(s(get(error, "code")), "unsupported-log-version"))
+        /* Entries after the last valid one may change the document or its keys (profile §5). */
+        return did_failure(c, "featureNotSupported", s(get(error, "message")), error);
+    J *m = get(result, "metadata"), *dm = object(c), *meta = object(c);
+    const char *copied[] = {"versionId", "versionTime", "created", "updated", "scid", "deactivated"};
+    for (size_t i = 0; i < 6; i++)
+        set(dm, copied[i], get(m, copied[i]));
+    set(dm, "ttl", track(c, json_object_new_int64((int64_t)num(get(m, "ttl")))));
+    J *rule = get(m, "witness");
+    if (rule) {
+        J *w = object(c);
+        set(w, "threshold", track(c, json_object_new_int64((int64_t)num(get(rule, "threshold")))));
+        set(w, "witnesses", get(rule, "witnesses"));
+        set(dm, "witness", w);
+    }
+    set(dm, "watchers", get(m, "watchers"));
+    set(meta, "contentType", string(c, "application/did+json"));
+    if (len(get(m, "warnings")))
+        set(meta, "warnings", get(m, "warnings"));
+    if (json_object_get_boolean(get(options, "includeDidLog"))) {
+        J *ls = lines(c, log), *first_invalid = get(result, "firstInvalidVersion");
+        size_t valid = first_invalid ? (size_t)num(first_invalid) - 1 : len(ls);
+        Buffer b = {0};
+        adds(c, &b, "");
+        for (size_t i = 0; i < valid; i++) {
+            append(c, &b, s(at(ls, i)), slen(at(ls, i)));
+            addc(c, &b, '\n');
+        }
+        set(meta, "didLog", string_n(c, b.data, b.size));
+        if (witnessed)
+            set(meta, "didWitness", has(options, "didWitness") ? get(options, "didWitness") : array(c));
+    }
+    /* A deactivated DID's document is not returned; earlier versions still are (profile §5). */
+    int last = !strcmp(s(get(m, "versionTime")), s(get(m, "updated")));
+    J *out = object(c);
+    set(out, "didResolutionMetadata", meta);
+    set(out, "didDocument",
+        json_object_get_boolean(get(m, "deactivated")) && last ? NULL : get(result, "state"));
+    set(out, "didDocumentMetadata", dm);
+    return out;
+}
+/* The did:vh driver operations (docs/interop-protocol.md, "did:vh operations"). */
+static J *didvh_dispatch(vh_context *c, const char *op, J *input) {
+    J *out = object(c);
+    if (!strcmp(op, "create") || !strcmp(op, "update")) {
+        J *in = clone_object(c, input);
+        set(in, "state", get(input, "document"));
+        Spec spec = didvh_spec(NULL);
+        if (op[0] == 'u')
+            return update(c, in);
+        out = create(c, in, &spec);
+        Buffer did = {0};
+        adds(c, &did, DID_PREFIX);
+        adds(c, &did, s(get(out, "scid")));
+        set(out, "did", string(c, did.data));
+        return out;
+    }
+    if (!strcmp(op, "resolve"))
+        return resolve_did(c, get(input, "did"), get(input, "options"), get(input, "now"),
+                           json_object_get_boolean(get(input, "remote")));
+    J *valid = NULL;
+    if (!strcmp(op, "ref")) {
+        const char *kind = check_ref(c, get(input, "ref"));
+        if (kind) {
+            set(out, "valid", boolean(c, 1));
+            set(out, "kind", string(c, kind));
+            return out;
+        }
+        set(out, "error", string(c, "invalidOptions"));
+    } else if (!strcmp(op, "src")) {
+        J *src = get(input, "src");
+        char *log, *witness;
+        if (type(src, json_type_string) && src_references(c, s(src), slen(src), &log, &witness)) {
+            set(out, "valid", boolean(c, 1));
+            set(out, "srcLog", string(c, log));
+            set(out, "srcWitness", string(c, witness));
+            return out;
+        }
+        set(out, "error", string(c, "invalidDidUrl"));
+    } else if (!strcmp(op, "did-url")) {
+        if ((valid = parse_did_url(c, get(input, "didUrl"))))
+            return valid;
+        set(out, "error", string(c, "invalidDidUrl"));
+    } else
+        fail(c, "unknown-operation", 0);
+    set(out, "valid", boolean(c, 0));
     return out;
 }
 static J *dispatch(vh_context *c, const char *op, J *input) {
@@ -1384,11 +2050,13 @@ static J *dispatch(vh_context *c, const char *op, J *input) {
         set(doc, "versionId", get(input, "versionId"));
         set(out, "proof", sign(c, doc, s(get(input, "seed")), input));
     } else if (!strcmp(op, "create"))
-        return create(c, input);
+        return create(c, input, &VH_LOG);
     else if (!strcmp(op, "update"))
         return update(c, input);
     else if (!strcmp(op, "resolve"))
-        return resolve(c, input);
+        return resolve(c, input, &VH_LOG);
+    else if (!strncmp(op, "didvh-", 6))
+        return didvh_dispatch(c, op + 6, input);
     else
         fail(c, "unknown-operation", 0);
     return out;

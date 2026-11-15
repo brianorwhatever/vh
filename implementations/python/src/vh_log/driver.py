@@ -11,6 +11,7 @@ import sys
 from collections.abc import Callable, Mapping
 from typing import Any, BinaryIO
 
+from .didvh import DidVhError, check_ref, create_did, parse_did_url, resolve_did, src_references, update_did
 from .ed25519 import signer_from_seed
 from .hashing import hash_b58, key_hash
 from .jcs import canonicalize, parse_json, to_json
@@ -37,6 +38,14 @@ def _update(i: Input) -> dict[str, Any]:
     return {"log": updated.log, "versionId": updated.version_id}
 
 
+def _rejected(fn: Callable[[], dict[str, Any]]) -> dict[str, Any]:
+    """Runs ``fn``, turning a did:vh error into ``{valid: false, error}``."""
+    try:
+        return {"valid": True, **fn()}
+    except DidVhError as e:
+        return {"valid": False, "error": e.code}
+
+
 OPS: dict[str, Callable[[Input], Any]] = {
     "jcs": lambda i: {"output": canonicalize(parse_json(i["text"]))},
     "hash": lambda i: {"output": hash_b58(i["data"])},
@@ -50,6 +59,17 @@ OPS: dict[str, Callable[[Input], Any]] = {
     "update": _update,
     "witness": lambda i: {"proof": witness_proof(i["versionId"], i["seed"], i.get("created"))},
     "resolve": resolve_request,
+    # did:vh (docs/interop-protocol.md, "did:vh operations")
+    "didvh-create": lambda i: create_did(i["document"], i.get("parameters"), i["versionTime"], i["signers"]),
+    "didvh-update": lambda i: update_did(
+        i["log"], i["document"], i.get("parameters"), i["versionTime"], i["signers"]
+    ),
+    "didvh-resolve": lambda i: resolve_did(
+        i.get("did"), i.get("options"), now=i.get("now"), remote=i.get("remote") is True
+    ),
+    "didvh-ref": lambda i: _rejected(lambda: {"kind": check_ref(i.get("ref"))}),
+    "didvh-src": lambda i: _rejected(lambda: src_references(i.get("src"))),
+    "didvh-did-url": lambda i: _rejected(lambda: parse_did_url(i.get("didUrl"))),
 }
 
 

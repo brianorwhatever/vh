@@ -11,8 +11,44 @@ data class WitnessConfig(val threshold: Int, val witnesses: List<JsonObject>) {
     fun toJson(): JsonObject = JsonObject("threshold" to JsonNumber(threshold), "witnesses" to JsonArray(witnesses))
 }
 
+/**
+ * What a specialisation of VH-Log (such as did:vh) changes in verification.
+ * Everything else (hashing, proofs, witnesses, pre-rotation) is shared.
+ */
+class Specialisation @JvmOverloads constructor(
+    /** Name of the parameter that carries the log version (`logVersion` in plain VH-Log). */
+    val versionParameter: String,
+    /** Accepted values of the version parameter, oldest first. */
+    val versions: List<String>,
+    /**
+     * Syntax of a version value. When set, a missing or malformed value fails with
+     * `invalid-parameter`, and only a well-formed value that is not accepted fails
+     * with `unsupported-log-version`. Without it, every unaccepted value is
+     * `unsupported-log-version` (plain VH-Log).
+     */
+    val versionSyntax: Regex? = null,
+    /**
+     * Parameters the specialisation adds to the VH-Log set. With null, any unknown
+     * parameter is ignored (plain VH-Log); otherwise the set is closed and an
+     * unknown parameter fails with `invalid-parameter`.
+     */
+    val extraParameters: List<String>? = null,
+    /** Checks every entry's `state` (with the SCID and version number) after the SCID check; throws [VHLogException]. */
+    val checkState: ((state: JsonObject, scid: String, version: Int) -> Unit)? = null,
+) {
+    companion object {
+        /** Plain VH-Log (`vh-log:1.0`), as specified by profile vh-log-interop-0. */
+        @JvmField
+        val VH_LOG = Specialisation("logVersion", listOf(LogController.LOG_VERSION))
+
+        /** The VH-Log parameters, excluding the version parameter. */
+        internal val VH_LOG_PARAMETERS = listOf("scid", "updateKeys", "nextKeyHashes", "witness", "watchers", "deactivated", "ttl")
+    }
+}
+
 /** The parameters active after an entry. */
 data class Parameters(
+    /** Value of the specialisation's version parameter (`logVersion` for plain VH-Log). */
     val logVersion: String,
     val scid: String,
     val updateKeys: List<String>,
@@ -60,7 +96,6 @@ object Verifier {
     /** Seconds a `versionTime` may be ahead of the resolver's clock (profile §4). */
     const val FUTURE_TOLERANCE_SECONDS = 300L
 
-    private val SUPPORTED_LOG_VERSIONS = listOf(LogController.LOG_VERSION)
     private val ENTRY_KEYS = listOf("versionId", "versionTime", "parameters", "state", "proof")
     private val VERSION_TIME = Regex("(\\d{4})-(\\d{2})-(\\d{2})T(\\d{2}):(\\d{2}):(\\d{2})(?:Z|\\+00:00)")
     private val VERSION_ID = Regex("([1-9][0-9]*)-([^-]+)")
@@ -117,19 +152,31 @@ object Verifier {
     }
 
     /** Applies an entry's `parameters` to the previously active set (Read step 1 and the pre-rotation rule of step 7). */
-    private fun applyParameters(raw: JsonObject, previous: Parameters?, version: Int): Parameters {
+    private fun applyParameters(raw: JsonObject, previous: Parameters?, version: Int, spec: Specialisation): Parameters {
         fun invalid(msg: String) = VHLogException(ErrorCode.INVALID_PARAMETER, msg, version)
         for ((key, value) in raw) if (value == JsonNull) throw invalid("$key must not be null")
-        if (previous == null && "logVersion" !in raw) {
-            throw VHLogException(ErrorCode.UNSUPPORTED_LOG_VERSION, "logVersion missing from first entry", 1)
-        }
-        raw["logVersion"]?.let { lv ->
-            val s = (lv as? JsonString)?.value
-            if (s == null || s !in SUPPORTED_LOG_VERSIONS) {
-                throw VHLogException(ErrorCode.UNSUPPORTED_LOG_VERSION, "unsupported logVersion ${lv.toJson()}", version)
+        val vp = spec.versionParameter
+        spec.extraParameters?.let { extra ->
+            for (key in raw.keys) {
+                if (key != vp && key !in Specialisation.VH_LOG_PARAMETERS && key !in extra) {
+                    throw invalid("$key is not a parameter of this log type")
+                }
             }
-            if (previous != null && SUPPORTED_LOG_VERSIONS.indexOf(s) < SUPPORTED_LOG_VERSIONS.indexOf(previous.logVersion)) {
-                throw VHLogException(ErrorCode.UNSUPPORTED_LOG_VERSION, "logVersion may not be lowered", version)
+        }
+        if (previous == null && vp !in raw) {
+            val code = if (spec.versionSyntax != null) ErrorCode.INVALID_PARAMETER else ErrorCode.UNSUPPORTED_LOG_VERSION
+            throw VHLogException(code, "$vp missing from first entry", 1)
+        }
+        raw[vp]?.let { lv ->
+            val s = (lv as? JsonString)?.value
+            if (spec.versionSyntax != null && (s == null || !spec.versionSyntax.matches(s))) {
+                throw invalid("malformed $vp ${lv.toJson()}")
+            }
+            if (s == null || s !in spec.versions) {
+                throw VHLogException(ErrorCode.UNSUPPORTED_LOG_VERSION, "unsupported $vp ${lv.toJson()}", version)
+            }
+            if (previous != null && spec.versions.indexOf(s) < spec.versions.indexOf(previous.logVersion)) {
+                throw VHLogException(ErrorCode.UNSUPPORTED_LOG_VERSION, "$vp may not be lowered", version)
             }
         }
         if (previous == null) {
@@ -168,7 +215,7 @@ object Verifier {
         }
 
         return Parameters(
-            logVersion = (raw["logVersion"] as? JsonString)?.value ?: previous!!.logVersion,
+            logVersion = (raw[vp] as? JsonString)?.value ?: previous!!.logVersion,
             scid = (raw["scid"] as? JsonString)?.value ?: previous!!.scid,
             updateKeys = updateKeys ?: previous!!.updateKeys,
             nextKeyHashes = nextKeyHashes ?: previous?.nextKeyHashes ?: emptyList(),
@@ -234,7 +281,7 @@ object Verifier {
     }
 
     /** Runs the per-entry checks (profile §4, steps 1–7) on one parsed line. */
-    private fun verifyEntry(raw: JsonObject, previous: VerifiedEntry?, now: Long): VerifiedEntry {
+    private fun verifyEntry(raw: JsonObject, previous: VerifiedEntry?, now: Long, spec: Specialisation): VerifiedEntry {
         val version = (previous?.versionNumber ?: 0) + 1
         if (previous?.parameters?.deactivated == true) {
             throw VHLogException(ErrorCode.ENTRY_AFTER_DEACTIVATION, "entry follows a deactivating entry", version)
@@ -246,7 +293,7 @@ object Verifier {
             throw VHLogException(ErrorCode.INVALID_ENTRY, "entry does not have the required properties and types", version)
         }
         val rawParameters = raw.obj("parameters")!!
-        val parameters = applyParameters(rawParameters, previous?.parameters, version)
+        val parameters = applyParameters(rawParameters, previous?.parameters, version, spec)
 
         val activeKeys: List<String>
         val witnessRule: WitnessConfig?
@@ -271,6 +318,7 @@ object Verifier {
             throw VHLogException(ErrorCode.FUTURE_VERSION_TIME, "versionTime is in the future", version)
         }
         if (previous == null) verifyScid(raw, parameters.scid)
+        spec.checkState?.invoke(raw.obj("state")!!, parameters.scid, version)
 
         return VerifiedEntry(raw, version, time, parameters, witnessRule)
     }
@@ -335,9 +383,11 @@ object Verifier {
      * @param witness the parsed witness file; Kotlin `null` means no file was found,
      *   while [JsonNull] (or any non-conforming value) is a malformed file.
      * @param now the resolver's clock, in seconds since the epoch.
+     * @param spec a specialisation of VH-Log, such as did:vh.
      */
     @JvmStatic
-    fun verifyLog(log: String, witness: JsonValue?, now: Long): VerifiedLog {
+    @JvmOverloads
+    fun verifyLog(log: String, witness: JsonValue?, now: Long, spec: Specialisation = Specialisation.VH_LOG): VerifiedLog {
         val lines = LogController.parseLogLines(log)
         val entries = ArrayList<VerifiedEntry>()
         var failure: ErrorReport? = null
@@ -350,7 +400,7 @@ object Verifier {
                 if (!isIJsonSafe(raw)) {
                     throw VHLogException(ErrorCode.INVALID_LOG, "line ${i + 1} has a non-finite number or a lone surrogate", i + 1)
                 }
-                entries.add(verifyEntry(raw, entries.lastOrNull(), now))
+                entries.add(verifyEntry(raw, entries.lastOrNull(), now, spec))
             } catch (e: VHLogException) {
                 failure = e.toReport()
                 break

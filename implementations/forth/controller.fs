@@ -1,4 +1,5 @@
 require crypto.fs
+require specialisation.fs
 : placeholder ( -- string ) s" {SCID}" str ;
 : signed-entry { entry signers -- entry }
   j-array { proofs }
@@ -24,8 +25,8 @@ require crypto.fs
 : create-log { input -- result }
   input new-entry { entry } entry s" parameters" j-get { params }
   params obj? 0= if -400 throw then
+  params version-name j-has 0= if version-value params version-name put then
   params s" scid" j-has 0= if placeholder params s" scid" put then
-  params s" logVersion" j-has 0= if s" vh-log:1.0" str params s" logVersion" put then
   params entry s" parameters" put placeholder entry s" versionId" put
   entry scid { id }
   entry j-dump placeholder id j-replace json-parse to entry

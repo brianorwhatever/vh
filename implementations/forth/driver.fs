@@ -1,4 +1,4 @@
-require resolver.fs
+require didvh.fs
 : wrapped { value addr len -- result } j-object { result } value result addr len put result ;
 : dispatch { input op -- result }
   op s" jcs" text= if input s" text" j-get json-parse dup 0= if -400 throw then jcs s" output" wrapped exit then
@@ -13,9 +13,16 @@ require resolver.fs
   op s" update" text= if input update-log exit then
   op s" witness" text= if input witness-proof s" proof" wrapped exit then
   op s" resolve" text= if input resolve-log exit then
+  op s" didvh-create" text= if input didvh-create exit then
+  op s" didvh-update" text= if input didvh-update exit then
+  op s" didvh-resolve" text= if input resolve-did exit then
+  op s" didvh-ref" text= if input reference-result exit then
+  op s" didvh-src" text= if input src-result exit then
+  op s" didvh-did-url" text= if input s" didUrl" j-get parse-did-url exit then
   -400 throw ;
 variable request
 : handle ( -- result )
+  vh-log-specialisation
   request @ obj? 0= if -400 throw then
   request @ s" input" j-get obj? 0= if -400 throw then
   request @ s" input" j-get request @ s" op" j-get dispatch ;

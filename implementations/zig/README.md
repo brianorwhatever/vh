@@ -27,10 +27,20 @@ node ../../harness/run.ts --impl zig   # from here, or `node harness/run.ts --im
 | eddsa-jcs-2022 | `createProof`, `verifyProof` |
 | Hashes | `scid`, `entryHash` |
 | Log Controller | `createLog`, `updateLog`, `witnessProof` |
-| Resolver | `verifyLog`, `resolve` (`ResolveRequest`: options, `copies`, `retained_version_id`), `ErrorCode` |
+| Resolver | `verifyLog`, `resolve` (`ResolveRequest`: options, `copies`, `retained_version_id`, `specialisation`), `ErrorCode` |
+| did:vh | `didvh.create`, `didvh.update`, `didvh.resolve`, `didvh.parseDid`, `didvh.parseDidUrl`, `didvh.referenceKind`, `didvh.srcReferences`, `didvh.specialisation` |
 
 Every function takes an explicit allocator; results that own memory have
 `deinit()`. `Resolution.toValue` gives the driver-protocol JSON.
+
+**did:vh.** [did:vh](../../docs/didvh-profile.md) logs are verified by the
+same resolver with a `Specialisation` (`ResolveRequest.specialisation`,
+default plain VH-Log): the version parameter (`method`) and its syntax, a
+closed parameter set, and a per-entry state check that fails with
+`invalid-state`. `didvh.resolve(arena, did, options, .{ .now = … })` is an
+offline resolver returning `{didResolutionMetadata, didDocument,
+didDocumentMetadata}` as a JSON `Value`. Clean-room notes for did:vh are in
+[`CLEAN-ROOM.md`](CLEAN-ROOM.md).
 
 ## Layout
 
@@ -42,5 +52,7 @@ Every function takes an explicit allocator; results that own memory have
 - `src/log.zig` — SCID, entry hash, create/update/witness.
 - `src/resolve.zig` — verification (profile §4 check order), witnesses,
   partial validity, version selection, copies and retained versionIds.
+- `src/didvh.zig` — did:vh: DIDs, create/update, `srcLog`/`srcWitness`
+  references, `src`, DID URLs, offline resolution.
 - `src/ops.zig` — the JSON Lines driver protocol; `src/main.zig` — the driver.
 - `src/tests.zig` — end-to-end tests and the shared vectors.

@@ -150,7 +150,9 @@ fragment
 2. The part before the query MUST be a did:vh DID (§2). **Profile:** a DID URL
    path (`did:vh:<SCID>/…`) is not supported.
 3. The query is split on `&`. Each part MUST contain `=`. The name and value
-   are each percent-decoded once as UTF-8. `+` is not a space.
+   are each percent-decoded once as UTF-8. `+` is not a space. A character
+   that is not percent-encoded is kept as it is, as a whole code point, even
+   outside ASCII (so a raw emoji stays one emoji).
 4. The resolution-option names `didLog`, `didWitness`, `srcLog`,
    `srcWitness`, `checkWatchers`, `extraWatchers`, `minCopies` and
    `includeDidLog` are not allowed. `src`, `versionId`, `versionTime` and

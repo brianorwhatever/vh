@@ -236,9 +236,9 @@ sub _signers {
 }
 
 sub create {
-  my $input = shift;
+  my ($input, $vp, $version) = (@_, 'logVersion', 'vh-log:1.0');    # a specialisation passes its own version parameter
   croak 'parameters must be an object' unless is_object($input->{parameters});
-  my %parameters = (logVersion => 'vh-log:1.0', scid => '{SCID}', %{ $input->{parameters} });
+  my %parameters = ($vp => $version, scid => '{SCID}', %{ $input->{parameters} });
   my $entry = { versionId => '{SCID}', versionTime => $input->{versionTime},
     parameters => \%parameters, state => $input->{state} };
   my $id = scid($entry);
@@ -297,10 +297,10 @@ sub _str_eq { my ($v, $s) = @_; is_string($v) && $v eq $s }
 my @KNOWN = qw(logVersion scid updateKeys nextKeyHashes witness watchers ttl);
 
 sub _parameters {
-  my ($raw, $previous, $n) = @_;
+  my ($raw, $previous, $n, $spec) = (@_[0 .. 2], $_[3] // $VH::Log::VH_LOG);
   _fail('invalid-parameter', $n) if grep { !defined } values %$raw;
-  _fail('unsupported-log-version', $n)
-    if (!$previous && !exists $raw->{logVersion}) || (exists $raw->{logVersion} && !_str_eq($raw->{logVersion}, 'vh-log:1.0'));
+  _fail('invalid-parameter', $n) if $spec->{extra} && grep { !_known($spec, $_) } keys %$raw;
+  _version($raw, $previous, $n, $spec);
   _fail('invalid-parameter', $n)
     if $previous ? exists $raw->{scid} : (!is_string($raw->{scid}) || !exists $raw->{updateKeys});
   if (exists $raw->{updateKeys}) {
@@ -312,7 +312,7 @@ sub _parameters {
       unless _strings($raw->{nextKeyHashes}) && !grep { _check_hash($_) ne 'ok' } @{ $raw->{nextKeyHashes} };
   }
   my %p = $previous ? %$previous : (nextKeyHashes => [], witness => undef, watchers => [], ttl => 3600);
-  $p{$_} = $raw->{$_} for grep { exists $raw->{$_} } @KNOWN;
+  $p{$_} = $raw->{$_} for grep { exists $raw->{$_} } @KNOWN; $p{logVersion} = $raw->{ $spec->{param} } if exists $raw->{ $spec->{param} };
   $p{deactivated} = exists $raw->{deactivated} ? $raw->{deactivated} : false;
   if (exists $raw->{witness}) {
     my $w = $raw->{witness};
@@ -346,14 +346,14 @@ sub _parameters {
 }
 
 sub _verify_entry {
-  my ($e, $previous, $now) = @_;
+  my ($e, $previous, $now, $spec) = (@_[0 .. 2], $_[3] // $VH::Log::VH_LOG);
   my $n = $previous ? $previous->{n} + 1 : 1;
   _fail('entry-after-deactivation', $n) if $previous && $previous->{p}{deactivated};
   _fail('invalid-entry', $n) unless join(',', sort keys %$e) eq 'parameters,proof,state,versionId,versionTime'
     && is_string($e->{versionId}) && is_string($e->{versionTime}) && is_object($e->{parameters})
     && is_object($e->{state}) && is_array($e->{proof});
   my $pp = $previous && $previous->{p};
-  my $p = _parameters($e->{parameters}, $pp, $n);
+  my $p = _parameters($e->{parameters}, $pp, $n, $spec);
   my $keys = !$pp || @{ $pp->{nextKeyHashes} } ? $p->{updateKeys} : $pp->{updateKeys};
   my $rule = !$pp || (exists $e->{parameters}{witness} && !$pp->{witness}) ? $p->{witness} : $pp->{witness};
   _fail('invalid-proof', $n) unless @{ $e->{proof} };
@@ -384,13 +384,14 @@ sub _verify_entry {
     $text =~ s/\Q$id\E/{SCID}/g;
     _fail('scid-mismatch', $n) unless scid(parse($text)) eq $id;
   }
+  $spec->{state}->($e->{state}, $p->{scid}, $n) if $spec->{state};
   return { e => $e, p => $p, n => $n, time => $t, rule => $rule };
 }
 
 sub _report { VH::Log::Error->new(@_)->report }
 
 sub _verify_log {
-  my ($log, $has_witness, $witness, $now) = @_;
+  my ($log, $has_witness, $witness, $now, $spec) = @_;
   my $lines = _lines($log);
   my @entries;
   my $failure;
@@ -399,7 +400,7 @@ sub _verify_log {
     my $ok = eval {
       my $e = eval { parse($lines->[$i]) };
       _fail('invalid-log', $i + 1) unless is_object($e);
-      push @entries, _verify_entry($e, $entries[-1], $now);
+      push @entries, _verify_entry($e, $entries[-1], $now, $spec);
       1;
     };
     next if $ok;
@@ -501,14 +502,14 @@ sub _result {
 }
 
 sub _resolve_copies {
-  my ($input, $now, $options) = @_;
+  my ($input, $now, $options, $spec) = @_;
   my @all = ({ source => 'primary', log => $input->{log}, exists $input->{witness} ? (witness => $input->{witness}) : () },
     @{ $input->{copies} // [] });
   croak 'copies must be objects' if grep { !is_object($_) } @all;
   my (@warnings, %status, %cache);
   my $get = sub {
     my $i = shift;
-    $cache{$i} //= _verify_log($all[$i]{log}, exists $all[$i]{witness}, $all[$i]{witness}, $now);
+    $cache{$i} //= _verify_log($all[$i]{log}, exists $all[$i]{witness}, $all[$i]{witness}, $now, $spec);
   };
   my $invalid = sub {
     my $i = shift;
@@ -578,10 +579,11 @@ sub _resolve_copies {
   return _result($r, $options, \@warnings, \@copies);
 }
 
-# Resolves a log (see docs/interop-protocol.md for input and result shapes).
+# Resolves a log (see docs/interop-protocol.md for input and result shapes),
+# as plain VH-Log or as the given specialisation (such as did:vh).
 # Verification failures are reported in the result, never thrown.
 sub resolve {
-  my $input = shift;
+  my ($input, $spec) = @_;
   my $result = eval {
     my $now = _time($input->{now});
     _fail('invalid-option') unless defined $now;
@@ -595,8 +597,8 @@ sub resolve {
     for (qw(versionNumber minCopies)) {
       _fail('invalid-option') if exists $options->{$_} && (!_integer($options->{$_}) || $options->{$_} < 1);
     }
-    return _resolve_copies($input, $now, $options) if exists $input->{copies} || ($options->{minCopies} // 1) > 1;
-    my $v = _verify_log($input->{log}, exists $input->{witness}, $input->{witness}, $now);
+    return _resolve_copies($input, $now, $options, $spec) if exists $input->{copies} || ($options->{minCopies} // 1) > 1;
+    my $v = _verify_log($input->{log}, exists $input->{witness}, $input->{witness}, $now, $spec);
     return { valid => false, error => $v->{failure} } unless @{ $v->{entries} };
     my @warnings;
     _retained($v, 'primary', $input->{retainedVersionId}, \@warnings) if exists $input->{retainedVersionId};
@@ -628,7 +630,36 @@ sub dispatch {
   return create($input) if $op eq 'create';
   return update($input) if $op eq 'update';
   return resolve($input) if $op eq 'resolve';
+  return VH::Log::DidVh::dispatch($op, $input) if $op =~ /\Adidvh-/;
   croak "unknown operation $op";
 }
+
+# ------------------------------------------------------- specialisations
+
+# What a specialisation of VH-Log (such as did:vh) changes in verification:
+# param, the version parameter; versions, its accepted values; syntax, the form
+# of a version value (missing or malformed is invalid-parameter, and only a
+# well-formed unaccepted value is unsupported-log-version); extra, undef for an
+# open parameter set or the parameters added to a closed one; state, a check
+# run on every entry's state after the SCID check.
+our $VH_LOG = { param => 'logVersion', versions => ['vh-log:1.0'] };
+my @PARAMETERS = qw(scid updateKeys nextKeyHashes witness watchers deactivated ttl);
+
+sub _known {
+  my ($spec, $key) = @_;
+  return grep { $_ eq $key } $spec->{param}, @PARAMETERS, @{ $spec->{extra} };
+}
+
+sub _version {
+  my ($raw, $previous, $n, $spec) = @_;
+  my ($vp, $syntax) = @$spec{qw(param syntax)};
+  _fail($syntax ? 'invalid-parameter' : 'unsupported-log-version', $n) if !$previous && !exists $raw->{$vp};
+  return unless exists $raw->{$vp};
+  my $v = $raw->{$vp};
+  _fail('invalid-parameter', $n) if $syntax && !(is_string($v) && $v =~ $syntax);
+  _fail('unsupported-log-version', $n) unless is_string($v) && grep { $_ eq $v } @{ $spec->{versions} };
+}
+
+require VH::Log::DidVh;
 
 1;

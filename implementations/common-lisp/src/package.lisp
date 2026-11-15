@@ -27,4 +27,9 @@
    #:resolution-metadata #:resolution-first-invalid-version
    #:resolution-error #:resolution-to-json
    #:log-error #:log-error-code #:log-error-version #:log-error-message
-   #:log-error-fork))
+   #:log-error-fork
+   ;; Specialisations (docs/didvh-profile.md §1)
+   #:specialisation #:make-specialisation #:*specialisation*
+   ;; did:vh
+   #:parse-did-vh #:did-vh-specialisation #:create-did-vh #:update-did-vh
+   #:reference-kind #:src-references #:parse-did-vh-url #:resolve-did-vh))

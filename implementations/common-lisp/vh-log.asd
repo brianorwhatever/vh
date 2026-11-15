@@ -1,7 +1,7 @@
 ;;;; vh-log.asd — VH-Log (Verifiable History Log) for Common Lisp.
 
 (defsystem "vh-log"
-  :description "VH-Log: create, update, witness, verify and resolve Verifiable History Logs."
+  :description "VH-Log: create, update, witness, verify and resolve Verifiable History Logs, and did:vh DIDs."
   :version "0.1.0"
   :license "MIT"
   :depends-on ("ironclad/digest/sha256"
@@ -15,7 +15,8 @@
                (:file "time")
                (:file "proof")
                (:file "log")
-               (:file "resolve"))
+               (:file "resolve")
+               (:file "didvh"))
   :in-order-to ((test-op (test-op "vh-log/tests"))))
 
 (defsystem "vh-log/driver"

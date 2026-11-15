@@ -107,3 +107,37 @@ profile, the protocol and the spec. The profile's explicit check order (§4) and
 Spec notes 17–21 (JCS numbers as doubles, UTF-16 key order, double formatting,
 I-JSON, JSON Lines splitting) named every hazard that came up while writing the
 JSON layer. The vectors caught the one formatting bug introduced.
+
+## 5. did:vh
+
+did:vh support (`src/didvh.lisp`, the specialisation hook in
+`src/resolve.lisp`) was added under the same rule: no other implementation,
+its git history or diffs, `tools/generate-vectors.ts` or
+`tools/generate-didvh-vectors.ts` was read. The sources were:
+
+- `docs/didvh-profile.md` (`didvh-interop-0`), the "did:vh operations"
+  section of `docs/interop-protocol.md`, and `docs/profile.md`;
+- the pinned DIF spec, `decentralized-identity/didvh@cc2eff6`, where the
+  profile links to it;
+- `vectors/didvh/**` and `harness/run.ts` (`didvh`, `didvhCross`,
+  `compareDidResolution`).
+
+Every did:vh vector passed on the first harness run, so none of the choices
+below was forced by a failure. They are the places where the profile left
+room, and where another implementation could differ without a vector
+noticing:
+
+| # | Profile passage | Choice made here |
+| --- | --- | --- |
+| 1 | §5 step 4: "the log needs witnessing, meaning some entry has an active witness list" | Decided syntactically, before verification: some line's `parameters.witness` is a non-empty object. For `includeDidLog`'s `didWitness` the same test runs on the valid entries only. |
+| 2 | §4 step 3: "The query is split on `&`. Each part MUST contain `=`." | Applied literally: `did:vh:…?` (an empty query) and `?a=1&&b=2` (an empty part) are `invalidDidUrl`. |
+| 3 | §3.2 step 4: "one trailing `/` is removed" | Removed from the whole value before the authority and path checks, so `ipfs://x/` is valid and `https://h/a//` fails on its empty last segment. |
+| 4 | §3.2 step 3/5: other schemes need only "`//` and a non-empty authority" | For schemes other than `https`, the authority and path are not checked further (no `@`, port or segment rules). |
+| 5 | §3.1 step 4: "A port is 1–5 digits" | An empty port (`https://h:/x`) is invalid. |
+| 6 | §3.1 step 5: `file://localhost/<path>` | `file://localhost` with no `/` after the host is invalid (no path). `file:///` (path `/`) is valid. |
+| 7 | §5 step 2: the order of the option checks | Presence (`didLog`/`srcLog`, `didWitness`/`srcWitness`), types, references, selectors, then `checkWatchers`, `extraWatchers`, `minCopies`, `includeDidLog`. All give `invalidOptions`, so order only changes `detail`. |
+| 8 | §5 Deactivation: "the resolved entry is the last valid entry" | Compared by version number: the resolved `versionNumber` equals the number of valid entries. |
+| 9 | §4 step 6: `versionNumber` "becomes a JSON number" | A double, like every number in this library; up to 16 digits can exceed 2^53, which the profile allows. |
+| 10 | §1: "`method` may appear in later entries, under the same rules as `logVersion`" | The same membership rule as `logVersion`: with one accepted value, "lowering" can't occur. |
+| 11 | §2: the state check needs `state` to be an object | VH-Log's structure check already makes `state` an object (`invalid-entry`), so the state check only compares `state.id`. |
+| 12 | §5: `didLog` "holds the original lines of the valid entries" | The lines as split on `\n`, byte for byte, each followed by `\n`. |
