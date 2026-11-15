@@ -162,7 +162,8 @@
         "PATH_PREPEND": [
           "/opt/homebrew/opt/ruby/bin"
         ]
-      }
+      },
+      "didvh": true
     },
     {
       "name": "php",

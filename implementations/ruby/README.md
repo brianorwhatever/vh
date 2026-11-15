@@ -31,6 +31,26 @@ Use `VHLog.parse` to parse text before hashing: it converts JSON numbers to
 binary64 as RFC 8785 requires. `VHLog.jcs`, `sign`, `verify`, `create`,
 `update`, and `resolve` can be called directly.
 
+## did:vh
+
+`VHLog::DidVh` (`lib/vh_log/did_vh.rb`) implements did:vh as pinned by
+[`docs/didvh-profile.md`](../../docs/didvh-profile.md). The log is verified
+by `VHLog` with the did:vh specialisation (`method` instead of `logVersion`,
+a closed parameter set, and a `state.id` check on every entry).
+
+```ruby
+did = VHLog::DidVh.create('document' => {'id' => 'did:vh:{SCID}'},
+                          'parameters' => {'updateKeys' => [VHLog.multikey(seed)]},
+                          'versionTime' => '2026-01-01T00:00:00Z', 'signers' => [seed])
+result = VHLog::DidVh.resolve(did['did'], {'didLog' => did['log']}, now: '2026-06-01T00:00:00Z')
+VHLog::DidVh.parse_did_url("#{did['did']}?versionNumber=1#key-1")
+```
+
+The resolver is offline: it verifies the log passed in `didLog` (and
+`didWitness`) and returns `featureNotSupported` where it would have to fetch
+anything. `check_ref` and `src_references` check `srcLog`/`srcWitness`
+references and the `src` DID URL parameter.
+
 ## Verification and driver
 
 From the repository root:
