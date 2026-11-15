@@ -502,7 +502,6 @@ export function resolveDid(did: string, resolutionOptions: unknown = {}, context
       throw new DidVhError("featureNotSupported", result.error.message, result.error);
     }
     const m = result.metadata;
-    // A deactivated DID's document is not returned; earlier versions still are (profile §5).
     // A deactivated DID's document is returned only for an explicit version selector (profile §5).
     const didDocumentMetadata: DidDocumentMetadata = {
       versionId: m.versionId,
