@@ -1,4 +1,4 @@
-require resolver.fs
+require didvh.fs
 : assert ( flag -- ) 0= if -600 throw then ;
 : check-empty-stack ( -- ) depth 0= assert ;
 : test-encoding ( -- )
@@ -27,9 +27,25 @@ require resolver.fs
   s\" {\"\\ud800\":0}" str json-parse 0= assert
   s\" \"\\u0000\"" str json-parse j-size 1 = assert
   s\" {\"n\":-0}" str json-parse jcs s\" {\"n\":0}" text= assert ;
+: test-didvh ( -- )
+  s" did:vh:1.0" str method? assert
+  s" did:vh:01.0" str method? 0= assert
+  s" did:webvh:1.0" str method? 0= assert
+  s" https://example.com/a/did.jsonl" str reference-kind 1 = assert
+  s" http://127.0.0.1/did.jsonl" str reference-kind 2 = assert
+  s" file:/var/did.jsonl" str reference-kind 3 = assert
+  s" urn:x" str reference-kind 4 = assert
+  s" https://example.com/a/%2e%2e/x" str reference-kind 0= assert
+  s" a%20b" str percent-decode s" a b" text= assert
+  s" a%FF" str percent-decode 0= assert
+  s" https://example.com/" str src-references s" https://example.com/did-witness.json" text= assert
+  s" https://example.com/did.jsonl" text= assert
+  \ The did:vh hook is installed only for its own resolutions.
+  version-name s" logVersion" compare 0= assert ;
 : tests ( -- )
   test-encoding check-empty-stack j-reset
   test-time check-empty-stack j-reset
   test-json check-empty-stack j-reset
+  test-didvh check-empty-stack j-reset
   ." Forth library checks passed" cr ;
 tests bye

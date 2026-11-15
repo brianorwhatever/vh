@@ -150,7 +150,8 @@
       "command": [
         "sh",
         "run.sh"
-      ]
+      ],
+      "didvh": true
     },
     {
       "name": "ruby",

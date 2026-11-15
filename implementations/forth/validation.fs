@@ -33,10 +33,20 @@ variable error-code
 : array-values! { values xt -- }
   values arr? parameter! values j-size 0 ?do values i j-at xt execute parameter! loop ;
 : multikey? ( key -- flag ) decode-key 0<> ;
+: known-parameter? { key -- flag }
+  key version-name text= key s" scid" text= or key s" updateKeys" text= or
+  key s" nextKeyHashes" text= or key s" witness" text= or key s" watchers" text= or
+  key s" deactivated" text= or key s" ttl" text= or 0<> ;
+: closed-set! { p -- }
+  spec-closed @ 0= if exit then
+  p j-keys { keys } keys j-size 0 ?do keys i j-at known-parameter? parameter! loop ;
+: version! { p first -- }
+  first p version-name j-has or 0= if exit then
+  p version-name j-get { v }
+  spec-syntax @ if v str? if v spec-syntax @ execute else false then parameter! then
+  v version-value j-equal s" unsupported-log-version" demand ;
 : parameters! { p old first -- active }
-  first p s" logVersion" j-has or if
-    p s" logVersion" j-get s" vh-log:1.0" text= s" unsupported-log-version" demand
-  then
+  p closed-set! p first version!
   first if
     p s" scid" j-get str? parameter! p s" scid" j-get j-size 0> parameter!
     p s" updateKeys" j-has parameter!
@@ -113,6 +123,9 @@ variable scan-witness
   first 0= if instant scan-time @ > s" invalid-version-time" demand then
   instant scan-now @ 300 + <= s" future-version-time" demand
   first if entry scid-check then
+  spec-state @ if
+    entry s" state" j-get active s" scid" j-get spec-state @ execute s" invalid-state" demand
+  then
   old s" witness" j-get dup j-size 0= if drop active s" witness" j-get then scan-witness !
   active scan-active ! instant scan-time ! entry s" versionId" j-get scan-previous ! ;
 : error-object { code version -- error }

@@ -89,3 +89,45 @@ test('request arena and Forth stacks survive a stream of mixed operations', () =
     assert.equal(response.result.output, JSON.stringify({ a: [null, true, '😀'], z: i }));
   }
 });
+
+const didvh = name => JSON.parse(readFileSync(new URL(`../../vectors/didvh/${name}.json`, cwd)));
+
+test('did:vh references, src values and DID URLs match the vectors', () => {
+  for (const [file, op, field] of [['ref', 'didvh-ref', 'ref'], ['src', 'didvh-src', 'src'], ['did-url', 'didvh-did-url', 'didUrl']]) {
+    const { cases } = didvh(file);
+    const responses = exchange(cases.map(c => ({ op, input: { [field]: c[field] } })));
+    for (const [i, response] of responses.entries()) {
+      assert.equal(response.ok, true, `${file}/${cases[i].name}`);
+      assert.deepEqual(response.result, cases[i].expect, `${file}/${cases[i].name}`);
+    }
+  }
+});
+
+test('did:vh resolution errors and documents match the vectors, and the stack stays balanced', () => {
+  for (const group of ['basic', 'deactivation', 'did', 'log', 'options', 'witnesses']) {
+    const { cases } = didvh(`resolution/${group}`);
+    const responses = exchange(cases.map(c => ({ op: 'didvh-resolve', input: c.input })));
+    for (const [i, { ok, result }] of responses.entries()) {
+      const { name, expect } = cases[i];
+      assert.equal(ok, true, name);
+      const meta = result.didResolutionMetadata;
+      if (expect.error) {
+        assert.equal(meta.error, expect.error, name);
+        if (expect.vhLogError) assert.equal(meta.problemDetails.vhLog.code, expect.vhLogError, name);
+        assert.equal(result.didDocument, null, name);
+      } else {
+        assert.equal(meta.error, undefined, name);
+        assert.deepEqual(result.didDocument, expect.didDocument, name);
+        assert.deepEqual(result.didDocumentMetadata, expect.didDocumentMetadata, name);
+      }
+    }
+  }
+});
+
+test('a did:vh resolution does not leak its specialisation into VH-Log', () => {
+  const vh = caseInput(vectors('parameters').find(c => c.name === 'defaults'));
+  const { cases } = didvh('resolution/basic');
+  const [, plain] = exchange([{ op: 'didvh-resolve', input: cases[0].input }, { op: 'resolve', input: vh }]);
+  assert.equal(plain.result.valid, true);
+  assert.equal(plain.result.error, null);
+});
