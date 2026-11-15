@@ -98,7 +98,8 @@
       ],
       "command": [
         ".build/release/vh-log-driver"
-      ]
+      ],
+      "didvh": true
     },
     {
       "name": "kotlin",
