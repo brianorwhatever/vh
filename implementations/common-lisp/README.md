@@ -68,6 +68,7 @@ double-floats, and `true`/`false`/`null` are `:true`/`:false`/`:null`.
 | Proofs | `make-signer`, `sign-document`, `verify-proof` |
 | Log Controller | `create-log`, `update-log`, `witness-proof`, `compute-scid`, `entry-hash` |
 | Resolver | `resolve` → `resolution` (`resolution-valid-p`, `-state`, `-metadata`, `-error`, `-first-invalid-version`), `resolution-to-json` |
+| did:vh | `create-did-vh`, `update-did-vh`, `resolve-did-vh`, `parse-did-vh`, `parse-did-vh-url`, `reference-kind`, `src-references`, `did-vh-specialisation` |
 
 `resolve` takes the log text and `:now`, plus optionally `:witness` (the
 parsed witness file), `:options` (a JSON object: `versionId`, `versionTime`,
@@ -75,6 +76,18 @@ parsed witness file), `:options` (a JSON object: `versionId`, `versionTime`,
 [:witness w])` or `(:source s :unavailable reason)`) and
 `:retained-version-id`. Failures are `log-error` conditions carrying the
 profile's error code and version.
+
+**did:vh.** [did:vh](../../docs/didvh-profile.md) logs are verified by the
+same resolver with a `specialisation`: `resolve` takes `:specialisation`
+(default: plain VH-Log), which sets the version parameter (`method`), its
+syntax, a closed parameter set and a per-entry state check
+(`invalid-state`). `resolve-did-vh` is an offline resolver:
+
+```lisp
+(resolve-did-vh "did:vh:Qm…" (make-json "didLog" log-text "versionNumber" 2d0)
+                :now "2026-06-01T00:00:00Z")
+;; => {"didResolutionMetadata": {…}, "didDocument": {…}, "didDocumentMetadata": {…}}
+```
 
 ## Layout
 
@@ -85,7 +98,8 @@ profile's error code and version.
 | `src/time.lisp` | `versionTime` parsing (proleptic Gregorian, years 0000–9999) |
 | `src/proof.lisp` | eddsa-jcs-2022 signing and verification with did:key methods |
 | `src/log.lisp` | SCID, entry hash, create / update / witness |
-| `src/resolve.lisp` | per-entry checks in profile order, witnesses, copy comparison, version selection |
+| `src/resolve.lisp` | per-entry checks in profile order, witnesses, copy comparison, version selection, the specialisation hook |
+| `src/didvh.lisp` | did:vh: DIDs, create/update, `srcLog`/`srcWitness` references, `src`, DID URLs, offline resolution |
 | `src/driver.lisp` | JSON Lines driver ([protocol](../../docs/interop-protocol.md)) |
 | `tests/` | unit tests and the shared vectors run through the library (no test framework dependency) |
 

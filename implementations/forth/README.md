@@ -57,6 +57,13 @@ The protocol is implemented in Forth:
 - `witness.fs`: distinct witness approvals and deferred witness verification.
 - `selection.fs`, `copies.fs`, `resolver.fs`: partial validity, historical
   selection, matching copies, forks, retained versions, and result metadata.
+- `specialisation.fs`: how a method specialises VH-Log (version parameter
+  and syntax, closed parameter set, per-entry state check). Plain VH-Log is
+  the default.
+- `didvh.fs`: [did:vh](../../docs/didvh-profile.md): DIDs, create/update,
+  `srcLog`/`srcWitness` references, `src`, DID URLs, and offline resolution
+  (`resolve-did`), which installs the did:vh specialisation for one VH-Log
+  resolution.
 - `driver.fs`: request dispatch and error recovery.
 
 `native.cpp` is a generic C ABI support library, bound by `native.fs`. It supplies

@@ -60,6 +60,9 @@ pub const CreateInput = struct {
     parameters: Value,
     version_time: []const u8,
     signers: []const [32]u8,
+    /// The version parameter added when absent (did:vh uses `method`).
+    version_parameter: []const u8 = "logVersion",
+    version: []const u8 = log_version,
 };
 
 pub const Created = struct {
@@ -104,8 +107,8 @@ fn line(a: Allocator, entry: Value) Error![]u8 {
 }
 
 /// Creates a new log (spec *Create*, profile §5). Generators don't validate
-/// semantics: `parameters` is used as given, with `scid` ("{SCID}") and
-/// `logVersion` added if absent.
+/// semantics: `parameters` is used as given, with the version parameter
+/// (`logVersion` by default) and `scid` ("{SCID}") added if absent.
 pub fn create(gpa: Allocator, input: CreateInput) Error!Created {
     const arena = try newArena(gpa);
     errdefer freeArena(arena);
@@ -113,7 +116,7 @@ pub fn create(gpa: Allocator, input: CreateInput) Error!Created {
 
     if (input.parameters != .object) return error.InvalidLog;
     var params = input.parameters;
-    if (params.get("logVersion") == null) params = try json.with(a, params, "logVersion", .{ .string = log_version });
+    if (params.get(input.version_parameter) == null) params = try json.with(a, params, try a.dupe(u8, input.version_parameter), .{ .string = try a.dupe(u8, input.version) });
     if (params.get("scid") == null) params = try json.with(a, params, "scid", .{ .string = scid_placeholder });
 
     var members: std.ArrayList(Member) = .empty;

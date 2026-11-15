@@ -14,6 +14,7 @@ pub const time = @import("time.zig");
 pub const log = @import("log.zig");
 pub const resolver = @import("resolve.zig");
 pub const ops = @import("ops.zig");
+pub const didvh = @import("didvh.zig");
 
 pub const Value = json.Value;
 pub const Member = json.Member;
@@ -64,6 +65,8 @@ pub const ResolveOptions = resolver.Options;
 pub const Resolution = resolver.Resolution;
 pub const CopyInput = resolver.CopyInput;
 pub const WitnessInput = resolver.WitnessInput;
+/// How a method specialises VH-Log (did:vh: `didvh.specialisation`).
+pub const Specialisation = resolver.Specialisation;
 
 test {
     std.testing.refAllDecls(@This());

@@ -8,6 +8,7 @@ const proof = @import("proof.zig");
 const log = @import("log.zig");
 const time = @import("time.zig");
 const resolver = @import("resolve.zig");
+const didvh = @import("didvh.zig");
 const Allocator = std.mem.Allocator;
 const Value = json.Value;
 const Member = json.Member;
@@ -59,6 +60,13 @@ const Ctx = struct {
 fn single(a: Allocator, key: []const u8, value: Value) Allocator.Error!Value {
     const m = try a.alloc(Member, 1);
     m[0] = .{ .key = key, .value = value };
+    return .{ .object = m };
+}
+
+fn pair(a: Allocator, k1: []const u8, v1: Value, k2: []const u8, v2: Value) Allocator.Error!Value {
+    const m = try a.alloc(Member, 2);
+    m[0] = .{ .key = k1, .value = v1 };
+    m[1] = .{ .key = k2, .value = v2 };
     return .{ .object = m };
 }
 
@@ -164,6 +172,68 @@ fn dispatch(c: *Ctx, op: []const u8, input: Value) OpError!Value {
     }
     if (eq(u8, op, "resolve")) {
         return resolveOp(c, input);
+    }
+    if (eq(u8, op, "didvh-create")) {
+        const r = didvh.create(a, .{
+            .document = try c.obj(input, "document"),
+            .parameters = try c.obj(input, "parameters"),
+            .version_time = try c.str(input, "versionTime"),
+            .signers = try c.signers(input),
+        }) catch |err| return mapLog(c, err);
+        const m = try a.alloc(Member, 4);
+        m[0] = .{ .key = "log", .value = str(r.created.log) };
+        m[1] = .{ .key = "did", .value = str(r.did) };
+        m[2] = .{ .key = "scid", .value = str(r.created.scid) };
+        m[3] = .{ .key = "versionId", .value = str(r.created.version_id) };
+        return .{ .object = m };
+    }
+    if (eq(u8, op, "didvh-update")) {
+        const r = didvh.update(a, try c.str(input, "log"), .{
+            .document = try c.obj(input, "document"),
+            .parameters = try c.obj(input, "parameters"),
+            .version_time = try c.str(input, "versionTime"),
+            .signers = try c.signers(input),
+        }) catch |err| return mapLog(c, err);
+        const m = try a.alloc(Member, 2);
+        m[0] = .{ .key = "log", .value = str(r.log) };
+        m[1] = .{ .key = "versionId", .value = str(r.version_id) };
+        return .{ .object = m };
+    }
+    if (eq(u8, op, "didvh-resolve")) {
+        const now = time.parse(try c.str(input, "now")) orelse return c.bad("input.now is not a valid timestamp", .{});
+        const remote = if (input.get("remote")) |r| r == .bool and r.bool else false;
+        return didvh.resolve(a, input.get("did") orelse .null, input.get("options") orelse .null, .{ .now = now, .remote = remote });
+    }
+    if (eq(u8, op, "didvh-ref")) {
+        const ref = input.get("ref") orelse Value.null;
+        const kind = if (ref == .string) try didvh.referenceKind(a, ref.string) else null;
+        if (kind) |k| return pair(a, "valid", .{ .bool = true }, "kind", str(@tagName(k)));
+        return pair(a, "valid", .{ .bool = false }, "error", str("invalidOptions"));
+    }
+    if (eq(u8, op, "didvh-src")) {
+        const src = input.get("src") orelse Value.null;
+        const refs = if (src == .string) try didvh.srcReferences(a, src.string) else null;
+        if (refs) |r| {
+            const m = try a.alloc(Member, 3);
+            m[0] = .{ .key = "valid", .value = .{ .bool = true } };
+            m[1] = .{ .key = "srcLog", .value = str(r.src_log) };
+            m[2] = .{ .key = "srcWitness", .value = str(r.src_witness) };
+            return .{ .object = m };
+        }
+        return pair(a, "valid", .{ .bool = false }, "error", str("invalidDidUrl"));
+    }
+    if (eq(u8, op, "didvh-did-url")) {
+        const url = input.get("didUrl") orelse Value.null;
+        const parsed = if (url == .string) try didvh.parseDidUrl(a, url.string) else null;
+        if (parsed) |d| {
+            var m: std.ArrayList(Member) = .empty;
+            try m.append(a, .{ .key = "valid", .value = .{ .bool = true } });
+            try m.append(a, .{ .key = "did", .value = str(d.did) });
+            try m.append(a, .{ .key = "options", .value = d.options });
+            if (d.fragment) |f| try m.append(a, .{ .key = "fragment", .value = str(f) });
+            return .{ .object = m.items };
+        }
+        return pair(a, "valid", .{ .bool = false }, "error", str("invalidDidUrl"));
     }
     return c.bad("unknown op {s}", .{op});
 }

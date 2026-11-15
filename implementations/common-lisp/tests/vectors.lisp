@@ -133,3 +133,122 @@
                    (when (resolution-valid-p r)
                      (is (same (jget expected "state") (resolution-state r)))
                      (is-equal (jget expected "versionId") (jget (resolution-metadata r) "versionId")))))))))
+
+;;; ------------------------------------------------------------ did:vh
+
+(defun didvh-vector (name) (load-vector (concatenate 'string "didvh/" name)))
+
+(deftest didvh-reference-vectors
+  (loop for c across (jget (didvh-vector "ref.json") "cases")
+        for kind = (reference-kind (jget c "ref"))
+        do (is (same (jget c "expect")
+                     (if kind (make-json "valid" :true "kind" kind) (make-json "valid" :false "error" "invalidOptions")))
+               "ref/~a: got ~a" (jget c "name") kind)))
+
+(deftest didvh-src-vectors
+  (loop for c across (jget (didvh-vector "src.json") "cases")
+        do (multiple-value-bind (src-log src-witness) (src-references (jget c "src"))
+             (is (same (jget c "expect")
+                       (if src-log
+                           (make-json "valid" :true "srcLog" src-log "srcWitness" src-witness)
+                           (make-json "valid" :false "error" "invalidDidUrl")))
+                 "src/~a: got ~a" (jget c "name") src-log))))
+
+(deftest didvh-did-url-vectors
+  (loop for c across (jget (didvh-vector "did-url.json") "cases")
+        do (multiple-value-bind (did options fragment) (parse-did-vh-url (jget c "didUrl"))
+             (let ((got (if did
+                            (apply #'make-json "valid" :true "did" did "options" options
+                                   (when fragment (list "fragment" fragment)))
+                            (make-json "valid" :false "error" "invalidDidUrl"))))
+               (is (same (jget c "expect") got) "did-url/~a: got ~a" (jget c "name") (to-json got))))))
+
+(defun did-resolution-problems (expect got)
+  "Mirrors compareDidResolution in harness/run.ts."
+  (let ((problems '())
+        (meta (jget got "didResolutionMetadata")))
+    (flet ((problem (control &rest args) (push (apply #'format nil control args) problems)))
+      (cond ((jhas expect "error")
+             (unless (equal (jget expect "error") (jget meta "error"))
+               (problem "error: expected ~a, got ~a" (jget expect "error") (jget meta "error")))
+             (when (and (jhas expect "vhLogError")
+                        (not (equal (jget expect "vhLogError") (jget (jget (jget meta "problemDetails") "vhLog") "code"))))
+               (problem "vhLog code: expected ~a" (jget expect "vhLogError")))
+             (unless (eq (jget got "didDocument") :null) (problem "didDocument must be null")))
+            (t
+             (when (jhas meta "error") (problem "unexpected error ~a" (to-json meta)))
+             (unless (equal (jget meta "contentType") "application/did+json") (problem "contentType"))
+             (unless (same (jget expect "didDocument") (jget got "didDocument")) (problem "didDocument differs"))
+             (unless (same (jget expect "didDocumentMetadata") (jget got "didDocumentMetadata"))
+               (problem "didDocumentMetadata: got ~a" (to-json (jget got "didDocumentMetadata"))))
+             (let ((want (sort (coerce (jget expect "warnings" #()) 'list) #'string<))
+                   (have (sort (map 'list (lambda (w) (jget w "code")) (jget meta "warnings" #())) #'string<)))
+               (unless (equal want have) (problem "warnings: got ~a" have)))
+             (dolist (key '("didLog" "didWitness"))
+               (unless (same (jget expect key :null) (jget meta key :null))
+                 (problem "didResolutionMetadata.~a differs" key))))))
+    (nreverse problems)))
+
+(defun resolve-did-case (input)
+  (resolve-did-vh (jget input "did") (jget input "options")
+                  :now (jget input "now") :remote (eq (jget input "remote") :true)))
+
+(deftest didvh-resolution-vectors
+  (dolist (file (directory (merge-pathnames "didvh/resolution/*.json" *vectors*)))
+    (loop for c across (jget (parse-json (read-text file)) "cases")
+          for problems = (did-resolution-problems (jget c "expect") (resolve-did-case (jget c "input")))
+          do (is (null problems) "didvh ~a/~a: ~{~a~^; ~}" (pathname-name file) (jget c "name") problems))))
+
+(deftest didvh-generation-vectors
+  (loop for scenario across (jget (didvh-vector "generation.json") "scenarios")
+        do (let ((log "") (scid "") (version-ids '()))
+             (loop for step across (jget scenario "steps")
+                   for i from 1
+                   for create-p = (string= (jget step "op") "didvh-create")
+                   for in = (if create-p (jget step "input") (replace-scid (jget step "input") scid))
+                   for expect = (jget step "expect")
+                   for signers = (map 'list #'make-signer (jget in "signers"))
+                   do (if create-p
+                          (multiple-value-bind (new-log did new-scid version-id)
+                              (create-did-vh :document (jget in "document") :parameters (jget in "parameters")
+                                             :version-time (jget in "versionTime") :signers signers)
+                            (setf log new-log scid new-scid)
+                            (push version-id version-ids)
+                            (is-equal (jget expect "did") did)
+                            (is-equal (jget expect "scid") new-scid))
+                          (multiple-value-bind (new-log version-id)
+                              (update-did-vh log :document (jget in "document") :parameters (jget in "parameters")
+                                                 :version-time (jget in "versionTime") :signers signers)
+                            (setf log new-log)
+                            (push version-id version-ids)))
+                      (is-equal (jget expect "versionId") (first version-ids))
+                      (is (same (jget expect "line") (parse-json (car (last (split-log-lines log)))))
+                          "~a step ~d line" (jget scenario "name") i))
+             (setf version-ids (reverse version-ids))
+             (let* ((witness (multiple-value-bind (spec present) (jget scenario "witness")
+                               (and present
+                                    (map 'vector (lambda (w)
+                                                   (let ((id (nth (1- (round (jget w "step"))) version-ids)))
+                                                     (make-json "versionId" id
+                                                                "proof" (map 'vector (lambda (seed) (witness-proof id (make-signer seed)))
+                                                                             (jget w "seeds")))))
+                                         spec))))
+                    (expected (jget scenario "resolve"))
+                    (options (if witness (make-json "didLog" log "didWitness" witness) (make-json "didLog" log)))
+                    (got (resolve-did-vh (jget expected "did") options :now (jget expected "now")))
+                    (problems (did-resolution-problems
+                               (make-json "didDocument" (jget expected "didDocument")
+                                          "didDocumentMetadata" (jget expected "didDocumentMetadata"))
+                               got)))
+               (is (null problems) "didvh generation ~a resolves: ~{~a~^; ~}" (jget scenario "name") problems)))))
+
+(deftest vh-log-ignores-did-vh-rules
+  ;; Plain VH-Log keeps open parameters and no state check.
+  (let* ((key (make-signer *seed-1*))
+         (log (create-log :state (make-json "anything" "{SCID}")
+                          :parameters (make-json "updateKeys" (vector (signer-multikey key)) "custom" 1d0)
+                          :version-time "2026-01-01T00:00:00Z" :signers (list key))))
+    (is (resolution-valid-p (resolve log :now *now*)))
+    (let ((r (resolve log :now *now* :specialisation (did-vh-specialisation))))
+      (is (not (resolution-valid-p r)))
+      (is-equal "invalid-parameter" (log-error-code (resolution-error r))))))
