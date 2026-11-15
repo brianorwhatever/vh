@@ -46,11 +46,39 @@ When a later entry is invalid, resolution still succeeds with the valid prefix
 and reports where the log breaks in `resolution.first_invalid_version` and
 `resolution.error`.
 
+### did:vh
+
+`VHLog.DidVh` implements [did:vh](../../docs/didvh-profile.md) on top of the
+VH-Log verifier, which it calls with the did:vh `VHLog.Specialisation`:
+
+```elixir
+%{log: log, did: did} =
+  VHLog.DidVh.create(
+    %{"id" => "did:vh:{SCID}"},
+    %{"updateKeys" => [key]},
+    "2026-01-01T00:00:00Z",
+    [seed]
+  )
+
+result = VHLog.DidVh.resolve(did, %{"didLog" => log}, now: "2026-06-01T00:00:00Z")
+result["didDocument"]["id"]               #=> did
+result["didDocumentMetadata"]["versionId"] #=> "1-Qm…"
+
+{:ok, %{did: ^did, options: %{"versionNumber" => 1}}} =
+  VHLog.DidVh.parse_did_url(did <> "?versionNumber=1")
+```
+
+`resolve/3` is offline (`srcLog` gives `featureNotSupported`) and returns
+DID Resolution errors in `didResolutionMetadata`; `check_ref/1`,
+`src_references/1` and `parse_did_url/1` return `{:error, code, message}`.
+
 ### Modules
 
 | Module | Purpose |
 | --- | --- |
 | `VHLog` | `create/1`, `update/2`, `witness_proof/2`, `verify/2`, `resolve/2` |
+| `VHLog.DidVh` | did:vh: create/update, DIDs, DID URLs, `srcLog`/`src` references, resolution |
+| `VHLog.Specialisation` | What a VH-Log specialisation (did:vh) changes in verification |
 | `VHLog.Verifier` | Per-entry checks (profile §4) as a fold, then witness verification |
 | `VHLog.Resolver` | Version selection, partial validity, copies, retained versionId |
 | `VHLog.Parameters` | Parameter validation, inheritance and pre-rotation |

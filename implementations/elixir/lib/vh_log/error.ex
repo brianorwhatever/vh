@@ -22,6 +22,7 @@ defmodule VHLog.Error do
     :invalid_version_time,
     :future_version_time,
     :scid_mismatch,
+    :invalid_state,
     :entry_after_deactivation,
     :witness_threshold_not_met,
     :invalid_witness_file,
@@ -46,6 +47,7 @@ defmodule VHLog.Error do
           | :invalid_version_time
           | :future_version_time
           | :scid_mismatch
+          | :invalid_state
           | :entry_after_deactivation
           | :witness_threshold_not_met
           | :invalid_witness_file

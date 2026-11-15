@@ -39,5 +39,12 @@ pub fn resolve_text(log: String) -> json.Json {
 [driver operations](../../docs/interop-protocol.md). `json_value.parse` rejects
 unsafe JSON and explicitly applies last-value-wins handling to duplicate keys.
 Resolution includes witnesses, key rotation, partial validity, selectors, and
-copy/fork metadata. Controller calls expect well-typed input; the driver catches
+copy/fork metadata.
+
+`vh_log/didvh` implements [did:vh](../../docs/didvh-profile.md) on top of the
+same verifier, which it calls with a `vh_log.Spec` (version parameter
+`method`, a closed parameter set and the `state.id` check): `create`,
+`update`, `parse_did`, `parse_did_url`, `check_ref`, `src_references` and an
+offline `resolve(did, options, now, remote)` that returns the DID Resolution
+result. `vh_log/driver` routes the `didvh-*` driver operations to it. Controller calls expect well-typed input; the driver catches
 invalid-request exceptions without terminating the stream.

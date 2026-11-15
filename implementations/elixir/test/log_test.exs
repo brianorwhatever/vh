@@ -224,6 +224,6 @@ defmodule VHLog.LogTest do
 
   test "error codes have wire names" do
     assert "witness-threshold-not-met" in Enum.map(Error.codes(), &Error.code_string/1)
-    assert length(Error.codes()) == 20
+    assert length(Error.codes()) == 21
   end
 end

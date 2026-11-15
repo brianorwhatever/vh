@@ -106,15 +106,23 @@ defmodule VHLog.Log do
   end
 
   @doc """
-  Creates a log. `parameters` gets `logVersion` and `scid: "{SCID}"` if they
-  are absent.
+  Creates a log. `parameters` gets the version parameter and `scid: "{SCID}"`
+  if they are absent. A specialisation passes its own version parameter and
+  value (did:vh uses `method` / `did:vh:1.0`).
   """
-  @spec create(entry(), entry(), String.t(), [String.t()]) ::
+  @spec create(entry(), entry(), String.t(), [String.t()], String.t(), String.t()) ::
           %{log: String.t(), scid: String.t(), version_id: String.t()}
-  def create(state, parameters, version_time, signers) do
+  def create(
+        state,
+        parameters,
+        version_time,
+        signers,
+        version_parameter \\ "logVersion",
+        version \\ @log_version
+      ) do
     parameters =
       parameters
-      |> Map.put_new("logVersion", @log_version)
+      |> Map.put_new(version_parameter, version)
       |> Map.put_new("scid", @scid_placeholder)
 
     body = %{"versionTime" => version_time, "parameters" => parameters, "state" => state}
