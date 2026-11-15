@@ -293,7 +293,8 @@
         "PATH_PREPEND": [
           "/opt/homebrew/opt/openjdk@21/bin"
         ]
-      }
+      },
+      "didvh": true
     },
     {
       "name": "lua",
