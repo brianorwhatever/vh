@@ -160,7 +160,7 @@ const MOVEMENTS = [
       swift: { ranges: [["swift/Sources/VHLog/Verify.swift", 276, 285]], marks: [[1, "Multihash.check(scid)"], [2, "entry.removing(\"proof\").setting(\"versionId\", .string(scidPlaceholder))"], [3, "replacingText(in: preliminary, scid, with: scidPlaceholder)"], [4, "computeScid(restored)"], [4, "bytesEqual(computed, scid)"]] },
       kotlin: { ranges: [["kotlin/src/main/kotlin/org/vhlog/Verify.kt", 219, 234]], marks: [[1, "Hashes.checkSha256Multihash(scid)"], [2, "entry.without(\"proof\").with(\"versionId\", JsonString(LogController.SCID_PLACEHOLDER))"], [3, "LogController.replaceInText("], [4, "LogController.computeScid(preliminary) != scid"]] },
       zig: { ranges: [["zig/src/resolve.zig", 253, 265], ["zig/src/log.zig", 44, 55]], marks: [[1, "codec.classifyMultihash(a, params.scid)"], [4, "!std.mem.eql(u8, recomputed, params.scid)"], [2, "json.without(a, entry, \"proof\")"], [2, "\"versionId\", .{ .string = scid_placeholder }"], [3, "replaceAll(a, text, the_scid, scid_placeholder)"], [4, "hashValue(allocator, reparsed.value)"]] },
-      "common-lisp": { ranges: [["common-lisp/src/resolve.lisp", 224, 231]], marks: [[1, "(decode-multihash scid) :sha-256"], [2, "(jwith (jwithout json \"proof\") \"versionId\" +scid-placeholder+)"], [3, "(replace-all (to-json preliminary) scid +scid-placeholder+)"], [4, "(string= scid (compute-scid restored))"]] },
+      "common-lisp": { ranges: [["common-lisp/src/resolve.lisp", 256, 263]], marks: [[1, "(decode-multihash scid) :sha-256"], [2, "(jwith (jwithout json \"proof\") \"versionId\" +scid-placeholder+)"], [3, "(replace-all (to-json preliminary) scid +scid-placeholder+)"], [4, "(string= scid (compute-scid restored))"]] },
     },
   },
   {
@@ -193,7 +193,7 @@ const MOVEMENTS = [
       swift: { ranges: [["swift/Sources/VHLog/Verify.swift", 214, 221]], marks: [[1, "let previous, !previous.nextKeyHashes.isEmpty"], [2, "guard let keys = updateKeys else"], [2, "guard nextKeyHashes != nil else"], [3, "Multihash.keyHash(key)"], [4, "containsExactly(previous.nextKeyHashes, "]] },
       kotlin: { ranges: [["kotlin/src/main/kotlin/org/vhlog/Verify.kt", 161, 168]], marks: [[1, "previous != null && previous.nextKeyHashes.isNotEmpty()"], [2, "updateKeys == null"], [2, "nextKeyHashes == null"], [3, "Hashes.keyHash(key)"], [4, "!in previous.nextKeyHashes"]] },
       zig: { ranges: [["zig/src/resolve.zig", 355, 367]], marks: [[1, "pp.next_key_hashes.len > 0"], [2, "update_keys == null"], [2, "next_key_hashes == null"], [3, "codec.hashString(a, key)"], [4, "std.mem.eql(u8, c, h)"]] },
-      "common-lisp": { ranges: [["common-lisp/src/resolve.lisp", 155, 162]], marks: [[1, "(and prior (plusp (length (params-next-key-hashes prior))))"], [2, "(jhas raw \"updateKeys\")"], [2, "(jhas raw \"nextKeyHashes\")"], [3, "(key-hash key)"], [4, "unless (find"], [4, "(params-next-key-hashes prior) :test #'string=)"]] },
+      "common-lisp": { ranges: [["common-lisp/src/resolve.lisp", 187, 194]], marks: [[1, "(and prior (plusp (length (params-next-key-hashes prior))))"], [2, "(jhas raw \"updateKeys\")"], [2, "(jhas raw \"nextKeyHashes\")"], [3, "(key-hash key)"], [4, "unless (find"], [4, "(params-next-key-hashes prior) :test #'string=)"]] },
     },
   },
 ];

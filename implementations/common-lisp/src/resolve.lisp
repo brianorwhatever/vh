@@ -7,8 +7,9 @@
 (defparameter +future-tolerance+ 300 "Seconds a versionTime may be ahead of now.")
 (defparameter +max-ttl+ (expt 2 31))
 (defparameter +supported-log-versions+ (list +log-version+))
-(defparameter +known-parameters+
-  '("logVersion" "scid" "updateKeys" "nextKeyHashes" "witness" "watchers" "deactivated" "ttl"))
+(defparameter +common-parameters+
+  '("scid" "updateKeys" "nextKeyHashes" "witness" "watchers" "deactivated" "ttl")
+  "The known parameters other than the version parameter.")
 (defparameter +entry-keys+ '("versionId" "versionTime" "parameters" "state" "proof"))
 
 ;;; ------------------------------------------------------------ errors
@@ -31,6 +32,29 @@
                          "version" (or (log-error-version e) :null)
                          "message" (log-error-message e))))
     (if (log-error-fork e) (jwith json "fork" (log-error-fork e)) json)))
+
+;;; ------------------------------------------------------------ specialisation
+
+(defstruct specialisation
+  "How a method specialises VH-Log (docs/didvh-profile.md §1). The default
+is plain VH-Log; did:vh builds its own in didvh.lisp."
+  (version-parameter "logVersion")
+  (versions (list +log-version+))
+  ;; NIL, or a predicate on the version string. With a syntax, a missing or
+  ;; malformed value is invalid-parameter and only a well-formed unaccepted
+  ;; value is unsupported-log-version.
+  (version-syntax nil)
+  ;; When true, an unknown parameter is invalid-parameter.
+  (closed nil)
+  ;; NIL, or (lambda (state scid)) returning NIL or a message: run on every
+  ;; entry after the SCID check, failing with invalid-state.
+  (check-state nil))
+
+(defvar *specialisation* (make-specialisation)
+  "The specialisation the resolver verifies with.")
+
+(defun known-parameters ()
+  (cons (specialisation-version-parameter *specialisation*) +common-parameters+))
 
 ;;; ------------------------------------------------------------ state
 
@@ -108,16 +132,24 @@ prefix, FAILURE the LOG-ERROR that invalidated the entry after it (if anything).
 parameters (NIL for the first entry) and returns the new accumulated ones."
   (flet ((bad (control &rest args) (apply #'log-error "invalid-parameter" number control args)))
     (let ((p (if prior (copy-params prior) (make-params))))
-      (dolist (key +known-parameters+)
+      (dolist (key (known-parameters))
         (when (eq (jget raw key) :null) (bad "~a must not be null" key)))
-      (multiple-value-bind (v present) (jget raw "logVersion")
-        (cond (present
-               (unless (stringp v) (bad "logVersion must be a string"))
-               (unless (member v +supported-log-versions+ :test #'string=)
-                 (log-error "unsupported-log-version" number "unsupported logVersion ~s" v))
-               (setf (params-log-version p) v))
-              ((= number 1)
-               (log-error "unsupported-log-version" number "the first entry must set logVersion"))))
+      (when (specialisation-closed *specialisation*)
+        (dolist (key (jkeys raw))
+          (unless (member key (known-parameters) :test #'string=) (bad "unknown parameter ~s" key))))
+      (let* ((s *specialisation*)
+             (key (specialisation-version-parameter s))
+             (syntax (specialisation-version-syntax s)))
+        (multiple-value-bind (v present) (jget raw key)
+          (cond (present
+                 (unless (stringp v) (bad "~a must be a string" key))
+                 (when (and syntax (not (funcall syntax v))) (bad "malformed ~a ~s" key v))
+                 (unless (member v (specialisation-versions s) :test #'string=)
+                   (log-error "unsupported-log-version" number "unsupported ~a ~s" key v))
+                 (setf (params-log-version p) v))
+                ((/= number 1))
+                (syntax (bad "the first entry must set ~a" key))
+                (t (log-error "unsupported-log-version" number "the first entry must set ~a" key)))))
       (multiple-value-bind (v present) (jget raw "scid")
         (cond ((and present (> number 1)) (bad "scid may only appear in the first entry"))
               (present (unless (stringp v) (bad "scid must be a string"))
@@ -254,6 +286,9 @@ why the line isn't a JSON object."
     (check-version-id json number (if previous (log-entry-version-id previous) (params-scid params)))
     (let ((time (check-version-time json number previous now)))
       (when (= number 1) (check-scid json (params-scid params)))
+      (let* ((check (specialisation-check-state *specialisation*))
+             (problem (and check (funcall check (jget json "state") (params-scid params)))))
+        (when problem (log-error "invalid-state" number "~a" problem)))
       (make-log-entry :number number
                       :version-id (jget json "versionId")
                       :version-time (jget json "versionTime")
@@ -519,13 +554,15 @@ resolved version, and FIRST-INVALID-VERSION / ERROR any invalid tail."
   (string-downcase (symbol-name status)))
 
 (defun resolve (log-text &key (witness nil witness-p) now options
-                              (copies nil copies-p) retained-version-id)
+                              (copies nil copies-p) retained-version-id
+                              ((:specialisation *specialisation*) *specialisation*))
   "Resolves LOG-TEXT (spec: Read), returning a RESOLUTION.
 WITNESS is the parsed witness file (omit it if there is none). NOW is an ISO
 8601 UTC time. OPTIONS is a JSON object of resolution options (versionId,
 versionTime, versionNumber, minCopies). COPIES are other copies, each a plist
 (:source S :log TEXT [:witness W]) or (:source S :unavailable REASON).
-RETAINED-VERSION-ID is a versionId kept from an earlier resolution."
+RETAINED-VERSION-ID is a versionId kept from an earlier resolution.
+SPECIALISATION (default: plain VH-Log) is a method's SPECIALISATION."
   (let ((now (or (parse-version-time now) (error "now must be an ISO 8601 UTC time"))))
     (handler-case
         (multiple-value-bind (selector min-copies) (parse-options options)

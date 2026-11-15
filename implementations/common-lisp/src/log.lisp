@@ -46,13 +46,15 @@ predecessor's versionId (the SCID for the first entry)."
                 collect (sign-document entry signer :created created))
           'simple-vector))
 
-(defun create-log (&key state parameters version-time signers)
+(defun create-log (&key state parameters version-time signers
+                        (version (cons "logVersion" +log-version+)))
   "Creates a log (spec: Create). STATE and PARAMETERS may contain the
-\"{SCID}\" placeholder; \"scid\" and \"logVersion\" are added when absent.
+\"{SCID}\" placeholder; \"scid\" and the VERSION parameter (a (name . value)
+pair, \"logVersion\" by default) are added when absent.
 SIGNERS each add one proof. Generators don't check semantics (profile §5).
 Returns (values LOG-TEXT SCID VERSION-ID)."
   (let* ((parameters (or parameters (make-json)))
-         (parameters (if (jhas parameters "logVersion") parameters (jwith parameters "logVersion" +log-version+)))
+         (parameters (if (jhas parameters (car version)) parameters (jwith parameters (car version) (cdr version))))
          (parameters (if (jhas parameters "scid") parameters (jwith parameters "scid" +scid-placeholder+)))
          (preliminary (ordered-entry +scid-placeholder+ version-time parameters (or state (make-json))))
          (scid (compute-scid preliminary))
