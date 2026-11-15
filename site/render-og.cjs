@@ -16,7 +16,7 @@ const ink = '#1c1823', rule = '#d2cfd8', highlight = '#fae0ff', accent = '#a800b
 ctx.fillStyle = '#faf9fd'; ctx.fillRect(0, 0, 1200, 630);
 ctx.fillStyle = ink; ctx.font = '190px Newsreader'; ctx.fillText('vh', 56, 280);
 ctx.font = '38px Newsreader';
-const headline = `VH-Log in ${count} languages that produce the same bytes.`;
+const headline = `VH-Log and did:vh in ${count} languages that produce the same bytes.`;
 let line = '', y = 371;
 for (const word of headline.split(' ')) {
   if (line && ctx.measureText(line + ' ' + word).width > 410) { ctx.fillText(line, 56, y); y += 42.56; line = word; }
