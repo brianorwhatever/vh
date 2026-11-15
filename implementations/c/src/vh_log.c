@@ -251,15 +251,88 @@ static char *binary64_tokens(vh_context *c, const char *input) {
     }
     return b.data ? b.data : text(c, "");
 }
+/* Strict UTF-8 (RFC 3629): no overlong forms, surrogates or code points above
+ * U+10FFFF. Checked here rather than with json-c's JSON_TOKENER_VALIDATE_UTF8;
+ * see ascii_strings for why. */
+static int valid_utf8(const char *text) {
+    const unsigned char *p = (const unsigned char *)text;
+    while (*p) {
+        unsigned char b = *p;
+        size_t extra;
+        unsigned int cp, min;
+        if (b < 0x80) {
+            p++;
+            continue;
+        } else if ((b & 0xE0) == 0xC0) {
+            extra = 1, cp = b & 0x1F, min = 0x80;
+        } else if ((b & 0xF0) == 0xE0) {
+            extra = 2, cp = b & 0x0F, min = 0x800;
+        } else if ((b & 0xF8) == 0xF0) {
+            extra = 3, cp = b & 0x07, min = 0x10000;
+        } else {
+            return 0;
+        }
+        for (size_t i = 1; i <= extra; i++) {
+            if ((p[i] & 0xC0) != 0x80)
+                return 0;
+            cp = (cp << 6) | (p[i] & 0x3F);
+        }
+        if (cp < min || cp > 0x10FFFF || (cp >= 0xD800 && cp <= 0xDFFF))
+            return 0;
+        p += extra + 1;
+    }
+    return 1;
+}
+/* json-c 0.18 compares a plain (signed) char with 0x1f in JSON_TOKENER_STRICT
+ * mode, so it rejects every non-ASCII byte in a string (fixed in 0.19, absent
+ * in 0.17). Rewriting each non-ASCII character inside a string as a JSON
+ * \\u escape (a surrogate pair above U+FFFF) gives json-c the same text in a form
+ * every version accepts. The input is already valid UTF-8. A character right
+ * after a backslash, or outside a string, is left as it is: that JSON is
+ * invalid either way, and escaping it could make it valid. */
+static char *ascii_strings(vh_context *c, const char *input) {
+    Buffer b = {0};
+    const unsigned char *p = (const unsigned char *)input;
+    int quoted = 0;
+    while (*p) {
+        unsigned char ch = *p;
+        if (quoted && ch == '\\' && p[1]) {
+            append(c, &b, (const char *)p, 2);
+            p += 2;
+            continue;
+        }
+        if (ch == '"')
+            quoted = !quoted;
+        if (!quoted || ch < 0x80) {
+            addc(c, &b, (char)ch);
+            p++;
+            continue;
+        }
+        size_t extra = ch >= 0xF0 ? 3 : ch >= 0xE0 ? 2 : 1;
+        unsigned int cp = ch & (0x3F >> extra);
+        for (size_t i = 1; i <= extra; i++)
+            cp = (cp << 6) | (p[i] & 0x3F);
+        char escape[13];
+        if (cp > 0xFFFF) {
+            cp -= 0x10000;
+            snprintf(escape, sizeof escape, "\\u%04x\\u%04x", 0xD800 + (cp >> 10), 0xDC00 + (cp & 0x3FF));
+        } else {
+            snprintf(escape, sizeof escape, "\\u%04x", cp);
+        }
+        adds(c, &b, escape);
+        p += extra + 1;
+    }
+    return b.data ? b.data : text(c, "");
+}
 static J *parse(vh_context *c, const char *input, int *valid) {
     *valid = 0;
-    if (!unicode_escapes(input))
+    if (!valid_utf8(input) || !unicode_escapes(input))
         return NULL;
-    input = binary64_tokens(c, input);
+    input = ascii_strings(c, binary64_tokens(c, input));
     struct json_tokener *tok = json_tokener_new();
     if (!tok)
         abort();
-    json_tokener_set_flags(tok, JSON_TOKENER_STRICT | JSON_TOKENER_VALIDATE_UTF8);
+    json_tokener_set_flags(tok, JSON_TOKENER_STRICT);
     size_t n = strlen(input);
     J *v = json_tokener_parse_ex(tok, input, (int)n + 1);
     enum json_tokener_error error = json_tokener_get_error(tok);
