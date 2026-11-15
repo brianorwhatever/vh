@@ -387,6 +387,17 @@ h2 { font-size: var(--t-h2); font-weight: 480; line-height: 1.02; letter-spacing
 .choices { padding-left: 1.1em; display: grid; gap: var(--s-2); }
 .choices li::marker { color: var(--ink-2); }
 .choices code { font-size: 0.8125rem; }
+.didvh .section-lede code, .didvh .open-grid code { font-size: 0.8125rem; }
+.didvh .total { font-size: var(--t-small); color: var(--ink-2); }
+.didvh .total .num { color: var(--ink); font-size: 1.25rem; }
+.specialise { margin: 0; }
+.specialise table { width: 100%; border-collapse: collapse; font-size: var(--t-small); }
+.specialise caption { caption-side: bottom; text-align: left; font-style: italic; color: var(--ink-2); padding-top: var(--s-3); }
+.specialise th, .specialise td { text-align: left; vertical-align: top; padding: var(--s-2) var(--s-3) var(--s-2) 0; border-top: 1px solid var(--rule); }
+.specialise thead th { font-weight: 620; border-top: 0; }
+.specialise thead td { border-top: 0; }
+.specialise tbody th { font-weight: 450; color: var(--ink-2); white-space: nowrap; }
+.specialise code { font-size: 0.8125rem; overflow-wrap: anywhere; }
 
 /* ---- Add a language ----------------------------------------------------------------- */
 

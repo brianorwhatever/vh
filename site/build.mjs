@@ -379,7 +379,20 @@ const spec = JSON.parse(fs.readFileSync(path.join(ROOT, "spec.lock.json"), "utf8
 // The driver operations, read from the protocol document so the list can't drift.
 const protocol = fs.readFileSync(path.join(ROOT, "docs/interop-protocol.md"), "utf8");
 const OPS = [...new Set([...protocol.matchAll(/^\| `([a-z-]+)` \|/gm), ...protocol.matchAll(/"op": "([a-z-]+)"/g)].map((m) => m[1]))];
-const specNotes = (fs.readFileSync(path.join(ROOT, "docs/spec-notes.md"), "utf8").match(/^\d+\. \*\*/gm) || []).length;
+const notesText = fs.readFileSync(path.join(ROOT, "docs/spec-notes.md"), "utf8");
+const countNotes = (t) => (t.match(/^\d+\. \*\*/gm) || []).length;
+const specNotes = countNotes(notesText);
+const didvhNotes = countNotes(notesText.slice(notesText.indexOf("\n## did:vh")));
+const vhlogNotes = specNotes - didvhNotes;
+// did:vh facts, read from the pinned spec and the vectors so they can't drift.
+const didvhSpec = spec.didvh;
+const DIDVH = path.join(ROOT, "vectors/didvh");
+const didvhCases = (f) => JSON.parse(fs.readFileSync(path.join(DIDVH, f), "utf8")).cases.length;
+const didvhResolution = fs.readdirSync(path.join(DIDVH, "resolution")).reduce((a, f) => a + didvhCases(`resolution/${f}`), 0);
+const didvhSyntax = didvhCases("ref.json") + didvhCases("src.json") + didvhCases("did-url.json");
+const didvhImpls = JSON.parse(fs.readFileSync(path.join(ROOT, "implementations.json"), "utf8")).implementations.filter((i) => i.didvh).length;
+const didvhSuite = matrix.suites.indexOf("did:vh");
+const didvhChecks = didvhSuite === -1 ? 0 : matrix.perImpl.typescript[didvhSuite].n;
 const fmt = (n) => n.toLocaleString("en-US");
 const short = Object.fromEntries(LANGS.map((l) => [l.id, l.short]));
 for (const name of matrix.producers) if (!short[name]) console.warn(`warning: ${name} is in the README matrix but not in LANGS; add its part to site/build.mjs`);
@@ -423,11 +436,11 @@ const html = `<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>vh: VH-Log in ${N} languages, side by side</title>
-<meta name="description" content="${Ncap} implementations of VH-Log (${LANGS.map((l) => l.name).join(", ")}) that produce the same bytes, with their code compared where it matters.">
+<title>vh: VH-Log and did:vh in ${N} languages, side by side</title>
+<meta name="description" content="${Ncap} implementations of VH-Log and did:vh (${LANGS.map((l) => l.name).join(", ")}) that produce the same bytes, with their code compared where it matters.">
 <meta name="color-scheme" content="light dark">
-<meta property="og:title" content="vh: VH-Log in ${N} languages, side by side">
-<meta property="og:description" content="${Ncap} implementations that produce the same bytes, checked against each other on every push.">
+<meta property="og:title" content="vh: VH-Log and did:vh in ${N} languages, side by side">
+<meta property="og:description" content="${Ncap} implementations of VH-Log and did:vh that produce the same bytes, checked against each other on every push.">
 <meta property="og:image" content="https://brianorwhatever.github.io/vh/og.png?v=${socialImageVersion}">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
@@ -442,10 +455,10 @@ const html = `<!doctype html>
 <header class="masthead">
   <div class="title">
     <h1>vh</h1>
-    <p class="line">${Ncap} implementations of VH&#8209;Log that produce the same&nbsp;bytes.</p>
+    <p class="line">${Ncap} implementations of VH&#8209;Log and did:vh that produce the same&nbsp;bytes.</p>
   </div>
   <div class="intro">
-    <p>${NAMES}, checked against each other and against <span class="nw">didwebvh-ts</span> on every push. Below: four algorithms that matter, in all ${N}, one beat at a time, followed by <a href="#benchmarks">measured driver benchmarks</a>.</p>
+    <p>${NAMES}, checked against each other and against <span class="nw">didwebvh-ts</span> on every push. Every one also resolves <a href="#didvh">did:vh</a> DIDs on the same log code. Below: four algorithms that matter, in all ${N}, one beat at a time, followed by <a href="#benchmarks">measured driver benchmarks</a>.</p>
     <a class="action" href="${REPO}">Source on GitHub</a>
   </div>
 </header>
@@ -476,6 +489,31 @@ const html = `<!doctype html>
     </div>
   </section>
 
+  <section class="open didvh" aria-labelledby="didvh">
+    <h2 id="didvh">did:vh, on the same log</h2>
+    <p class="section-lede">A did:vh DID is <code>did:vh:&lt;SCID&gt;</code>, with no location in it. The client brings the log, and the resolver checks it.</p>
+    <div class="open-grid">
+      <div>
+        <p><a href="${didvhSpec.rendered}">did:vh</a> and VH-Log both come from did:webvh, so a did:vh DID log is a VH-Log log: the same entries, SCID, entry hashes, proofs, pre-rotation and witnesses. ${didvhImpls === N ? `All ${N}` : `${didvhImpls} of the ${N}`} implementations verify it with their VH-Log code, given a small <i>specialisation</i> for the rules did:vh adds, then put the DID layer on top: DID and DID URL parsing, <code>srcLog</code>, <code>srcWitness</code> and <code>src</code> references, resolution options, and DID Resolution metadata and errors.</p>
+        <p>The resolvers are offline. They verify a log passed in <code>didLog</code> and return <code>featureNotSupported</code> where they would have to fetch something.</p>
+        <p class="total"><span class="num">${fmt(didvhChecks)}</span> did:vh checks per implementation: ${fmt(didvhResolution)} resolution vectors, ${fmt(didvhSyntax)} reference, <code>src</code> and DID URL cases, and every implementation resolving the DID logs every other one generated.</p>
+        <p><a href="${REPO}/blob/${REF}/docs/didvh-profile.md">The did:vh interop profile</a> · <a href="${REPO}/tree/${REF}/vectors/didvh">did:vh vectors</a></p>
+      </div>
+      <figure class="specialise">
+        <table>
+          <caption>What the specialisation changes. Everything else is VH-Log.</caption>
+          <thead><tr><td></td><th scope="col">VH-Log</th><th scope="col">did:vh</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Version parameter</th><td><code>logVersion: "vh-log:1.0"</code></td><td><code>method: "did:vh:1.0"</code></td></tr>
+            <tr><th scope="row">Other parameters</th><td>unknown ones ignored</td><td>a closed set; <code>portable</code> is rejected</td></tr>
+            <tr><th scope="row"><code>state</code></th><td>any object</td><td>a DID document whose <code>id</code> is <code>did:vh:&lt;SCID&gt;</code>, in every entry</td></tr>
+            <tr><th scope="row">New error</th><td>none</td><td><code>invalid-state</code></td></tr>
+          </tbody>
+        </table>
+      </figure>
+    </div>
+  </section>
+
   ${benchmarkHTML}
 
   <section class="parts" aria-labelledby="parts">
@@ -490,7 +528,7 @@ const html = `<!doctype html>
     <h2 id="open">What the spec leaves open</h2>
     <div class="open-grid">
       <div>
-        <p>Building it ${N} times turned up ${specNotes} notes on the spec. The first one: the worked example in <i>Generate Entry Hash</i> does not reproduce.</p>
+        <p>Building it ${N} times turned up ${vhlogNotes} notes on VH-Log and ${didvhNotes} on did:vh. The first one: the worked example in <i>Generate Entry Hash</i> does not reproduce.</p>
         <figure class="hashes">
           <div><span class="label">The spec states</span><code><del>QmQ6FJ4fk2xheSSQoEjVpTgx9AQPKhJgtR9hn1nr4EeCrZ</del></code></div>
           <div><span class="label">All ${N} compute, and so does didwebvh-ts</span><code>QmXoHG2Z6Hg1kmryaRxcqgzF6nv2vgLZnYHvGirL9t2a8U</code></div>
@@ -498,13 +536,14 @@ const html = `<!doctype html>
         <p><a href="${REPO}/blob/${REF}/docs/spec-notes.md">All ${specNotes} spec notes</a></p>
       </div>
       <div>
-        <p>Where the spec leaves a choice open, the <a href="${REPO}/blob/${REF}/docs/profile.md">interop profile</a> makes it once, for all ${N}:</p>
+        <p>Where the spec leaves a choice open, the <a href="${REPO}/blob/${REF}/docs/profile.md">interop profile</a> (and the <a href="${REPO}/blob/${REF}/docs/didvh-profile.md">did:vh profile</a> on top of it) makes it once, for all ${N}:</p>
         <ul class="choices">
           <li>A proof names its key as <code>did:key:&lt;mk&gt;#&lt;mk&gt;</code>.</li>
           <li>A witness signs <code>{"versionId": …}</code>, as in did:webvh.</li>
           <li>Every proof on an entry must be valid and authorised, not just one.</li>
           <li>The first invalid entry ends the log. The valid prefix still resolves, with an <code>invalid-entries</code> warning.</li>
           <li>Failures carry one shared error code, found in one shared check order.</li>
+          <li>A did:vh log needs its witness file only if a <em>valid</em> entry turns witnessing on. Six clean-room implementations read this differently from the reference until the profile said so.</li>
         </ul>
       </div>
     </div>
@@ -516,7 +555,7 @@ const html = `<!doctype html>
     <ol class="steps">
       <li>
         <h3>Read the documents, not the code</h3>
-        <p>Work from the <a href="${spec.repository}/tree/${spec.commit}">pinned spec</a>, the <a href="${REPO}/blob/${REF}/docs/profile.md">interop profile</a>, the <a href="${REPO}/blob/${REF}/docs/interop-protocol.md">driver protocol</a> and the shared <a href="${REPO}/tree/${REF}/vectors">vectors</a>. Zig and Common Lisp were built that way, so each is an independent check that the documents are enough. Note anything you had to guess.</p>
+        <p>Work from the pinned <a href="${spec.repository}/tree/${spec.commit}">VH-Log</a> and <a href="${didvhSpec.repository}/tree/${didvhSpec.commit}">did:vh</a> specs, the <a href="${REPO}/blob/${REF}/docs/profile.md">interop profile</a>, the <a href="${REPO}/blob/${REF}/docs/didvh-profile.md">did:vh profile</a>, the <a href="${REPO}/blob/${REF}/docs/interop-protocol.md">driver protocol</a> and the shared <a href="${REPO}/tree/${REF}/vectors">vectors</a>. Zig, Common Lisp, Forth, Raku, OCaml and Ada were built that way, so each is an independent check that the documents are enough. Note anything you had to guess.</p>
       </li>
       <li>
         <h3>Write a driver</h3>
@@ -525,12 +564,13 @@ const html = `<!doctype html>
       </li>
       <li>
         <h3>Register it</h3>
-        <p>Add an entry to <a href="${REPO}/blob/${REF}/implementations.json"><code>implementations.json</code></a>: where it lives, how to build it, how to start the driver.</p>
+        <p>Add an entry to <a href="${REPO}/blob/${REF}/implementations.json"><code>implementations.json</code></a>: where it lives, how to build it, how to start the driver. <code>"didvh": true</code> turns on the did:vh suite once the driver answers the <code>didvh-*</code> operations.</p>
         <pre tabindex="0" aria-label="implementations.json entry"><code>{
   "name": "ocaml",
   "cwd": "implementations/ocaml",
   "build": ["dune", "build"],
-  "command": ["_build/default/bin/vh_log_driver.exe"]
+  "command": ["_build/default/bin/vh_log_driver.exe"],
+  "didvh": true
 }</code></pre>
       </li>
       <li>
@@ -560,7 +600,7 @@ node harness/run.ts                            <span class="c"># everything</spa
 node harness/run.ts --impl rust --impl zig     <span class="c"># a subset</span>
 node harness/run.ts --suite resolution --verbose</code></pre>
   <p>Node 24 runs the harness. Each driver also needs its own toolchain; the <a href="${REPO}/blob/${REF}#development">README lists them</a>.</p>
-  <p class="colophon">VH-Log is <a href="${spec.rendered}">Stephen Curran's Verifiable History Log</a>, pinned here at <a class="nw" href="${spec.repository}/tree/${spec.commit}">swcurran/VH-Log@${spec.commit}</a>. MIT licence. <a href="${REPO}">github.com/brianorwhatever/vh</a></p>
+  <p class="colophon">VH-Log is <a href="${spec.rendered}">Stephen Curran's Verifiable History Log</a>, pinned here at <a class="nw" href="${spec.repository}/tree/${spec.commit}">swcurran/VH-Log@${spec.commit}</a>. <a href="${didvhSpec.rendered}">did:vh</a> is pinned at <a class="nw" href="${didvhSpec.repository}/tree/${didvhSpec.commit}">decentralized-identity/didvh@${didvhSpec.commit}</a>. MIT licence. <a href="${REPO}">github.com/brianorwhatever/vh</a></p>
 </footer>
 <script src="${assetURL("main.js")}" defer></script>
 <script src="${assetURL("benchmarks.js")}" defer></script>
