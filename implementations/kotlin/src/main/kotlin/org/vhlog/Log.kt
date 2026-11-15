@@ -96,11 +96,23 @@ object LogController {
         return Jcs.formatNumber(n.toDouble())
     }
 
-    /** Creates a log whose first entry has [state] and [parameters] (profile §5). */
+    /**
+     * Creates a log whose first entry has [state] and [parameters] (profile §5). A
+     * specialisation passes its own version parameter and value (did:vh uses
+     * `method` / `did:vh:1.0`); either way it is added only if absent.
+     */
     @JvmStatic
-    fun createLog(state: JsonObject, parameters: JsonObject, versionTime: String, signers: List<String>): CreateResult {
+    @JvmOverloads
+    fun createLog(
+        state: JsonObject,
+        parameters: JsonObject,
+        versionTime: String,
+        signers: List<String>,
+        versionParameter: String = "logVersion",
+        version: String = LOG_VERSION,
+    ): CreateResult {
         val params = LinkedHashMap(parameters.members)
-        if ("logVersion" !in params) params["logVersion"] = JsonString(LOG_VERSION)
+        if (versionParameter !in params) params[versionParameter] = JsonString(version)
         if ("scid" !in params) params["scid"] = JsonString(SCID_PLACEHOLDER)
         val body = JsonObject(
             "versionId" to JsonString(SCID_PLACEHOLDER),

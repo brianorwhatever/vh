@@ -80,6 +80,8 @@ data class ResolveRequest @JvmOverloads constructor(
     val copies: List<CopyInput>? = null,
     /** A `versionId` the client retained from an earlier resolution. */
     val retainedVersionId: String? = null,
+    /** Resolves the log as a specialisation of VH-Log, such as did:vh. */
+    val specialisation: Specialisation = Specialisation.VH_LOG,
 ) {
     companion object {
         /**
@@ -233,7 +235,7 @@ object Resolver {
         if (request.copies != null || (request.options.minCopies ?: 1) > 1) {
             resolveCopies(request, now)
         } else {
-            val verified = Verifier.verifyLog(request.log, request.witness, now)
+            val verified = Verifier.verifyLog(request.log, request.witness, now, request.specialisation)
             if (verified.entries.isEmpty()) {
                 ResolveResult.Failed(verified.failure!!)
             } else {
@@ -367,7 +369,7 @@ object Resolver {
         val verifiedCache = HashMap<Int, VerifiedLog>()
         fun verify(i: Int): VerifiedLog = verifiedCache.getOrPut(i) {
             val c = all[i] as CopyInput.Available
-            Verifier.verifyLog(c.log, c.witness, now)
+            Verifier.verifyLog(c.log, c.witness, now, request.specialisation)
         }
         fun markInvalid(i: Int) {
             status[i] = CopyStatus.INVALID
