@@ -311,6 +311,28 @@
       }
     },
     {
+      "name": "raw-non-ascii",
+      "didUrl": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ?versionId=1-é😀",
+      "expect": {
+        "valid": true,
+        "did": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ",
+        "options": {
+          "versionId": "1-é😀"
+        }
+      }
+    },
+    {
+      "name": "raw-and-encoded-non-ascii",
+      "didUrl": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ?versionId=😀%F0%9F%98%80",
+      "expect": {
+        "valid": true,
+        "did": "did:vh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ",
+        "options": {
+          "versionId": "😀😀"
+        }
+      }
+    },
+    {
       "name": "not-did-vh",
       "didUrl": "did:webvh:QmfGEUAcMpzo25kF2Rhn8L5FAXysfGnkzjwdKoNPi615XQ:example.com",
       "expect": {

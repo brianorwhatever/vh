@@ -125,7 +125,11 @@ export function percentDecode(s: string): string | null {
       bytes.push(parseInt(hex, 16));
       i += 2;
     } else {
-      bytes.push(...new TextEncoder().encode(s[i]));
+      // Unescaped characters are taken whole (by code point), not per UTF-16 unit.
+      const ch = String.fromCodePoint(s.codePointAt(i)!);
+      if (!ch.isWellFormed()) return null;
+      bytes.push(...new TextEncoder().encode(ch));
+      i += ch.length - 1;
     }
   }
   try {
