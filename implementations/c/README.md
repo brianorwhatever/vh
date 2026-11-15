@@ -7,6 +7,12 @@ including deterministic creation and updates, pre-rotation, witnesses,
 version selection, partial validity, watcher copies, and fork detection.
 Protocol logic runs in C; it does not call another implementation.
 
+It also implements [did:vh](../../docs/didvh-profile.md): the did:vh log is
+verified by the same VH-Log code with a specialisation (`method`, a closed
+parameter set and the `state.id` check), and the `didvh-*` operations add
+DID creation and update, `srcLog`/`srcWitness` and `src` checks, DID URL
+parsing and offline DID resolution.
+
 The C implementation has a [narrower JSON domain](../../docs/profile.md#c-implementation-restriction):
 object member names containing escaped U+0000 are rejected before json-c can
 truncate them. NUL string values remain supported in canonicalization and
