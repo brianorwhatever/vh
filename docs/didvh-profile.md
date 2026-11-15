@@ -199,8 +199,9 @@ a `file` or `loopback` `srcLog` or `srcWitness` is `invalidOptions`.
    as the spec requires.
 
    **The log needs witnessing** when some *valid* entry needs witnessing: run
-   the per-entry checks (`profile.md` §4 checks 1–7, plus check 8 from §1)
-   without a witness file, and look at the entries before the first one that
+   only the per-entry checks (`profile.md` §4 checks 1–7, plus check 8 from
+   §1 of this profile), with the request's `now`, and skip witness
+   verification entirely. Then look at the entries before the first one that
    fails. The log needs witnessing if the witness list that applies to any of
    those entries (`profile.md` §3) is not `{}`. This follows the spec's "if
    the active parameters of the DID Log require witnesses": a `witness`
