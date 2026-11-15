@@ -31,6 +31,8 @@ pub const ErrorCode = enum {
     min_copies_not_met,
     not_found,
     invalid_option,
+    /// A specialisation's state check failed (did:vh: `state.id`).
+    invalid_state,
 
     /// The profile's spelling, e.g. "invalid-log".
     pub fn name(self: ErrorCode) []const u8 {
@@ -48,6 +50,29 @@ pub const ErrorCode = enum {
 
 /// Future tolerance for versionTime (profile §4).
 pub const future_tolerance_seconds = 300;
+
+/// A per-entry state check (`invalid-state`), run after the SCID check.
+/// Returns null if `state` is acceptable, else why not.
+pub const StateCheck = struct {
+    context: ?*const anyopaque = null,
+    func: *const fn (context: ?*const anyopaque, a: Allocator, state: Value, scid: []const u8) Allocator.Error!?[]const u8,
+};
+
+/// How a method specialises VH-Log (docs/didvh-profile.md §1). The default
+/// value is plain VH-Log.
+pub const Specialisation = struct {
+    /// The version parameter's name.
+    version_parameter: []const u8 = "logVersion",
+    /// Accepted values of the version parameter.
+    versions: []const []const u8 = &.{log.log_version},
+    /// Optional syntax for the version parameter. With one, a missing or
+    /// malformed value is `invalid-parameter`, and only a well-formed value
+    /// that isn't accepted is `unsupported-log-version`.
+    version_syntax: ?*const fn ([]const u8) bool = null,
+    /// A closed parameter set: an unknown parameter is `invalid-parameter`.
+    closed: bool = false,
+    state_check: ?StateCheck = null,
+};
 
 pub const Failure = struct {
     code: ErrorCode,
@@ -161,6 +186,7 @@ const Outcome = union(enum) {
 const Verifier = struct {
     a: Allocator,
     now: i64,
+    spec: Specialisation = .{},
     prev: ?Entry = null,
     scid: []const u8 = "",
     deactivated: bool = false,
@@ -265,6 +291,12 @@ const Verifier = struct {
             v.scid = params.scid;
         }
 
+        // 8. The specialisation's state check (every entry).
+        if (v.spec.state_check) |sc| {
+            if (try sc.func(sc.context, a, entry.get("state").?, v.scid)) |why|
+                return v.failf(.invalid_state, k, "entry {d}: {s}", .{ k, why });
+        }
+
         if (params.params.deactivated) v.deactivated = true;
         return .{ .ok = .{
             .version_id = version_id,
@@ -293,18 +325,36 @@ const Verifier = struct {
 
     fn checkParameters(v: *Verifier, k: u64, p: Value) Allocator.Error!ParamResult {
         const a = v.a;
-        const known = [_][]const u8{ "logVersion", "scid", "updateKeys", "nextKeyHashes", "witness", "watchers", "deactivated", "ttl" };
+        const spec = v.spec;
+        const vp = spec.version_parameter;
+        const known = [_][]const u8{ vp, "scid", "updateKeys", "nextKeyHashes", "witness", "watchers", "deactivated", "ttl" };
         for (known) |name| {
             if (p.get(name)) |val| if (val == .null)
                 return v.pfail(.invalid_parameter, k, "entry {d}: parameter {s} is null", .{ k, name });
         }
+        if (spec.closed) for (p.object) |m| {
+            const is_known = for (known) |name| {
+                if (std.mem.eql(u8, name, m.key)) break true;
+            } else false;
+            if (!is_known) return v.pfail(.invalid_parameter, k, "entry {d}: unknown parameter {s}", .{ k, m.key });
+        };
 
-        // logVersion
-        if (p.get("logVersion")) |lv| {
-            if (lv != .string) return v.pfail(.invalid_parameter, k, "entry {d}: logVersion must be a string", .{k});
-            if (!std.mem.eql(u8, lv.string, log.log_version))
-                return v.pfail(.unsupported_log_version, k, "entry {d}: unsupported logVersion {s}", .{ k, lv.string });
-        } else if (k == 1) return v.pfail(.unsupported_log_version, k, "the first entry has no logVersion", .{});
+        // The version parameter (logVersion).
+        if (p.get(vp)) |lv| {
+            if (lv != .string) return v.pfail(.invalid_parameter, k, "entry {d}: {s} must be a string", .{ k, vp });
+            if (spec.version_syntax) |syntax| if (!syntax(lv.string))
+                return v.pfail(.invalid_parameter, k, "entry {d}: {s} {s} is malformed", .{ k, vp, lv.string });
+            const accepted = for (spec.versions) |ver| {
+                if (std.mem.eql(u8, lv.string, ver)) break true;
+            } else false;
+            if (!accepted)
+                return v.pfail(.unsupported_log_version, k, "entry {d}: unsupported {s} {s}", .{ k, vp, lv.string });
+        } else if (k == 1) return v.pfail(
+            if (spec.version_syntax != null) .invalid_parameter else .unsupported_log_version,
+            k,
+            "the first entry has no {s}",
+            .{vp},
+        );
 
         // scid
         var the_scid: []const u8 = v.scid;
@@ -455,6 +505,11 @@ pub fn validWatcherUrl(u: []const u8) bool {
 /// Verifies a log: every entry in order, then witnesses over the valid prefix.
 /// All memory comes from `a` (use an arena).
 pub fn verify(a: Allocator, log_text: []const u8, witness: WitnessInput, now: i64) Allocator.Error!Verification {
+    return verifyWith(a, log_text, witness, now, .{});
+}
+
+/// `verify` with a method's specialisation of VH-Log.
+pub fn verifyWith(a: Allocator, log_text: []const u8, witness: WitnessInput, now: i64, spec: Specialisation) Allocator.Error!Verification {
     const lines = try splitLines(a, log_text);
     const line_times = try a.alloc(?i64, lines.text.len);
     for (lines.values, line_times) |lv, *t| {
@@ -465,7 +520,7 @@ pub fn verify(a: Allocator, log_text: []const u8, witness: WitnessInput, now: i6
     if (lines.text.len == 0) {
         failure = .{ .code = .invalid_log, .version = null, .message = "the log is empty" };
     }
-    var verifier: Verifier = .{ .a = a, .now = now };
+    var verifier: Verifier = .{ .a = a, .now = now, .spec = spec };
     for (lines.text, 0..) |_, i| {
         const k: u64 = i + 1;
         const val = lines.values[i] orelse {
@@ -616,6 +671,8 @@ pub const Request = struct {
     options: Options = .{},
     copies: ?[]const CopyInput = null,
     retained_version_id: ?[]const u8 = null,
+    /// The method's specialisation (default: plain VH-Log).
+    specialisation: Specialisation = .{},
 };
 
 pub const CopyStatus = enum {
@@ -936,7 +993,7 @@ fn resolveIn(arena: *std.heap.ArenaAllocator, req_in: Request) Allocator.Error!R
         var ref_index: ?usize = null;
         for (cands, 0..) |*c, i| {
             if (c.status == .unavailable) continue;
-            const ver = try verify(a, c.input.log.?, c.input.witness, req.now);
+            const ver = try verifyWith(a, c.input.log.?, c.input.witness, req.now, req.specialisation);
             c.verification = ver;
             if (ver.fullyValid()) {
                 ref_index = i;
@@ -951,7 +1008,7 @@ fn resolveIn(arena: *std.heap.ArenaAllocator, req_in: Request) Allocator.Error!R
             cands[ri].status = .current;
         } else {
             // No copy passes verification: fall back to the primary's valid prefix.
-            ref = .{ .source = "primary", .verification = cands[0].verification orelse try verify(a, req.log, req.witness, req.now) };
+            ref = .{ .source = "primary", .verification = cands[0].verification orelse try verifyWith(a, req.log, req.witness, req.now, req.specialisation) };
         }
 
         for (cands[start..]) |*c| {
@@ -975,7 +1032,7 @@ fn resolveIn(arena: *std.heap.ArenaAllocator, req_in: Request) Allocator.Error!R
                     // Extends the reference: verify the additional entries from
                     // the state reached at the reference's last entry.
                     const combined = try joinLines(a, ref.verification.lines.text[0..r], lines.text[r..]);
-                    const ver = try verify(a, combined, c.input.witness, req.now);
+                    const ver = try verifyWith(a, combined, c.input.witness, req.now, req.specialisation);
                     if (ver.fullyValid()) {
                         ref = .{ .source = c.source, .verification = ver };
                         c.status = .current;
@@ -987,7 +1044,7 @@ fn resolveIn(arena: *std.heap.ArenaAllocator, req_in: Request) Allocator.Error!R
                 }
             }
             // Diverges: verify in full.
-            const ver = try verify(a, c.input.log.?, c.input.witness, req.now);
+            const ver = try verifyWith(a, c.input.log.?, c.input.witness, req.now, req.specialisation);
             if (!ver.fullyValid()) {
                 c.status = .invalid;
                 c.invalid_at = if (ver.failure) |f| f.version else null;
@@ -1039,7 +1096,7 @@ fn resolveIn(arena: *std.heap.ArenaAllocator, req_in: Request) Allocator.Error!R
         }
         reports = out;
     } else {
-        ref = .{ .source = "primary", .verification = try verify(a, req.log, req.witness, req.now) };
+        ref = .{ .source = "primary", .verification = try verifyWith(a, req.log, req.witness, req.now, req.specialisation) };
     }
 
     const ver = ref.verification;
