@@ -393,6 +393,12 @@ const didvhSyntax = didvhCases("ref.json") + didvhCases("src.json") + didvhCases
 const didvhImpls = JSON.parse(fs.readFileSync(path.join(ROOT, "implementations.json"), "utf8")).implementations.filter((i) => i.didvh).length;
 const didvhSuite = matrix.suites.indexOf("did:vh");
 const didvhChecks = didvhSuite === -1 ? 0 : matrix.perImpl.typescript[didvhSuite].n;
+const vhlogChecks = perImplTotal - (universal[didvhSuite] ? didvhChecks : 0);
+// did:vh logs made by independent implementations, which every did:vh driver resolves.
+const didvhExternal = fs.readdirSync(path.join(DIDVH, "external")).map((source) => JSON.parse(fs.readFileSync(path.join(DIDVH, "external", source, "manifest.json"), "utf8")));
+const interopAlliance = didvhExternal.find((m) => m.source.package === "@interop/did-method-webvh");
+if (!interopAlliance) throw new Error("vectors/didvh/external has no @interop/did-method-webvh manifest");
+const sampleDid = interopAlliance.scenarios.find((s) => s.name === "basic").did;
 const fmt = (n) => n.toLocaleString("en-US");
 const short = Object.fromEntries(LANGS.map((l) => [l.id, l.short]));
 for (const name of matrix.producers) if (!short[name]) console.warn(`warning: ${name} is in the README matrix but not in LANGS; add its part to site/build.mjs`);
@@ -426,7 +432,10 @@ const partsList = LANGS.map((l) => `<li>
         </li>`).join("\n        ");
 
 const tabs = MOVEMENTS.map((m, i) => `<button type="button" role="tab" id="t-${m.id}" aria-controls="m-${m.id}" aria-selected="${i === 0}" aria-label="${ROMAN[i]}. ${esc(m.title)}"><span class="numeral">${ROMAN[i]}</span><span class="t-title"> ${esc(m.title)}</span></button>`).join("\n        ");
-const toggles = LANGS.map((l) => `<button type="button" aria-pressed="true" data-part="${l.id}">${l.name}</button>`).join("");
+// The score opens on a few contrasting parts; the rest are a click away (all of them without JavaScript).
+const OPENING = ["typescript", "rust", "python", "go", "elixir", "zig"];
+for (const id of OPENING) if (!short[id]) throw new Error(`OPENING names an unknown language: ${id}`);
+const toggles = LANGS.map((l) => `<button type="button" aria-pressed="true" data-part="${l.id}"${OPENING.includes(l.id) ? " data-opening" : ""}>${l.name}</button>`).join("");
 
 const benchmarkData = fs.readFileSync(path.join(ROOT, "benchmarks/latest.json"), "utf8");
 const benchmarkHTML = benchmarkSection(JSON.parse(benchmarkData), LANGS, REPO);
@@ -458,10 +467,34 @@ const html = `<!doctype html>
     <p class="line">${Ncap} implementations of VH&#8209;Log and did:vh that produce the same&nbsp;bytes.</p>
   </div>
   <div class="intro">
-    <p>${NAMES}, checked against each other and against <span class="nw">didwebvh-ts</span> on every push. Every one also resolves <a href="#didvh">did:vh</a> DIDs on the same log code. Below: four algorithms that matter, in all ${N}, one beat at a time, followed by <a href="#benchmarks">measured driver benchmarks</a>.</p>
+    <p>${NAMES}, checked against each other, and against independent implementations of both, on every push. Below: the two specs, four algorithms compared line by line, the full interop matrix and <a href="#benchmarks">measured driver benchmarks</a>.</p>
     <a class="action" href="${REPO}">Source on GitHub</a>
   </div>
 </header>
+
+<section class="pair" aria-label="The two specs">
+  <article class="kind">
+    <p class="eyebrow">The log</p>
+    <h2 class="kind-name">VH&#8209;Log</h2>
+    <p class="kind-what"><a href="${spec.rendered}">Verifiable History Log</a>: a hash-chained JSON Lines file of signed entries, with a self-certifying identifier, pre-rotation, witnesses and watchers.</p>
+    <dl class="kind-facts">
+      <div><dt class="num">${fmt(vhlogChecks)}</dt><dd>VH-Log checks per implementation</dd></div>
+      <div><dt class="num">${okPairings}/${pairings}</dt><dd>producer and resolver pairings agree</dd></div>
+    </dl>
+    <p class="kind-links"><a href="#score">Compare the code</a><a href="#interop">See the matrix</a></p>
+  </article>
+  <article class="kind kind-didvh">
+    <p class="eyebrow">The DID</p>
+    <h2 class="kind-name">did:vh</h2>
+    <p class="kind-did"><code>${sampleDid}</code></p>
+    <p class="kind-what">A DID with no location in it. The client brings the log; the resolver checks it with the same VH-Log code, plus the DID layer. ${didvhImpls === LANGS.length ? `All ${N}` : `${didvhImpls} of the ${N}`} implement it.</p>
+    <dl class="kind-facts">
+      <div><dt class="num">${fmt(didvhChecks)}</dt><dd>did:vh checks per implementation</dd></div>
+      <div><dt class="num">${interopAlliance.scenarios.length}/${interopAlliance.scenarios.length}</dt><dd>logs from <a href="${interopAlliance.source.repository}">@interop/did-method-webvh</a> resolve identically</dd></div>
+    </dl>
+    <p class="kind-links"><a href="#didvh">How did:vh works</a><a href="${REPO}/blob/${REF}/docs/didvh-profile.md">The did:vh profile</a></p>
+  </article>
+</section>
 
 <main>
   <div class="score" id="score">
@@ -471,31 +504,18 @@ const html = `<!doctype html>
       </div>
       <div class="toggles" role="group" aria-label="Languages shown">${toggles}</div>
     </div>
-    <p class="score-help">Choose an algorithm and the languages to compare. Select a numbered step to highlight the matching code in each example. These are source excerpts; ⋯ marks omitted code, and file links open the original lines on GitHub.<br><button type="button" id="play-steps">Play steps</button></p>
+    <p class="score-help">Choose an algorithm and the languages to compare. Select a numbered step to highlight the matching code in each example. These are source excerpts; ⋯ marks omitted code, and file links open the original lines on GitHub.<br><button type="button" id="play-steps">Play steps</button> <button type="button" id="all-parts" aria-pressed="false">Show all ${N}</button></p>
     ${MOVEMENTS.map(movementPanel).join("\n    ")}
   </div>
-
-  <section class="field" aria-labelledby="interop">
-    <div class="field-inner">
-      <div class="field-text">
-        <h2 id="interop">Every producer, every resolver</h2>
-        <p>Each implementation runs as a driver behind one small JSON Lines protocol. The harness feeds all ${N} the same vectors, then has each one resolve the logs every other one generated: ${pairings} pairings, ${logsPerPairing} files each.</p>
-        <dl class="suites">
-          ${suites}
-        </dl>
-        <p class="total"><span class="num">${fmt(perImplTotal)}</span> checks per implementation, <span class="num">${fmt(runTotal)}</span> per run.</p>
-      </div>
-      ${crossTable}
-    </div>
-  </section>
 
   <section class="open didvh" aria-labelledby="didvh">
     <h2 id="didvh">did:vh, on the same log</h2>
     <p class="section-lede">A did:vh DID is <code>did:vh:&lt;SCID&gt;</code>, with no location in it. The client brings the log, and the resolver checks it.</p>
     <div class="open-grid">
       <div>
-        <p><a href="${didvhSpec.rendered}">did:vh</a> and VH-Log both come from did:webvh, so a did:vh DID log is a VH-Log log: the same entries, SCID, entry hashes, proofs, pre-rotation and witnesses. ${didvhImpls === N ? `All ${N}` : `${didvhImpls} of the ${N}`} implementations verify it with their VH-Log code, given a small <i>specialisation</i> for the rules did:vh adds, then put the DID layer on top: DID and DID URL parsing, <code>srcLog</code>, <code>srcWitness</code> and <code>src</code> references, resolution options, and DID Resolution metadata and errors.</p>
+        <p><a href="${didvhSpec.rendered}">did:vh</a> and VH-Log both come from did:webvh, so a did:vh DID log is a VH-Log log: the same entries, SCID, entry hashes, proofs, pre-rotation and witnesses. ${didvhImpls === LANGS.length ? `All ${N}` : `${didvhImpls} of the ${N}`} implementations verify it with their VH-Log code, given a small <i>specialisation</i> for the rules did:vh adds, then put the DID layer on top: DID and DID URL parsing, <code>srcLog</code>, <code>srcWitness</code> and <code>src</code> references, resolution options, and DID Resolution metadata and errors.</p>
         <p>The resolvers are offline. They verify a log passed in <code>didLog</code> and return <code>featureNotSupported</code> where they would have to fetch something.</p>
+        <p>It is checked outside this repository too. The Interop Alliance's <a href="${interopAlliance.source.repository}">@interop/did-method-webvh</a> ${esc(interopAlliance.source.version)} generated ${interopAlliance.scenarios.length} did:vh logs (${interopAlliance.scenarios.map((s) => esc(s.name)).join(", ")}), and every implementation resolves each one to the document, version and deactivation status that it does.</p>
         <p class="total"><span class="num">${fmt(didvhChecks)}</span> did:vh checks per implementation: ${fmt(didvhResolution)} resolution vectors, ${fmt(didvhSyntax)} reference, <code>src</code> and DID URL cases, and every implementation resolving the DID logs every other one generated.</p>
         <p><a href="${REPO}/blob/${REF}/docs/didvh-profile.md">The did:vh interop profile</a> · <a href="${REPO}/tree/${REF}/vectors/didvh">did:vh vectors</a></p>
       </div>
@@ -513,6 +533,21 @@ const html = `<!doctype html>
       </figure>
     </div>
   </section>
+
+  <section class="field" aria-labelledby="interop">
+    <div class="field-inner">
+      <div class="field-text">
+        <h2 id="interop">Every producer, every resolver</h2>
+        <p>Each implementation runs as a driver behind one small JSON Lines protocol. The harness feeds all ${N} the same vectors, then has each one resolve the logs every other one generated: ${pairings} pairings, ${logsPerPairing} files each.</p>
+        <dl class="suites">
+          ${suites}
+        </dl>
+        <p class="total"><span class="num">${fmt(perImplTotal)}</span> checks per implementation, <span class="num">${fmt(runTotal)}</span> per run.</p>
+      </div>
+      ${crossTable}
+    </div>
+  </section>
+
 
   ${benchmarkHTML}
 

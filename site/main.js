@@ -117,15 +117,35 @@ for (const b of document.querySelectorAll("[data-beat]")) {
 
 // Parts: hide or show a language in every movement. At least one part keeps playing.
 const toggles = [...document.querySelectorAll("[data-part]")];
+const allParts = document.getElementById("all-parts");
+const isOn = (b) => b.getAttribute("aria-pressed") === "true";
+function setPart(b, on) {
+  b.setAttribute("aria-pressed", String(on));
+  for (const s of document.querySelectorAll(`.staff[data-lang="${b.dataset.part}"]`)) s.hidden = !on;
+}
+function syncAll() {
+  const all = toggles.every(isOn);
+  allParts.setAttribute("aria-pressed", String(all));
+  allParts.textContent = all ? "Show fewer" : `Show all ${toggles.length}`;
+}
 for (const b of toggles) {
   b.addEventListener("click", () => {
-    const on = b.getAttribute("aria-pressed") === "true";
-    if (on && toggles.filter((x) => x.getAttribute("aria-pressed") === "true").length === 1) return;
-    b.setAttribute("aria-pressed", String(!on));
-    for (const s of document.querySelectorAll(`.staff[data-lang="${b.dataset.part}"]`)) s.hidden = on;
+    const on = isOn(b);
+    if (on && toggles.filter(isOn).length === 1) return;
+    setPart(b, !on);
+    syncAll();
     setBeat(beat);
   });
 }
+// The score opens on a few contrasting parts, so the page below it stays in reach.
+const opening = () => { for (const b of toggles) setPart(b, "opening" in b.dataset); };
+allParts.addEventListener("click", () => {
+  if (toggles.every(isOn)) opening(); else for (const b of toggles) setPart(b, true);
+  syncAll();
+  setBeat(beat);
+});
+opening();
+syncAll();
 
 playback.addEventListener("click", () => {
   pinned = !pinned;
