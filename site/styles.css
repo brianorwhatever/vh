@@ -140,6 +140,30 @@ h1 {
 .action::after { content: "→"; font-weight: 400; }
 .action:hover { background: var(--ink); color: var(--ground); }
 
+/* ---- The two specs: VH-Log and did:vh, side by side -------------------------------- */
+
+.pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  max-width: 1600px;
+  margin: 0 auto var(--s-7);
+  padding: 0 var(--gutter);
+}
+.kind { border-top: 3px solid var(--ink); padding: var(--s-5) var(--s-7) var(--s-5) 0; display: flex; flex-direction: column; gap: var(--s-3); }
+.kind + .kind { border-left: 1px solid var(--rule); padding-left: var(--s-7); padding-right: 0; }
+.kind-didvh { border-top-color: var(--accent); }
+.eyebrow { font-size: var(--t-meta); letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); }
+.kind-didvh .eyebrow { color: var(--accent); }
+.kind-name { font-size: var(--t-h2); }
+.kind-did code { display: inline-block; max-width: 100%; font-size: 0.8125rem; background: var(--hl); padding: .2em .5em; border-radius: 3px; overflow-wrap: anywhere; }
+.kind-what { max-width: 52ch; text-wrap: pretty; }
+.kind-facts { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-5); margin-top: var(--s-2); }
+.kind-facts div { border-top: 1px solid var(--rule); padding-top: var(--s-3); }
+.kind-facts dt { font-size: 1.75rem; line-height: 1.1; font-weight: 450; }
+.kind-facts dd { font-size: var(--t-small); color: var(--ink-2); margin: 0; text-wrap: pretty; }
+.kind-links { display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-5); margin-top: auto; padding-top: var(--s-2); font-weight: 520; }
+.kind-links a::after { content: " →"; font-weight: 400; }
+
 /* ---- The score ------------------------------------------------------------------- */
 
 .score { padding: 0 var(--gutter) var(--s-8); max-width: 1600px; margin: 0 auto; }
@@ -181,8 +205,9 @@ html:not(.js) .controls { display: none; }
   cursor: pointer;
 }
 .toggles button:hover { color: var(--accent); }
-/* A hidden part is tacet: still listed, struck through. */
-.toggles button[aria-pressed="false"] { color: var(--ink-2); opacity: .55; text-decoration: line-through; text-decoration-thickness: 1px; }
+/* A hidden part is tacet: still listed, dimmed. Shown parts are underlined. */
+.toggles button[aria-pressed="true"] { text-decoration: underline 1px var(--accent); text-underline-offset: 0.25em; }
+.toggles button[aria-pressed="false"] { color: var(--ink-2); opacity: .6; }
 
 .movement + .movement { margin-top: var(--s-8); }
 html.js .movement + .movement { margin-top: 0; }
@@ -328,28 +353,41 @@ html:not(.js) .beats { display: none; }
 .field a { color: var(--field-ink); }
 .field-inner {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--s-7);
-  align-items: center;
   padding: var(--s-8) var(--gutter);
   max-width: 1600px;
   margin: 0 auto;
 }
 h2 { font-size: var(--t-h2); font-weight: 480; line-height: 1.02; letter-spacing: -0.025em; text-wrap: balance; }
-.field-text { overflow-wrap: break-word; }
+.field-text {
+  overflow-wrap: break-word;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-areas: "head suites" "lede suites" "total suites";
+  grid-template-rows: auto auto 1fr;
+  column-gap: var(--s-7);
+}
+.field-text h2 { grid-area: head; }
+.field-text > p:not(.total) { grid-area: lede; }
+.field-text .suites { grid-area: suites; margin-top: 0; }
+.field-text .total { grid-area: total; align-self: start; }
 .field-text > p { margin-top: var(--s-4); max-width: 52ch; text-wrap: pretty; }
 .suites { margin-top: var(--s-6); display: grid; gap: var(--s-3); max-width: 52ch; }
-.suites div { display: grid; grid-template-columns: 4ch 1fr; gap: var(--s-5); align-items: baseline; border-top: 1px solid var(--field-rule); padding-top: var(--s-3); }
-.suites dt { font-size: 1.75rem; line-height: 1; font-weight: 450; text-align: left; font-variant-numeric: tabular-nums lining-nums; }
+.suites div { display: grid; grid-template-columns: 3.25rem 1fr; gap: var(--s-5); align-items: baseline; border-top: 1px solid var(--field-rule); padding-top: var(--s-3); }
+.suites dt { white-space: nowrap; font-size: 1.75rem; line-height: 1; font-weight: 450; text-align: left; font-variant-numeric: tabular-nums lining-nums; }
 .suites dd { font-size: var(--t-small); }
 .suites b { font-weight: 620; margin-right: 0.25em; }
 .total { margin-top: var(--s-5); font-size: var(--t-h3); }
 
-.cross { border-collapse: collapse; font-variant-numeric: tabular-nums; }
-.cross caption { caption-side: bottom; text-align: left; font-size: var(--t-small); padding-top: var(--s-4); max-width: 36ch; }
+/* Fluid cells across the full width; below about 30px a cell scrolls instead. */
+.cross-fig { overflow-x: auto; }
+.cross { border-collapse: collapse; font-variant-numeric: tabular-nums; width: 100%; min-width: 60rem; table-layout: fixed; }
+.cross thead td:first-child { width: 3.5rem; }
+.cross caption { caption-side: bottom; text-align: left; font-size: var(--t-small); padding-top: var(--s-4); max-width: 70ch; }
 .cross th { font: italic 400 var(--t-small)/1 var(--font-text); padding: 0 var(--s-2); text-align: right; }
-.cross thead th { text-align: center; padding: 0 0 var(--s-2); }
-.cross td { width: 48px; height: 48px; text-align: center; font-size: 1.0625rem; border: 1px solid oklch(100% 0 0 / .35); }
+.cross thead th { text-align: center; padding: 0 0 var(--s-2); font-size: var(--t-meta); }
+.cross td { height: 44px; text-align: center; font-size: 1.0625rem; border: 1px solid oklch(100% 0 0 / .35); }
 .cross thead td { border: 0; }
 .cross td.ref { border-color: oklch(100% 0 0 / .75); }
 .claim { font-size: 1.375rem; line-height: 1.2; margin-bottom: var(--s-4); }
@@ -436,12 +474,15 @@ h2 { font-size: var(--t-h2); font-weight: 480; line-height: 1.02; letter-spacing
 /* ---- Widths ------------------------------------------------------------------------ */
 
 @media (max-width: 1100px) {
-  .field-inner { grid-template-columns: minmax(0, 1fr); }
-  .cross-fig { overflow-x: auto; }
+  .field-text { grid-template-columns: minmax(0, 1fr); grid-template-areas: "head" "lede" "suites" "total"; grid-template-rows: none; }
+  .field-text .suites { margin-top: var(--s-6); }
+  .field-text .total { margin-top: var(--s-5); }
   .part-list { grid-template-columns: 1fr; }
 }
 @media (max-width: 860px) {
   :root { --label: 0px; }
+  .pair { grid-template-columns: minmax(0, 1fr); gap: var(--s-5); margin-bottom: var(--s-6); }
+  .kind, .kind + .kind { padding: var(--s-4) 0 0; border-left: 0; }
   .masthead { grid-template-columns: 1fr; padding-top: var(--s-5); padding-bottom: var(--s-4); gap: var(--s-4); }
   .line { margin-top: var(--s-3); }
   .action { margin-top: var(--s-3); }
@@ -481,7 +522,9 @@ h2 { font-size: var(--t-h2); font-weight: 480; line-height: 1.02; letter-spacing
   .action { border: 0; padding: 0; min-height: 32px; color: var(--accent); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 0.18em; font-size: 1.0625rem; }
   .action:hover { background: none; color: var(--accent); text-decoration-thickness: 2px; }
   .staff pre { font-size: 0.78125rem; white-space: pre-wrap; overflow-wrap: anywhere; }
-  .cross td { width: 31px; height: 31px; font-size: 0.875rem; }
+  .cross { min-width: 51rem; }
+  .cross td { height: 31px; font-size: 0.875rem; }
+  .cross thead td:first-child { width: 2.75rem; }
   .cross th { padding: 0 var(--s-1); font-size: var(--t-meta); }
 }
 
@@ -494,7 +537,7 @@ h2 { font-size: var(--t-h2); font-weight: 480; line-height: 1.02; letter-spacing
 }
 
 /* Benchmarks use the same paper, rules and type as the code comparisons. */
-.benchmarks { margin: var(--s-8) var(--gutter); }
+.benchmarks { padding: var(--s-8) var(--gutter) 0; max-width: 1600px; margin: 0 auto; }
 .bench-controls { display: none; align-items: center; flex-wrap: wrap; gap: var(--s-3); margin: var(--s-5) 0; }
 .js .bench-controls { display: flex; }
 .bench-controls label { font-size: var(--t-small); }
@@ -535,5 +578,6 @@ h2 { font-size: var(--t-h2); font-weight: 480; line-height: 1.02; letter-spacing
 }
 
 .score-help { color: var(--ink-2); font-size: var(--t-small); margin-bottom: var(--s-3); max-width: 75ch; }
+.score-help button + button { margin-left: .5em; }
 .score-help button { font: inherit; color: var(--accent); background: none; border: 1px solid var(--rule); padding: .3em .7em; cursor: pointer; margin-top: .5em; }
 html:not(.js) .score-help { display: none; }
