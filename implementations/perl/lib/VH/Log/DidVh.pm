@@ -324,13 +324,12 @@ sub resolve_did {
       _error($ERROR_MAP{ $error->{code} } // 'invalidDid', $error->{message}, $error);
     }
     my $partial = $r->{error};
-    if (!(grep { exists $o->{$_} } @SELECTORS) && $partial && $partial->{code} eq 'unsupported-log-version') {
+    my $selected = grep { exists $o->{$_} } @SELECTORS;
+    if (!$selected && $partial && $partial->{code} eq 'unsupported-log-version') {
       # Entries after the last valid one may change the document or its keys (profile §5).
       _error('featureNotSupported', $partial->{message}, $partial);
     }
     my $m = $r->{metadata};
-    # A deactivated DID's document is not returned; earlier versions still are (profile §5).
-    my $is_last = $m->{versionTime} eq $m->{updated};
     my %metadata = map { $_ => $m->{$_} } qw(versionId versionTime created updated scid deactivated ttl watchers);
     $metadata{witness} = $m->{witness} if $m->{witness};
     my %meta = (contentType => 'application/did+json');
@@ -341,7 +340,8 @@ sub resolve_did {
       $meta{didLog} = join '', map { "$_\n" } @lines[0 .. $valid - 1];
       $meta{didWitness} = $o->{didWitness} // [] if $witnessed;
     }
-    +{ didResolutionMetadata => \%meta, didDocument => $m->{deactivated} && $is_last ? undef : $r->{state},
+    # A deactivated DID's document is returned only for an explicit version selector (profile §5).
+    +{ didResolutionMetadata => \%meta, didDocument => $m->{deactivated} && !$selected ? undef : $r->{state},
       didDocumentMetadata => \%metadata };
   };
   return $result if $result;

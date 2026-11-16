@@ -356,6 +356,32 @@ async function didvh(d: Driver): Promise<DidGenerated[]> {
     }
   }
 
+  // did:vh logs from independent implementations (vectors/didvh/external/<source>).
+  const externalDir = join(DIDVH, "external");
+  for (const source of readdirSync(externalDir).sort()) {
+    const manifest = JSON.parse(readFileSync(join(externalDir, source, "manifest.json"), "utf8"));
+    for (const sc of manifest.scenarios) {
+      const log = readFileSync(join(externalDir, source, `${sc.name}.jsonl`), "utf8");
+      const options: Json = { didLog: log };
+      if (sc.witness) options.didWitness = JSON.parse(readFileSync(join(externalDir, source, `${sc.name}.witness.json`), "utf8"));
+      const res = await d.call("didvh-resolve", { did: sc.did, options, now: sc.now });
+      const test = `external/${source}/${sc.name}`;
+      if (!res.ok) {
+        record(name, "didvh", test, `driver error: ${res.error}`);
+        continue;
+      }
+      const r = res.result;
+      const problems: string[] = [];
+      if (r?.didResolutionMetadata?.error) problems.push(`did not resolve: ${r.didResolutionMetadata.error} ${show(r.didResolutionMetadata.problemDetails)}`);
+      else {
+        if (!same(sc.expect.didDocument, r.didDocument ?? null)) problems.push(`didDocument: expected ${show(sc.expect.didDocument)}, got ${show(r.didDocument)}`);
+        if (r.didDocumentMetadata?.versionId !== sc.expect.versionId) problems.push(`versionId: expected ${sc.expect.versionId}, got ${r.didDocumentMetadata?.versionId}`);
+        if (r.didDocumentMetadata?.deactivated !== sc.expect.deactivated) problems.push(`deactivated: expected ${sc.expect.deactivated}, got ${r.didDocumentMetadata?.deactivated}`);
+      }
+      record(name, "didvh", test, problems.length ? problems.join("\n     ") : null);
+    }
+  }
+
   const { scenarios } = JSON.parse(readFileSync(join(DIDVH, "generation.json"), "utf8"));
   const out: DidGenerated[] = [];
   for (const sc of scenarios) {

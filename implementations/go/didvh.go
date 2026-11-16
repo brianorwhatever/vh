@@ -788,8 +788,8 @@ func resolveDid(did string, options any, ctx ResolverContext) (*DidResolution, *
 			SCID: m.SCID, Deactivated: m.Deactivated, TTL: m.TTL, Witness: m.Witness, Watchers: m.Watchers,
 		},
 	}
-	// A deactivated DID's document is not returned; earlier versions still are (profile §5).
-	if m.Deactivated && m.VersionTime == m.Updated {
+	// A deactivated DID's document is returned only for an explicit version selector (profile §5).
+	if m.Deactivated && !selected {
 		out.DidDocument = nil
 	}
 	if include, _ := o.Get("includeDidLog"); include == true {

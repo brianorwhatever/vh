@@ -250,8 +250,10 @@ group("deactivation", () => {
     { didDocument: null, didDocumentMetadata: { deactivated: true, versionId: b.vid(3) } });
   vector("earlier-version", "An earlier version of a deactivated DID is returned, with deactivated true.", [S.deact],
     { did: b.did, options: { ...opts, versionNumber: 2 } }, { didDocument: b.state(2), didDocumentMetadata: { deactivated: true } });
-  vector("deactivating-version", "Selecting the deactivating entry itself returns no document.", [S.deact, PROFILE + "#5-resolution"],
-    { did: b.did, options: { ...opts, versionNumber: 3 } }, { didDocument: null, didDocumentMetadata: { deactivated: true } });
+  vector("deactivating-version", "Selecting the deactivating entry itself returns its document, with deactivated true.", [S.deact, PROFILE + "#5-resolution"],
+    { did: b.did, options: { ...opts, versionNumber: 3 } }, { didDocument: b.state(3), didDocumentMetadata: { deactivated: true } });
+  vector("deactivating-version-time", "A versionTime that selects the deactivating entry also returns its document.", [S.deact, PROFILE + "#5-resolution"],
+    { did: b.did, options: { ...opts, versionTime: "2026-06-01T00:00:00Z" } }, { didDocument: b.state(3), didDocumentMetadata: { deactivated: true } });
   const after = new DidLog().genesis().update({ deactivated: true }).update();
   vector("entry-after-deactivation", "An entry after deactivation is invalid; the deactivated DID is still reported.", [S.deact],
     { did: after.did, options: { didLog: after.log } }, { didDocument: null, didDocumentMetadata: { deactivated: true }, warnings: ["invalid-entries"] });

@@ -562,8 +562,6 @@ public enum DidVh {
             throw fromVHLog(e)
         }
         let m = result.metadata
-        // A deactivated DID's document is not returned; earlier versions still are (profile §5).
-        let isLast = m.versionTime.utf8.elementsEqual(m.updated.utf8)
         var didLog: String?
         var didWitness: JSONValue?
         if o["includeDidLog"]?.boolValue == true {
@@ -575,7 +573,8 @@ public enum DidVh {
         let metadata = DocumentMetadata(
             versionId: m.versionId, versionTime: m.versionTime, created: m.created, updated: m.updated, scid: m.scid,
             deactivated: m.deactivated, ttl: m.ttl, witness: m.witness, watchers: m.watchers)
-        return .resolved(document: m.deactivated && isLast ? nil : result.state.objectValue, metadata: metadata,
+        // A deactivated DID's document is returned only for an explicit version selector (profile §5).
+        return .resolved(document: m.deactivated && !selected ? nil : result.state.objectValue, metadata: metadata,
                          warnings: m.warnings, didLog: didLog, didWitness: didWitness)
     }
 }

@@ -382,7 +382,6 @@ public static class DidVh
             bool selected = new[] { "versionId", "versionTime", "versionNumber" }.Any(o.ContainsKey);
             if (!selected && AsString(result["error"]?["code"]) == "unsupported-log-version") throw FromVhLog(result["error"]);
             var m = (JsonObject)result["metadata"]!;
-            bool isLast = AsString(m["versionTime"]) == AsString(m["updated"]);
             var docMeta = Log.Obj("versionId", m["versionId"], "versionTime", m["versionTime"], "created", m["created"], "updated", m["updated"],
                 "scid", m["scid"], "deactivated", m["deactivated"], "ttl", m["ttl"]);
             if (m["witness"] is not null) docMeta["witness"] = Clone(m["witness"]);
@@ -397,7 +396,7 @@ public static class DidVh
                 if (witnessed) meta["didWitness"] = o["didWitness"] is JsonArray w ? w.DeepClone() : new JsonArray();
             }
             bool deactivated = m["deactivated"]?.GetValue<bool>() == true;
-            return Log.Obj("didResolutionMetadata", meta, "didDocument", deactivated && isLast ? null : result["state"], "didDocumentMetadata", docMeta);
+            return Log.Obj("didResolutionMetadata", meta, "didDocument", deactivated && !selected ? null : result["state"], "didDocumentMetadata", docMeta);
         }
         catch (DidVhException e) { return Failure(e); }
     }

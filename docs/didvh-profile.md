@@ -261,12 +261,17 @@ came from VH-Log. The harness compares `error` and `vhLog.code`.
 Other VH-Log metadata (`versionNumber`, `updateKeys`, `nextKeyHashes`) is not
 returned.
 
-**Deactivation.** When the DID is deactivated, `didDocument` is `null` if the
-resolved entry is the last valid entry. That covers both no version selector
-and a selector that names the deactivating entry. An earlier version selected
-explicitly is returned. `deactivated` is `true` in every case. That the
-deactivating entry's own document is not returned when it is selected is a
-**Profile** reading of the spec.
+**Deactivation.** When the DID is deactivated and no version selector
+(`versionId`, `versionTime` or `versionNumber`) is given, `didDocument` is
+`null`. With a selector, the selected entry's document is returned, including
+when the selector names the deactivating entry itself. `deactivated` is `true`
+whenever the DID is deactivated, including for an earlier version, so the
+client can always tell. A selector counts when its key is present in the
+options; which entry it lands on doesn't matter. So a `versionTime` at or
+after the deactivating entry returns that entry's document, while the same
+request without a selector returns `null`. That an explicitly selected
+deactivating entry is returned is a **Profile** reading of the spec, matching
+the independent `@interop/did-method-webvh`.
 
 ## 6. Driver operations
 

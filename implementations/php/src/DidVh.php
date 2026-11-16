@@ -313,8 +313,6 @@ final class DidVh {
                 throw new DidVhError('featureNotSupported',$partial['message'],$partial);
             }
             $m=$result['metadata'];
-            // A deactivated DID's document is not returned; earlier versions still are (profile §5).
-            $isLast=$m['versionTime']===$m['updated'];
             $metadata=['versionId'=>$m['versionId'],'versionTime'=>$m['versionTime'],'created'=>$m['created'],'updated'=>$m['updated'],
                 'scid'=>$m['scid'],'deactivated'=>$m['deactivated'],'ttl'=>self::int($m['ttl'])];
             if ($m['witness']!==null) $metadata['witness']=(object)['threshold'=>self::int($m['witness']->threshold),'witnesses'=>$m['witness']->witnesses];
@@ -327,7 +325,8 @@ final class DidVh {
                 $meta['didLog']=implode('',array_map(fn($l)=>$l."\n",array_slice($lines,0,$valid)));
                 if ($witnessed) $meta['didWitness']=$o->didWitness ?? [];
             }
-            return ['didResolutionMetadata'=>$meta,'didDocument'=>$m['deactivated'] && $isLast ? null : $result['state'],'didDocumentMetadata'=>$metadata];
+            // A deactivated DID's document is returned only for an explicit version selector (profile §5).
+            return ['didResolutionMetadata'=>$meta,'didDocument'=>$m['deactivated'] && !$selected ? null : $result['state'],'didDocumentMetadata'=>$metadata];
         } catch (DidVhError $e) { return self::failure($e); }
     }
 

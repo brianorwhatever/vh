@@ -886,8 +886,6 @@ fn resolve_inner(
         return Err(from_vh_log(e.clone()));
     }
     let m = result.metadata;
-    // A deactivated DID's document is not returned; earlier versions still are (profile §5).
-    let is_last = m.version_time == m.updated;
     let mut meta = DidResolutionMetadata {
         content_type: Some("application/did+json".into()),
         error: None,
@@ -908,7 +906,8 @@ fn resolve_inner(
     }
     Ok(DidResolution {
         did_resolution_metadata: meta,
-        did_document: if m.deactivated && is_last {
+        // A deactivated DID's document is returned only for an explicit version selector (profile §5).
+        did_document: if m.deactivated && !selected {
             None
         } else {
             Some(Value::Object(result.state))

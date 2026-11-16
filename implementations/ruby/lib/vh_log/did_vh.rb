@@ -307,13 +307,12 @@ module VHLog
         raise Error.new(ERROR_MAP.fetch(error['code'], 'invalidDid'), error['message'], error)
       end
       partial = result['error']
-      if (options.keys & SELECTORS).empty? && partial && partial['code'] == 'unsupported-log-version'
+      selected = !(options.keys & SELECTORS).empty?
+      if !selected && partial && partial['code'] == 'unsupported-log-version'
         # Entries after the last valid one may change the document or its keys (profile §5).
         raise Error.new('featureNotSupported', partial['message'], partial)
       end
       m = result['metadata']
-      # A deactivated DID's document is not returned; earlier versions still are (profile §5).
-      last = m['versionTime'] == m['updated']
       metadata = {'versionId'=>m['versionId'], 'versionTime'=>m['versionTime'], 'created'=>m['created'],
                   'updated'=>m['updated'], 'scid'=>m['scid'], 'deactivated'=>m['deactivated'], 'ttl'=>int(m['ttl'])}
       metadata['witness'] = m['witness'].merge('threshold'=>int(m['witness']['threshold'])) if m['witness']
@@ -326,7 +325,8 @@ module VHLog
         meta['didLog'] = lines.take(valid).map { |l| l + "\n" }.join
         meta['didWitness'] = options.fetch('didWitness', []) if witnessed
       end
-      {'didResolutionMetadata'=>meta, 'didDocument'=>m['deactivated'] && last ? nil : result['state'], 'didDocumentMetadata'=>metadata}
+      # A deactivated DID's document is returned only for an explicit version selector (profile §5).
+      {'didResolutionMetadata'=>meta, 'didDocument'=>m['deactivated'] && !selected ? nil : result['state'], 'didDocumentMetadata'=>metadata}
     rescue Error => e
       failure(e)
     end

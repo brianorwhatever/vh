@@ -127,7 +127,10 @@ Issues found in did:vh
 24. **Selecting the deactivating entry.** *Deactivate* forbids returning the
     document of a deactivated DID, and lets a client resolve "a prior version".
     It doesn't say whether the deactivating entry's own document is returned
-    when a version selector names it. **Profile:** it is not.
+    when a version selector names it. **Profile:** it is, with
+    `deactivated: true`, as the independent `@interop/did-method-webvh` 5.20
+    also does (vector `deactivation/deactivating-version`). Without a selector
+    no document is returned.
 25. **`watchers` with none active.** The metadata lists the active watchers,
     but it isn't said whether the field is omitted or `[]` when there are
     none. **Profile:** always present.

@@ -395,7 +395,6 @@ didDocument and didDocumentMetadata."
               (let* ((metadata (resolution-metadata result))
                      (valid (if error (1- (log-error-version error)) (length lines)))
                      (deactivated (eq (jget metadata "deactivated") :true))
-                     (latest-p (= (jget metadata "versionNumber") valid))
                      (witness (jget metadata "witness"))
                      (warnings (jget metadata "warnings"))
                      (resolution-metadata
@@ -419,5 +418,5 @@ didDocument and didDocumentMetadata."
                               (append (when (json-object-p witness) (list "witness" witness))
                                       (list "watchers" (jget metadata "watchers"))))))
                 (make-json "didResolutionMetadata" resolution-metadata
-                           "didDocument" (if (and deactivated latest-p) :null (resolution-state result))
+                           "didDocument" (if (and deactivated (not selected)) :null (resolution-state result))
                            "didDocumentMetadata" document-metadata)))))))))
